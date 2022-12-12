@@ -1,0 +1,120 @@
+plugins {
+    id 'idea'
+    id 'jacoco'
+    id 'java'
+
+    id 'com.diffplug.spotless'
+    id 'com.github.spotbugs'
+    id 'org.hidetake.swagger.generator'
+}
+
+boolean isCiServer = System.getenv().containsKey("CI")
+
+if (!isCiServer) {
+    tasks.withType(JavaExec).configureEach {
+        systemProperty 'spring.profiles.include', 'human-readable-logging'
+    }
+    tasks.withType(Test).configureEach {
+        systemProperty 'spring.profiles.include', 'human-readable-logging'
+    }
+}
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        // Terra proxy for maven central
+        url 'https://broadinstitute.jfrog.io/broadinstitute/maven-central/'
+    }
+    mavenCentral()
+    maven {
+        url 'https://broadinstitute.jfrog.io/broadinstitute/libs-release/'
+    }
+    maven {
+        url 'https://broadinstitute.jfrog.io/broadinstitute/libs-snapshot-local/'
+    }
+}
+
+dependencies {
+    compileOnly "com.google.code.findbugs:annotations:3.0.1"
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.0'
+    swaggerCodegen 'io.swagger.codegen.v3:swagger-codegen-cli:3.0.31'
+
+    implementation 'org.slf4j:slf4j-api:1.7.35'
+
+    testImplementation 'ch.qos.logback:logback-classic:1.2.11'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+
+    configurations.all {
+        exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
+    }
+
+    configurations.jacocoAnt {
+        exclude group: 'org.ow2.asm'
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+version = gradle.releaseVersion
+group = 'bio.terra'
+
+spotless {
+    java {
+        targetExclude "${buildDir}/**"
+        targetExclude "**/swagger-code/**"
+        googleJavaFormat()
+    }
+}
+
+// Run spotless check when running in github actions, otherwise run spotless apply.
+compileJava {
+    if (isCiServer) {
+        dependsOn(spotlessCheck)
+    } else {
+        dependsOn(spotlessApply)
+    }
+}
+
+// for scans
+if (hasProperty("buildScan")) {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
+}
+
+// Spotbugs configuration
+spotbugs {
+    toolVersion = '4.7.2'
+    reportLevel = 'high'
+    effort = 'max'
+}
+spotbugsMain {
+    reports {
+        if (isCiServer) {
+            sarif.enabled = true
+        } else {
+            html.enabled = true
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.8"
+}
+
+jacocoTestReport {
+    reports {
+        // sonarqube requires XML coverage output to upload coverage data
+        xml.required = true
+    }
+}
