@@ -38,12 +38,6 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
-    AnyObject:
-      type: object
-      required: [value]
-      properties:
-        value: {}
-
     ErrorReport:
       type: object
       required: [message, statusCode, causes]
@@ -56,10 +50,6 @@ components:
           type: array
           items:
             type: string
-
-    LookupPath:
-      type: string
-      description: Paths are specified in dot notation. For example, "user.name.first"
 
     VersionProperties:
       type: object
@@ -78,23 +68,6 @@ components:
           type: string
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
 
-  parameters:
-    ProfilePath:
-      name: path
-      in: query
-      description: Lookup path of a user profile property
-      explode: false
-      schema:
-        $ref: '#/components/schemas/LookupPath'
-
-    UserEmail:
-      name: userEmail
-      in: query
-      required: false
-      description: Target a specific user by their email address.
-      schema:
-        type: string
-
   responses:
     # Keep alphabetized please
     BadRequest:
@@ -110,13 +83,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorReport'
-
-    LookupResult:
-      description: Value of requested property
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/AnyObject'
 
     PermissionDenied:
       description: Permission denied

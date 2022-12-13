@@ -1,0 +1,80 @@
+name: Bump, Tag, Publish
+
+on:
+  push:
+    branches:
+    - main
+    paths-ignore:
+    - 'README.md'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Part of the version to bump: major, minor, patch'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      branch:
+        description: 'Branch to run the workflow on'
+        required: false
+        default: 'main'
+
+env:
+  SERVICE_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  tag-publish-job:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Set part of semantic version to bump
+      id: controls
+      run: |
+        SEMVER_PART=""
+        CHECKOUT_BRANCH="$GITHUB_REF"
+        if ${{github.event_name == 'push' }}; then
+          SEMVER_PART="minor"
+        elif ${{github.event_name == 'workflow_dispatch' }}; then
+          SEMVER_PART=${{ github.event.inputs.bump }}
+          CHECKOUT_BRANCH=${{ github.event.inputs.branch }}
+        fi
+        echo semver-part=$SEMVER_PART >> $GITHUB_OUTPUT
+        echo checkout-branch=$CHECKOUT_BRANCH >> $GITHUB_OUTPUT
+
+    - name: Checkout current code
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ steps.controls.outputs.checkout-branch }}
+        token: ${{ secrets.BROADBOT_TOKEN }}
+  
+    - name: Bump the tag to a new version
+      uses: databiosphere/github-actions/actions/bumper@bumper-0.0.6
+      id: tag
+      env:
+        DEFAULT_BUMP: minor
+        GITHUB_TOKEN: ${{ secrets.BROADBOT_TOKEN }}
+        HOTFIX_BRANCHES: hotfix.*
+        OVERRIDE_BUMP: ${{ steps.controls.outputs.semver-part }}
+        RELEASE_BRANCHES: main
+        VERSION_FILE_PATH: settings.gradle
+        VERSION_LINE_MATCH: "^\\s*gradle.ext.releaseVersion\\s*=\\s*'.*'"
+        VERSION_SUFFIX: SNAPSHOT
+  
+    - name: Set up AdoptOpenJDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: 17
+        cache: 'gradle'
+    
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+    
+    - name: "Publish to Artifactory"
+      run: ./gradlew --build-cache :client:artifactoryPublish --scan
+      env:
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        ARTIFACTORY_REPO_KEY: "libs-release-local"

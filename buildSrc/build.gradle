@@ -1,5 +1,6 @@
 plugins {
     id 'groovy-gradle-plugin'
+    id 'com.srcclr.gradle' version '3.1.10'
 }
 
 repositories {

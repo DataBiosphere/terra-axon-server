@@ -30,8 +30,7 @@ public class ClientTestUtils {
 
     if (testUser != null) {
       logger.debug(
-          "Fetching credentials and building Axon Server object for test user: {}",
-          testUser.name);
+          "Fetching credentials and building Axon Server object for test user: {}", testUser.name);
       GoogleCredentials userCredential =
           AuthenticationUtils.getDelegatedUserCredential(testUser, TEST_USER_SCOPES);
       accessToken = AuthenticationUtils.getAccessToken(userCredential);

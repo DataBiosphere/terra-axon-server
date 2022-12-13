@@ -4,7 +4,6 @@ plugins {
     id 'com.google.cloud.tools.jib'
     id 'com.srcclr.gradle'
     id 'org.sonarqube'
-
     id 'com.gorylenko.gradle-git-properties' version '2.3.1'
 }
 
@@ -18,11 +17,8 @@ dependencies {
     }
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
 
-    implementation 'org.apache.commons:commons-dbcp2'
     implementation 'org.apache.commons:commons-lang3'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.retry:spring-retry'
     implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'javax.servlet:jstl:1.2'

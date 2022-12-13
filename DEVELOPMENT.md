@@ -17,7 +17,13 @@ View current usage information for `write-config.sh` by entering
 ```
 
 ### Running
-Start server locally with swagger
+To start the server locally with swagger, run:
 ```
 ./gradlew bootRun
+```
+
+### Updating Dependency Locks
+All gradle dependency configurations are in this project. To update the lock files, run:
+```sh
+./gradlew dependencies --write-locks
 ```
