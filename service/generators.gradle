@@ -18,14 +18,15 @@ generateSwaggerCode {
     components = ['models', 'apis']
     jvmArgs = ['--add-opens=java.base/java.util=ALL-UNNAMED']
     additionalProperties = [
-        modelPackage     : "${artifactGroup}.model",
-        apiPackage       : "${artifactGroup}.api",
-        dateLibrary      : 'java11',
-        java8            : true,
-        interfaceOnly    : 'true',
-        useTags          : 'true',
-        errorOnUnknownEnums : 'true',
-        springBootVersion: dependencyManagement.managedVersions['org.springframework.boot:spring-boot']
+            modelPackage       : "${artifactGroup}.model",
+            apiPackage         : "${artifactGroup}.api",
+            dateLibrary        : 'java11',
+            java8              : true,
+            interfaceOnly      : 'true',
+            useTags            : 'true',
+            errorOnUnknownEnums: 'true',
+            springBootVersion  : dependencyManagement.managedVersions['org.springframework.boot:spring-boot'],
+            modelNamePrefix    : 'Api'
     ]
 }
 

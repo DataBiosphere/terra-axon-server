@@ -2,7 +2,7 @@ package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.PublicApi;
 import bio.terra.axonserver.app.configuration.VersionConfiguration;
-import bio.terra.axonserver.model.VersionProperties;
+import bio.terra.axonserver.model.ApiVersionProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +23,9 @@ public class PublicApiController implements PublicApi {
   }
 
   @Override
-  public ResponseEntity<VersionProperties> serviceVersion() {
-    VersionProperties currentVersion =
-        new VersionProperties()
+  public ResponseEntity<ApiVersionProperties> serviceVersion() {
+    ApiVersionProperties currentVersion =
+        new ApiVersionProperties()
             .gitTag(versionConfiguration.getGitTag())
             .gitHash(versionConfiguration.getGitHash())
             .github(versionConfiguration.getGithub())

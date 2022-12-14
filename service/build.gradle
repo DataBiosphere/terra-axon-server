@@ -2,8 +2,6 @@ plugins {
     id 'bio.terra.axonserver.java-spring-conventions'
     id 'de.undercouch.download'
     id 'com.google.cloud.tools.jib'
-    id 'com.srcclr.gradle'
-    id 'org.sonarqube'
     id 'com.gorylenko.gradle-git-properties' version '2.3.1'
 }
 
@@ -32,14 +30,6 @@ dependencies {
 
 test {
     useJUnitPlatform ()
-}
-
-sonarqube {
-    properties {
-        property 'sonar.projectKey', 'terra-axonserver'
-        property 'sonar.organization', 'broad-databiosphere'
-        property 'sonar.host.url', 'https://sonarcloud.io'
-    }
 }
 
 apply from: "$rootDir/gradle/dependency-locking.gradle"

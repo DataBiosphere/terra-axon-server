@@ -4,9 +4,6 @@ env:
   tracing:
     exportEnabled: ${CLOUD_TRACE_ENABLED:false}
     samplingRate: ${SAMPLING_PROBABILITY:0}
-  sam:
-    basePath: ${SAM_ADDRESS:https://sam.dsde-dev.broadinstitute.org}
-    resourceId: ${SAM_RESOURCE_ID:user-dev}
 
 # Below here is non-deployment-specific
 
@@ -41,10 +38,6 @@ axonserver:
     pollingIntervalSeconds: 60
     startupWaitSeconds: 5
     stalenessThresholdSeconds: 125
-
-  sam:
-    basePath: ${env.sam.basePath}
-    resourceId: ${env.sam.resourceId}
 
 terra.common:
   kubernetes:

@@ -1,5 +1,4 @@
 tasks.named('dependencies') {
     dependsOn(':service:dependencies')
     dependsOn(':client:dependencies')
-    dependsOn(':integration:dependencies')
 }
