@@ -9,6 +9,9 @@ apply from: 'generators.gradle'
 apply from: 'publishing.gradle'
 
 dependencies {
+    constraints {
+        implementation 'com.google.guava:guava:31.1-jre' // "-jre" for Java 8 or higher
+    }
     implementation platform('com.google.cloud:libraries-bom:25.1.0')
     implementation('bio.terra:terra-common-lib:0.0.75-SNAPSHOT') {
         exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
