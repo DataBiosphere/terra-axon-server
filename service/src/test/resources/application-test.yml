@@ -1,6 +1,3 @@
-user:
-  sam.base-path: ${SAM_ADDRESS:https://sam.dsde-dev.broadinstitute.org}
-
 terra.common:
   kubernetes:
     in-kubernetes: false
