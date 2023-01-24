@@ -2,13 +2,10 @@ package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.AuthorizationApi;
 import bio.terra.axonserver.model.AnyObject;
-// import bio.terra.axonserver.model.AuthTokens;
-// import bio.terra.axonserver.model.RefreshedToken;
-import com.google.api.client.auth.oauth2.TokenResponse;
+import com.google.api.client.auth.oauth2.TokenRequest;
 import com.google.api.client.auth.oauth2.TokenResponseException;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleRefreshTokenRequest;
-import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import javax.servlet.http.HttpServletRequest;
@@ -35,40 +32,30 @@ public class AuthorizationApiController implements AuthorizationApi {
 
   @Override
   public ResponseEntity<AnyObject> exchangeAuthCode(String authCode) {
-    try {
-      GoogleTokenResponse response =
-          new GoogleAuthorizationCodeTokenRequest(
-                  new NetHttpTransport(),
-                  new GsonFactory(),
-                  AXON_UI_CLIENT_ID,
-                  AXON_UI_CLIENT_SECRET,
-                  authCode,
-                  "postmessage")
-              .execute();
-
-      return new ResponseEntity<>(new AnyObject().value(response), HttpStatus.OK);
-    } catch (TokenResponseException e) {
-      return new ResponseEntity<>(
-          new AnyObject().value(e.getDetails()),
-          e.getStatusCode() > 0 ? HttpStatus.valueOf(e.getStatusCode()) : HttpStatus.BAD_REQUEST);
-
-    } catch (Exception e) {
-      return new ResponseEntity<>(new AnyObject().value(e.getMessage()), HttpStatus.BAD_REQUEST);
-    }
+    return catchTokenResponseUtil(
+        new GoogleAuthorizationCodeTokenRequest(
+            new NetHttpTransport(),
+            new GsonFactory(),
+            AXON_UI_CLIENT_ID,
+            AXON_UI_CLIENT_SECRET,
+            authCode,
+            "postmessage"));
   }
 
   @Override
   public ResponseEntity<AnyObject> getRefreshedAccessToken(String refreshToken) {
-    try {
-      TokenResponse response =
-          new GoogleRefreshTokenRequest(
-                  new NetHttpTransport(),
-                  new GsonFactory(),
-                  refreshToken,
-                  AXON_UI_CLIENT_ID,
-                  AXON_UI_CLIENT_SECRET)
-              .execute();
+    return catchTokenResponseUtil(
+        new GoogleRefreshTokenRequest(
+            new NetHttpTransport(),
+            new GsonFactory(),
+            refreshToken,
+            AXON_UI_CLIENT_ID,
+            AXON_UI_CLIENT_SECRET));
+  }
 
+  public <T extends TokenRequest> ResponseEntity<AnyObject> catchTokenResponseUtil(T request) {
+    try {
+      var response = request.execute();
       return new ResponseEntity<>(new AnyObject().value(response), HttpStatus.OK);
     } catch (TokenResponseException e) {
       return new ResponseEntity<>(
