@@ -46,11 +46,7 @@ paths:
       tags: [ Authorization ]
       responses:
         '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AnyObject'
+          $ref: '#/components/responses/ApiTokenResultResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -67,11 +63,7 @@ paths:
       tags: [ Authorization ]
       responses:
         '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AnyObject'
+          $ref: '#/components/responses/ApiTokenResultResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -82,14 +74,35 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
-    AnyObject:
+    ApiTokenReport:
       type: object
-      required: [ value ]
+      required: [ accessToken, tokenType ]
       properties:
-        value : {}
+        accessToken:
+          type: string
+        expiresIn:
+          type: number
+        tokenType:
+          type: string
+        scope:
+          type: string
+        refreshToken:
+          type: string
+        idToken:
+          type: string
+#    ApiTokenResult:
+#      type: object
+#      description: |
+#        The result of the token request
+#      properties:
+#        tokenReport:
+#          $ref: '#/components/schemas/ApiTokenReport'
+#        errorReport:
+#          $ref: '#/components/schemas/ErrorReport'
     AuthorizationCode:
       description: Authorization code provided by Google.
       type: string
+
     ErrorReport:
       type: object
       required: [ message, statusCode, causes ]
@@ -140,6 +153,12 @@ components:
 
   responses:
     # Keep alphabetized please
+    ApiTokenResultResponse:
+      description: Result of a token request (Success or failure)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiTokenReport'
     BadRequest:
       description: Bad request
       content:
