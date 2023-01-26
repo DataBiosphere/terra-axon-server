@@ -46,7 +46,7 @@ paths:
       tags: [ Authorization ]
       responses:
         '200':
-          $ref: '#/components/responses/ApiTokenResultResponse'
+          $ref: '#/components/responses/TokenResultResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -63,7 +63,7 @@ paths:
       tags: [ Authorization ]
       responses:
         '200':
-          $ref: '#/components/responses/ApiTokenResultResponse'
+          $ref: '#/components/responses/TokenResultResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -74,7 +74,7 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
-    ApiTokenReport:
+    TokenReport:
       type: object
       required: [ accessToken, tokenType ]
       properties:
@@ -140,12 +140,12 @@ components:
 
   responses:
     # Keep alphabetized please
-    ApiTokenResultResponse:
+    TokenResultResponse:
       description: Result of a token request.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiTokenReport'
+            $ref: '#/components/schemas/TokenReport'
 
     BadRequest:
       description: Bad request

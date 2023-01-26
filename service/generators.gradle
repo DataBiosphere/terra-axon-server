@@ -26,7 +26,7 @@ generateSwaggerCode {
             useTags            : 'true',
             errorOnUnknownEnums: 'true',
             springBootVersion  : dependencyManagement.managedVersions['org.springframework.boot:spring-boot'],
-//            modelNamePrefix    : 'Api'
+            modelNamePrefix    : 'Api'
     ]
 }
 
