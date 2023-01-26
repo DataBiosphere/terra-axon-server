@@ -22,10 +22,20 @@ public class AuthorizationApiController implements AuthorizationApi {
   private final HttpServletRequest servletRequest;
 
   @Value("${AXON_UI_CLIENT_ID}")
-  private String AXON_UI_CLIENT_ID;
+  private static String AXON_UI_CLIENT_ID;
 
   @Value("${AXON_UI_CLIENT_SECRET}")
-  private String AXON_UI_CLIENT_SECRET;
+  private static String AXON_UI_CLIENT_SECRET;
+
+  @Value("${AXON_UI_CLIENT_SECRET}")
+  public void setClientSecret(String clientSecret) {
+    AuthorizationApiController.AXON_UI_CLIENT_SECRET = clientSecret;
+  }
+
+  @Value("${AXON_UI_CLIENT_ID}")
+  public void setClientId(String clientId) {
+    AuthorizationApiController.AXON_UI_CLIENT_ID = clientId;
+  }
 
   @Autowired
   public AuthorizationApiController(HttpServletRequest servletRequest) {
