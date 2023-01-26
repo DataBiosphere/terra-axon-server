@@ -5,7 +5,6 @@ info:
     Terra Axon Server
 
   version: 0.0.1
-
 paths:
   # Unauthenticated Paths
   /status:
@@ -53,6 +52,7 @@ paths:
           $ref: '#/components/responses/PermissionDenied'
         '500':
           $ref: '#/components/responses/ServerError'
+
   /api/auth/refreshToken:
     parameters:
       - $ref: '#/components/parameters/RefreshToken'
