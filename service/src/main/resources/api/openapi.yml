@@ -74,6 +74,19 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
+    ErrorReport:
+      type: object
+      required: [ message, statusCode, causes ]
+      properties:
+        message:
+          type: string
+        statusCode:
+          type: integer
+        causes:
+          type: array
+          items:
+            type: string
+
     TokenReport:
       type: object
       required: [ accessToken, tokenType ]
@@ -90,19 +103,6 @@ components:
           type: string
         idToken:
           type: string
-
-    ErrorReport:
-      type: object
-      required: [ message, statusCode, causes ]
-      properties:
-        message:
-          type: string
-        statusCode:
-          type: integer
-        causes:
-          type: array
-          items:
-            type: string
 
     VersionProperties:
       type: object
@@ -140,13 +140,6 @@ components:
 
   responses:
     # Keep alphabetized please
-    TokenResultResponse:
-      description: Result of a token request.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/TokenReport'
-
     BadRequest:
       description: Bad request
       content:
@@ -174,6 +167,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorReport'
+
+    TokenResultResponse:
+      description: Result of a token request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenReport'
 
   securitySchemes:
     authorization:
