@@ -9,7 +9,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import java.io.IOException;
-import java.math.BigDecimal;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,7 +79,7 @@ public class AuthorizationApiController implements AuthorizationApi {
   private ApiTokenReport buildApiTokenResult(GoogleTokenResponse response) {
     return new ApiTokenReport()
         .accessToken(response.getAccessToken())
-        .expiresIn(BigDecimal.valueOf(response.getExpiresInSeconds()))
+        .expiresIn(response.getExpiresInSeconds())
         .tokenType(response.getTokenType())
         .scope(response.getScope())
         .refreshToken(response.getRefreshToken())
