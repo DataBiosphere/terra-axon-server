@@ -94,7 +94,8 @@ components:
         accessToken:
           type: string
         expiresIn:
-          type: number
+          type: integer
+          format: int64
         tokenType:
           type: string
         scope:

@@ -27,14 +27,14 @@ public class AuthorizationApiController implements AuthorizationApi {
   @Value("${AXON_UI_CLIENT_SECRET}")
   private static String AXON_UI_CLIENT_SECRET;
 
-  @Value("${AXON_UI_CLIENT_SECRET}")
-  public void setClientSecret(String clientSecret) {
-    AuthorizationApiController.AXON_UI_CLIENT_SECRET = clientSecret;
-  }
-
   @Value("${AXON_UI_CLIENT_ID}")
   public void setClientId(String clientId) {
     AuthorizationApiController.AXON_UI_CLIENT_ID = clientId;
+  }
+
+  @Value("${AXON_UI_CLIENT_SECRET}")
+  public void setClientSecret(String clientSecret) {
+    AuthorizationApiController.AXON_UI_CLIENT_SECRET = clientSecret;
   }
 
   @Autowired
