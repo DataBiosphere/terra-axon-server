@@ -58,7 +58,7 @@ paths:
       - $ref: '#/components/parameters/RefreshToken'
     post:
       summary: |
-        Pass in a refresh token to receive an access token
+        Pass in a refresh token to receive an access token.
       operationId: getRefreshedAccessToken
       tags: [ Authorization ]
       responses:
@@ -91,10 +91,6 @@ components:
         idToken:
           type: string
 
-    AuthorizationCode:
-      description: Authorization code provided by Google.
-      type: string
-
     ErrorReport:
       type: object
       required: [ message, statusCode, causes ]
@@ -107,10 +103,6 @@ components:
           type: array
           items:
             type: string
-
-    RefreshToken:
-      description: OAuth 2.0 refresh token.
-      type: string
 
     VersionProperties:
       type: object
@@ -132,17 +124,19 @@ components:
   parameters:
     AuthCode:
       name: authCode
+      description: OAuth 2.0 authorization code provided by Google.
       in: query
       required: true
       schema:
-        $ref: '#/components/schemas/AuthorizationCode'
+        type: string
 
     RefreshToken:
       name: refreshToken
+      description: OAuth 2.0 refresh token provided by Google.
       in: query
       required: true
       schema:
-        $ref: '#/components/schemas/RefreshToken'
+        type: string
 
   responses:
     # Keep alphabetized please
@@ -152,6 +146,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ApiTokenReport'
+
     BadRequest:
       description: Bad request
       content:
