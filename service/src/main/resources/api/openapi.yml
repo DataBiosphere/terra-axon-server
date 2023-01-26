@@ -90,15 +90,7 @@ components:
           type: string
         idToken:
           type: string
-#    ApiTokenResult:
-#      type: object
-#      description: |
-#        The result of the token request
-#      properties:
-#        tokenReport:
-#          $ref: '#/components/schemas/ApiTokenReport'
-#        errorReport:
-#          $ref: '#/components/schemas/ErrorReport'
+
     AuthorizationCode:
       description: Authorization code provided by Google.
       type: string
@@ -115,6 +107,10 @@ components:
           type: array
           items:
             type: string
+
+    RefreshToken:
+      description: OAuth 2.0 refresh token.
+      type: string
 
     VersionProperties:
       type: object
@@ -138,7 +134,6 @@ components:
       name: authCode
       in: query
       required: true
-      description: Authorization code provided by Google.
       schema:
         $ref: '#/components/schemas/AuthorizationCode'
 
@@ -146,15 +141,13 @@ components:
       name: refreshToken
       in: query
       required: true
-      description: Refresh token generated from initial call.
       schema:
-        type: string
-        description: Refresh token provided.
+        $ref: '#/components/schemas/RefreshToken'
 
   responses:
     # Keep alphabetized please
     ApiTokenResultResponse:
-      description: Result of a token request (Success or failure)
+      description: Result of a token request.
       content:
         application/json:
           schema:
