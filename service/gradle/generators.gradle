@@ -28,7 +28,7 @@ task downloadCalhounSwagger(type: Download) {
 }
 
 swaggerSources {
-    // generate axonserver openapi rest api controller iAnterfaces
+    // generate axonserver openapi rest api controller interfaces
     axonserver {
         inputFile = file('../service/src/main/resources/api/openapi.yml')
         code {

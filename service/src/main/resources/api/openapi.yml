@@ -9,31 +9,77 @@ paths:
   # Unauthenticated Paths
   /status:
     get:
-      security: [ ]
+      security: []
       summary: Returns the operational status of the service
       operationId: serviceStatus
-      tags: [ Public ]
+      tags: [Public]
       responses:
-        '200':
+        "200":
           description: Service can process requests
-        '500':
+        "500":
           description: |
             Service cannot process requests. That might be because dependent services are
             unavailable, or because there is a problem with the service itself.
 
   /version:
     get:
-      security: [ ]
+      security: []
       summary: Returns the deployed version of the service
       operationId: serviceVersion
-      tags: [ Public ]
+      tags: [Public]
       responses:
-        '200':
+        "200":
           description: Version properties
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VersionProperties'
+                $ref: "#/components/schemas/VersionProperties"
+
+  # GetFile paths
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/file/:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - in: query
+        name: convertTo
+        description: A file type to convert the requested file into before returning
+        schema:
+          type: string
+    get:
+      summary: Retrieves a file referenced by the given WSM resource
+      operationId: getFile
+      tags: [GetFile]
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/file/objects/{objectPath}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - $ref: "#/components/parameters/ObjectPath"
+      - in: query
+        name: convertTo
+        description: A file type to convert the requested file into before returning
+        schema:
+          type: string
+    get:
+      summary: Retrieves an object in a provided file containing WSM resource
+      operationId: getFileInBucket
+      tags: [GetFile]
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                format: binary
 
 components:
   schemas:
@@ -53,7 +99,7 @@ components:
 
     VersionProperties:
       type: object
-      required: [ gitTag, gitHash, github, build ]
+      required: [gitTag, gitHash, github, build]
       properties:
         gitTag:
           type: string
@@ -69,34 +115,60 @@ components:
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
 
   responses:
-    # Keep alphabetized please
     BadRequest:
       description: Bad request
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorReport'
+            $ref: "#/components/schemas/ErrorReport"
 
     Conflict:
       description: Request conflicts with current state
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorReport'
+            $ref: "#/components/schemas/ErrorReport"
 
     PermissionDenied:
       description: Permission denied
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorReport'
+            $ref: "#/components/schemas/ErrorReport"
 
     ServerError:
       description: Server error
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorReport'
+            $ref: "#/components/schemas/ErrorReport"
+
+  parameters:
+    ResourceId:
+      name: resourceId
+      in: path
+      description: A UUID used to identify a resource in a WSM workspace.
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      description: A UUID to used to identify a WSM workspace
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ObjectPath:
+      name: objectPath
+      in: path
+      description: File path to object
+      required: true
+      schema:
+        type: string
 
   securitySchemes:
     authorization:
@@ -105,13 +177,11 @@ components:
         implicit:
           authorizationUrl: https://accounts.google.com/o/oauth2/auth
           scopes:
-            openid: open id authorization
-            email: email authorization
-            profile: profile authorization
+            devstorage.read_only: google cloud storage read authorization
     bearerAuth:
       type: http
       scheme: bearer
 
 security:
-  - authorization: [ openid, email, profile ]
-  - bearerAuth: [ ]
+  - authorization: [openid, email, profile]
+  - bearerAuth: []

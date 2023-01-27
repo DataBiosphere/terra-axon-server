@@ -4,6 +4,11 @@ env:
   tracing:
     exportEnabled: ${CLOUD_TRACE_ENABLED:false}
     samplingRate: ${SAMPLING_PROBABILITY:0}
+  wsm:
+    basePath: ${WSM_ADDRESS:https://terra-devel-wsm.api.verily.com/}
+  calhoun:
+    basePath: ${CALHOUN_ADDRESS:https://terra-calhoun.api.verily.com/}
+
 
 # Below here is non-deployment-specific
 
@@ -38,6 +43,10 @@ axonserver:
     pollingIntervalSeconds: 60
     startupWaitSeconds: 5
     stalenessThresholdSeconds: 125
+  wsm:
+    basePath: ${env.wsm.basePath}
+  calhoun:
+    basePath: ${env.calhoun.basePath}
 
 terra.common:
   kubernetes:

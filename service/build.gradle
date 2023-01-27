@@ -5,25 +5,37 @@ plugins {
     id 'com.gorylenko.gradle-git-properties' version '2.3.1'
 }
 
-apply from: 'gradle/generators.gradle'
-apply from: 'gradle/publishing.gradle'
-apply from: 'gradle/dependency-locking.gradle'
+apply from: "$projectDir/gradle/generators.gradle"
+apply from: "$projectDir/gradle/publishing.gradle"
+apply from: "$projectDir/gradle/dependency-locking.gradle"
 
 dependencies {
     constraints {
         implementation 'com.google.guava:guava:31.1-jre' // "-jre" for Java 8 or higher
     }
+    implementation group: 'commons-io', name: 'commons-io', version: '2.11.0'
+
+    // Google cloud bom
     implementation platform('com.google.cloud:libraries-bom:25.1.0')
+    implementation group: 'com.google.cloud', name: 'google-cloud-storage', version: '2.17.2'
+
+    // Terra dependencies
     implementation('bio.terra:terra-common-lib:0.0.75-SNAPSHOT') {
         exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
     }
+    implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.545-SNAPSHOT'
+    // hk2 is required to use WSM client, but not correctly exposed by the client
+    implementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: '2.38'
 
+    // Spring dependencies
     implementation 'org.apache.commons:commons-lang3'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'javax.servlet:jstl:1.2'
 
+
+    // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         // Fixes warning about multiple occurrences of JSONObject on the classpath
@@ -34,5 +46,3 @@ dependencies {
 test {
     useJUnitPlatform ()
 }
-
-apply from: "$rootDir/gradle/dependency-locking.gradle"
