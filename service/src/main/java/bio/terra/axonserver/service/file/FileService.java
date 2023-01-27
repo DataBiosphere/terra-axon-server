@@ -48,7 +48,7 @@ public class FileService {
     return new ByteArrayResource(file);
   }
 
-  private Pair<byte[], String> getFileHandlerg(
+  private Pair<byte[], String> getFileHandler(
       ResourceDescription resource,
       @Nullable String objectPath,
       AuthenticatedUserRequest userRequest) {
