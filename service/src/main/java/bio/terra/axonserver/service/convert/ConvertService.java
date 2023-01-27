@@ -26,7 +26,6 @@ public class ConvertService {
 
   private byte[] convertToHtml(
       byte[] file, String fileExtension, AuthenticatedUserRequest userRequest) {
-
     return switch (fileExtension) {
       case "ipynb" -> this.calhounService.convertNotebook(userRequest.getRequiredToken(), file);
       case "rmd" -> this.calhounService.convertRmd(userRequest.getRequiredToken(), file);

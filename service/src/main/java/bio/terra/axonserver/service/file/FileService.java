@@ -8,10 +8,10 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.GcpUtils;
 import bio.terra.workspace.model.ResourceDescription;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.Blob;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
@@ -36,36 +36,54 @@ public class FileService {
       @Nullable String convertTo) {
 
     ResourceDescription resource = this.getResource(userRequest, workspaceId, resourceId);
-    byte[] file = null;
-    String fileName = null;
-    switch (resource.getMetadata().getResourceType()) {
-      case GCS_BUCKET -> {
-        file = this.getGcpBucketFile(userRequest, resource, objectPath);
-        fileName = objectPath;
-      }
-        // case GCS_OBJECT -> System.out.println("GCS_OBJECT");
-      default -> throw new InvalidResourceTypeException(
-          "Not a file containing resource: " + resource.getMetadata().getResourceType());
-    }
 
-    if (file != null && fileName != null && convertTo != null) {
+    Pair<byte[], String> fileWithName = this.getFileHandler(resource, objectPath, userRequest);
+    byte[] file = fileWithName.getValue0();
+    String fileName = fileWithName.getValue1();
+
+    if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileName);
       file = this.convertService.convert(file, fileExtension, convertTo, userRequest);
     }
     return new ByteArrayResource(file);
   }
 
-  private byte[] getGcpBucketFile(
-      AuthenticatedUserRequest authenticatedUserRequest,
+  private Pair<byte[], String> getFileHandlerg(
       ResourceDescription resource,
-      String objectPath) {
-    GoogleCredentials googleCredentials =
-        GcpUtils.getGoogleCredentialsFromUserRequest(authenticatedUserRequest);
-    String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
-    Blob object =
-        new CloudStorageService().getBucketObject(googleCredentials, bucketName, objectPath);
+      @Nullable String objectPath,
+      AuthenticatedUserRequest userRequest) {
 
-    return object.getContent();
+    return switch (resource.getMetadata().getResourceType()) {
+      case GCS_OBJECT -> {
+        String objectName = resource.getResourceAttributes().getGcpGcsObject().getFileName();
+        yield new Pair<byte[], String>(this.getGcsObjectFile(resource, userRequest), objectName);
+      }
+      case GCS_BUCKET -> new Pair<byte[], String>(
+          this.getGcsBucketFile(resource, objectPath, userRequest), objectPath);
+      default -> throw new InvalidResourceTypeException(
+          "Not a file containing resource: " + resource.getMetadata().getResourceType());
+    };
+  }
+
+  private byte[] getGcsObjectFile(
+      ResourceDescription resource, AuthenticatedUserRequest userRequest) {
+    GoogleCredentials googleCredentials = GcpUtils.getGoogleCredentialsFromUserRequest(userRequest);
+
+    String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
+    String objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
+    return new CloudStorageService()
+        .getBucketObject(googleCredentials, bucketName, objectPath)
+        .getContent();
+  }
+
+  private byte[] getGcsBucketFile(
+      ResourceDescription resource, String objectPath, AuthenticatedUserRequest userRequest) {
+    GoogleCredentials googleCredentials = GcpUtils.getGoogleCredentialsFromUserRequest(userRequest);
+
+    String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
+    return new CloudStorageService()
+        .getBucketObject(googleCredentials, bucketName, objectPath)
+        .getContent();
   }
 
   private ResourceDescription getResource(
