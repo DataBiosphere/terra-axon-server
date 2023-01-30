@@ -1,6 +1,5 @@
 package bio.terra.axonserver.utils;
 
-import bio.terra.common.iam.SamUser;
 import bio.terra.stairway.Step;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -10,9 +9,9 @@ public class GcpUtils {
 
   private GcpUtils() {}
 
-  public static GoogleCredentials getGoogleCredentialsFromUserRequest(SamUser userRequest) {
+  public static GoogleCredentials getGoogleCredentialsFromToken(String token) {
     // The expirationTime argument is only used for refresh tokens, not access tokens.
-    AccessToken accessToken = new AccessToken(userRequest.getBearerToken().getToken(), null);
+    AccessToken accessToken = new AccessToken(token, null);
     return GoogleCredentials.create(accessToken);
   }
 }

@@ -10,6 +10,7 @@ import javax.ws.rs.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/** Service for interacting with the Terra Workspace Manager client. */
 @Component
 public class WorkspaceManagerService {
   private final WsmConfiguration wsmConfig;
@@ -29,6 +30,15 @@ public class WorkspaceManagerService {
     return new ApiClient().setBasePath(wsmConfig.basePath());
   }
 
+  /**
+   * Get a resource from a workspace.
+   *
+   * @param accessToken user access token
+   * @param workspaceId terra workspace id
+   * @param resourceId terra resource id
+   * @return WSM resource description
+   * @throws NotFoundException if workspace or resource does not exist
+   */
   public ResourceDescription getResource(String accessToken, UUID workspaceId, UUID resourceId) {
     try {
       return new ResourceApi(getApiClient(accessToken)).getResource(workspaceId, resourceId);

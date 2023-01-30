@@ -11,6 +11,10 @@ import javax.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * Service for interacting with Calhoun notebook conversion service.
+ * https://github.com/DataBiosphere/calhoun
+ */
 @Component
 public class CalhounService {
 
@@ -31,6 +35,14 @@ public class CalhounService {
     return new ApiClient().setBasePath(calhounConfig.basePath());
   }
 
+  /**
+   * Convert a .ipynb jupyter notebook file to a html file.
+   *
+   * @param accessToken user access token
+   * @param file notebook file to convert
+   * @return converted notebook file
+   * @throws BadRequestException if conversion fails
+   */
   public byte[] convertNotebook(String accessToken, byte[] file) {
     try {
       File convertedFile = new ConvertApi(getApiClient(accessToken)).convertNotebook(file);
@@ -44,13 +56,21 @@ public class CalhounService {
     }
   }
 
+  /**
+   * Convert a .rmd R markdown file to a html file.
+   *
+   * @param accessToken user access token
+   * @param file notebook file to convert
+   * @return converted notebook file
+   * @throws BadRequestException if conversion fails
+   */
   public byte[] convertRmd(String accessToken, byte[] file) {
     try {
       File convertedFile = new ConvertApi(getApiClient(accessToken)).convertRmd(file);
       try {
         return Files.readAllBytes(convertedFile.toPath());
       } catch (Exception e) {
-        throw new InternalServerErrorException("Failed to read converted R markdown");
+        throw new InternalServerErrorException("Failed to parse converted R markdown");
       }
     } catch (ApiException apiException) {
       throw new BadRequestException("Failed to convert R markdown");
