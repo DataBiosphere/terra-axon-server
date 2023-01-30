@@ -3,9 +3,9 @@ package bio.terra.axonserver.service.file;
 import bio.terra.axonserver.service.cloud.gcp.CloudStorageService;
 import bio.terra.axonserver.service.convert.ConvertService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
-import bio.terra.axonserver.service.iam.AuthenticatedUserRequest;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.GcpUtils;
+import bio.terra.common.iam.SamUser;
 import bio.terra.workspace.model.ResourceDescription;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.util.UUID;
@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileService {
 
-  WorkspaceManagerService wsmService;
-  ConvertService convertService;
+  private final WorkspaceManagerService wsmService;
+  private final ConvertService convertService;
 
   @Autowired
   public FileService(WorkspaceManagerService wsmService, ConvertService convertService) {
@@ -29,7 +29,7 @@ public class FileService {
   }
 
   public ByteArrayResource getFile(
-      AuthenticatedUserRequest userRequest,
+      SamUser userRequest,
       UUID workspaceId,
       UUID resourceId,
       @Nullable String objectPath,
@@ -49,9 +49,7 @@ public class FileService {
   }
 
   private Pair<byte[], String> getFileHandler(
-      ResourceDescription resource,
-      @Nullable String objectPath,
-      AuthenticatedUserRequest userRequest) {
+      ResourceDescription resource, @Nullable String objectPath, SamUser userRequest) {
 
     return switch (resource.getMetadata().getResourceType()) {
       case GCS_OBJECT -> {
@@ -61,12 +59,12 @@ public class FileService {
       case GCS_BUCKET -> new Pair<byte[], String>(
           this.getGcsBucketFile(resource, objectPath, userRequest), objectPath);
       default -> throw new InvalidResourceTypeException(
-          "Not a file containing resource: " + resource.getMetadata().getResourceType());
+          resource.getMetadata().getResourceType()
+              + " is not a type of resource that contains files");
     };
   }
 
-  private byte[] getGcsObjectFile(
-      ResourceDescription resource, AuthenticatedUserRequest userRequest) {
+  private byte[] getGcsObjectFile(ResourceDescription resource, SamUser userRequest) {
     GoogleCredentials googleCredentials = GcpUtils.getGoogleCredentialsFromUserRequest(userRequest);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
@@ -77,7 +75,7 @@ public class FileService {
   }
 
   private byte[] getGcsBucketFile(
-      ResourceDescription resource, String objectPath, AuthenticatedUserRequest userRequest) {
+      ResourceDescription resource, String objectPath, SamUser userRequest) {
     GoogleCredentials googleCredentials = GcpUtils.getGoogleCredentialsFromUserRequest(userRequest);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
@@ -86,8 +84,8 @@ public class FileService {
         .getContent();
   }
 
-  private ResourceDescription getResource(
-      AuthenticatedUserRequest userRequest, UUID workspaceId, UUID resourceId) {
-    return this.wsmService.getResource(userRequest.getRequiredToken(), workspaceId, resourceId);
+  private ResourceDescription getResource(SamUser userRequest, UUID workspaceId, UUID resourceId) {
+    return this.wsmService.getResource(
+        userRequest.getBearerToken().getToken(), workspaceId, resourceId);
   }
 }

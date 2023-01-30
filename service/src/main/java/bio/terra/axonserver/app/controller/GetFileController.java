@@ -1,9 +1,10 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GetFileApi;
+import bio.terra.axonserver.app.configuration.SamConfiguration;
 import bio.terra.axonserver.service.file.FileService;
-import bio.terra.axonserver.service.iam.AuthenticatedUserRequest;
-import bio.terra.axonserver.service.iam.AuthenticatedUserRequestFactory;
+import bio.terra.common.iam.SamUser;
+import bio.terra.common.iam.SamUserFactory;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
@@ -21,10 +22,11 @@ public class GetFileController extends ControllerBase implements GetFileApi {
 
   @Autowired
   public GetFileController(
-      AuthenticatedUserRequestFactory authenticatedUserRequestFactory,
+      SamConfiguration samConfiguration,
+      SamUserFactory samUserFactory,
       HttpServletRequest request,
       FileService fileService) {
-    super(authenticatedUserRequestFactory, request);
+    super(samConfiguration, samUserFactory, request);
     this.fileService = fileService;
   }
 
@@ -32,10 +34,10 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   public ResponseEntity<Resource> getFile(
       UUID workspaceId, UUID resourceId, @Nullable String convertTo) {
 
-    AuthenticatedUserRequest userRequest = this.getAuthenticatedInfo();
+    SamUser user = this.getUser();
 
     ByteArrayResource resourceObj =
-        this.fileService.getFile(userRequest, workspaceId, resourceId, null, convertTo);
+        this.fileService.getFile(user, workspaceId, resourceId, null, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 
@@ -43,10 +45,10 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   public ResponseEntity<Resource> getFileInBucket(
       UUID workspaceId, UUID resourceId, String objectPath, @Nullable String convertTo) {
 
-    AuthenticatedUserRequest userRequest = this.getAuthenticatedInfo();
+    SamUser user = this.getUser();
 
     Resource resourceObj =
-        this.fileService.getFile(userRequest, workspaceId, resourceId, objectPath, convertTo);
+        this.fileService.getFile(user, workspaceId, resourceId, objectPath, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 }

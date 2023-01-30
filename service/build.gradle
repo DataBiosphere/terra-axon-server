@@ -10,6 +10,7 @@ apply from: "$projectDir/gradle/publishing.gradle"
 apply from: "$projectDir/gradle/dependency-locking.gradle"
 
 dependencies {
+    // Google dependencies
     constraints {
         implementation 'com.google.guava:guava:31.1-jre' // "-jre" for Java 8 or higher
     }
@@ -20,10 +21,15 @@ dependencies {
     implementation platform('com.google.cloud:libraries-bom:25.1.0')
     implementation group: 'com.google.cloud', name: 'google-cloud-storage', version: '2.17.2'
 
-    // Terra dependencies
+    // Terra Common Library
     implementation('bio.terra:terra-common-lib:0.0.75-SNAPSHOT') {
         exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
     }
+
+    // Terra SAM Client
+    implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
+
+    // Terra Workspace Manager Client
     implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.545-SNAPSHOT'
     // hk2 is required to use WSM client, but not correctly exposed by the client
     implementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: '2.38'
@@ -34,7 +40,6 @@ dependencies {
     implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'javax.servlet:jstl:1.2'
-
 
     // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api'

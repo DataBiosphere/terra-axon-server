@@ -1,7 +1,8 @@
 package bio.terra.axonserver.app.controller;
 
-import bio.terra.axonserver.service.iam.AuthenticatedUserRequest;
-import bio.terra.axonserver.service.iam.AuthenticatedUserRequestFactory;
+import bio.terra.axonserver.app.configuration.SamConfiguration;
+import bio.terra.common.iam.SamUser;
+import bio.terra.common.iam.SamUserFactory;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -9,20 +10,21 @@ import javax.servlet.http.HttpServletRequest;
  * beans from the @Controller classes, so it is better as a superclass rather than static methods.
  */
 public class ControllerBase {
-  private final AuthenticatedUserRequestFactory authenticatedUserRequestFactory;
+
+  private final SamConfiguration samConfiguration;
+  private final SamUserFactory samUserFactory;
   private final HttpServletRequest request;
 
   public ControllerBase(
-      AuthenticatedUserRequestFactory authenticatedUserRequestFactory, HttpServletRequest request) {
-    this.authenticatedUserRequestFactory = authenticatedUserRequestFactory;
+      SamConfiguration samConfiguration,
+      SamUserFactory samUserFactory,
+      HttpServletRequest request) {
+    this.samConfiguration = samConfiguration;
+    this.samUserFactory = samUserFactory;
     this.request = request;
   }
 
-  public AuthenticatedUserRequest getAuthenticatedInfo() {
-    return authenticatedUserRequestFactory.from(request);
-  }
-
-  public String getAuthToken() {
-    return this.request.getHeader("Authorization");
+  public SamUser getUser() {
+    return samUserFactory.from(request, samConfiguration.basePath());
   }
 }
