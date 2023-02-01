@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Service for interacting with Calhoun notebook conversion service.
- * https://github.com/DataBiosphere/calhoun
+ * Service for interacting with Calhoun notebook conversion service. <a
+ * href="https://github.com/DataBiosphere/calhoun">Calhoun Repo</a>
  */
 @Component
 public class CalhounService {

@@ -56,26 +56,26 @@ public class FileService {
     byte[] file = fileWithName.file;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
-      file = this.convertService.convertFile(file, fileExtension, convertTo, user);
+      file = convertService.convertFile(file, fileExtension, convertTo, user);
     }
     return new ByteArrayResource(file);
   }
 
   private FileWithName getFileHandler(
-      ResourceDescription resource, @Nullable String objectPath, SamUser userRequest) {
+      ResourceDescription resource, @Nullable String objectPath, SamUser user) {
 
     return switch (resource.getMetadata().getResourceType()) {
-      case GCS_OBJECT -> this.getGcsObjectFile(resource, userRequest);
-      case GCS_BUCKET -> this.getGcsBucketFile(resource, objectPath, userRequest);
+      case GCS_OBJECT -> getGcsObjectFile(resource, user);
+      case GCS_BUCKET -> getGcsBucketFile(resource, objectPath, user);
       default -> throw new InvalidResourceTypeException(
           resource.getMetadata().getResourceType()
               + " is not a type of resource that contains files");
     };
   }
 
-  private FileWithName getGcsObjectFile(ResourceDescription resource, SamUser userRequest) {
+  private FileWithName getGcsObjectFile(ResourceDescription resource, SamUser user) {
     GoogleCredentials googleCredentials =
-        GcpUtils.getGoogleCredentialsFromToken(userRequest.getBearerToken().getToken());
+        GcpUtils.getGoogleCredentialsFromToken(user.getBearerToken().getToken());
 
     String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
     String objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
@@ -85,9 +85,9 @@ public class FileService {
   }
 
   private FileWithName getGcsBucketFile(
-      ResourceDescription resource, String objectPath, SamUser userRequest) {
+      ResourceDescription resource, String objectPath, SamUser user) {
     GoogleCredentials googleCredentials =
-        GcpUtils.getGoogleCredentialsFromToken(userRequest.getBearerToken().getToken());
+        GcpUtils.getGoogleCredentialsFromToken(user.getBearerToken().getToken());
 
     String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
     byte[] file =
@@ -95,8 +95,7 @@ public class FileService {
     return new FileWithName(file, objectPath);
   }
 
-  private ResourceDescription getResource(SamUser userRequest, UUID workspaceId, UUID resourceId) {
-    return this.wsmService.getResource(
-        userRequest.getBearerToken().getToken(), workspaceId, resourceId);
+  private ResourceDescription getResource(SamUser user, UUID workspaceId, UUID resourceId) {
+    return wsmService.getResource(user.getBearerToken().getToken(), workspaceId, resourceId);
   }
 }

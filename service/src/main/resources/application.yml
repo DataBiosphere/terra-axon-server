@@ -5,12 +5,12 @@ env:
     exportEnabled: ${CLOUD_TRACE_ENABLED:false}
     samplingRate: ${SAMPLING_PROBABILITY:0}
   wsm:
-    basePath: ${WSM_ADDRESS:https://terra-devel-wsm.api.verily.com/}
+    basePath: ${WSM_ADDRESS:https://terra-devel-wsm.api.verily.com}
   sam:
-    basePath: ${SAM_ADDRESS:https://sam.dsde-dev.broadinstitute.org}
+    basePath: ${SAM_ADDRESS:https://terra-devel-sam.api.verily.com}
     resourceId: ${SAM_RESOURCE_ID:axonserver-dev}
   calhoun:
-    basePath: ${CALHOUN_ADDRESS:https://terra-calhoun.api.verily.com/}
+    basePath: ${CALHOUN_ADDRESS:https://terra-calhoun.api.verily.com}
 
 
 # Below here is non-deployment-specific

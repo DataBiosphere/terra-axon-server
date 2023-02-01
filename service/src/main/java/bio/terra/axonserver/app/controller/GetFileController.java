@@ -50,7 +50,7 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     SamUser user = this.getUser();
 
     ByteArrayResource resourceObj =
-        this.fileService.getFile(user, workspaceId, resourceId, null, convertTo);
+        fileService.getFile(user, workspaceId, resourceId, null, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 
@@ -68,10 +68,10 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   public ResponseEntity<Resource> getFileInBucket(
       UUID workspaceId, UUID resourceId, String objectPath, @Nullable String convertTo) {
 
-    SamUser user = this.getUser();
+    SamUser user = getUser();
 
     Resource resourceObj =
-        this.fileService.getFile(user, workspaceId, resourceId, objectPath, convertTo);
+        fileService.getFile(user, workspaceId, resourceId, objectPath, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 }

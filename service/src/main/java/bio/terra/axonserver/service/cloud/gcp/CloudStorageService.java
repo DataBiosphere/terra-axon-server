@@ -1,5 +1,6 @@
 package bio.terra.axonserver.service.cloud.gcp;
 
+import bio.terra.axonserver.service.exception.CloudObjectReadException;
 import bio.terra.axonserver.utils.BoundedByteArrayOutputStream;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
@@ -7,11 +8,12 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.StorageOptions;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import javax.ws.rs.InternalServerErrorException;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageService {
+
   private static final int MAX_OBJECT_SIZE = 512 * 1024 * 1024; // 512 MB
+  private static final int MAX_BUFFER_SIZE = 64 * 1024; // 64 KB
 
   public CloudStorageService() {}
 
@@ -35,7 +37,7 @@ public class CloudStorageService {
             .reader(blobId)) {
 
       BoundedByteArrayOutputStream outputStream = new BoundedByteArrayOutputStream(MAX_OBJECT_SIZE);
-      ByteBuffer bytes = ByteBuffer.allocate(64 * 1024);
+      ByteBuffer bytes = ByteBuffer.allocate(MAX_BUFFER_SIZE);
       while (reader.read(bytes) > 0) {
         bytes.flip();
         outputStream.write(bytes.array(), 0, bytes.limit());
@@ -44,7 +46,7 @@ public class CloudStorageService {
 
       return outputStream.toByteArray();
     } catch (IOException e) {
-      throw new InternalServerErrorException("Error reading bucket object" + objectName);
+      throw new CloudObjectReadException("Error reading object" + objectName);
     }
   }
 }
