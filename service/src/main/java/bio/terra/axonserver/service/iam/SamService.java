@@ -39,8 +39,8 @@ public class SamService {
    */
   public String getPetAccessToken(String projectId, BearerToken userRequest) {
     try {
-      return new GoogleApi(getApiClient(userRequest.getToken())).getPetServiceAccountToken(
-          projectId, GcpUtils.getPetScopes());
+      return new GoogleApi(getApiClient(userRequest.getToken()))
+          .getPetServiceAccountToken(projectId, GcpUtils.getPetScopes());
     } catch (ApiException apiException) {
       throw SamExceptionFactory.create("Error getting user's pet SA access token", apiException);
     }
