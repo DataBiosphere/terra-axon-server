@@ -25,7 +25,7 @@ dependencies {
         exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
     }
 
-    // Terra SAM Client
+    // Terra Sam Client
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
 
     // Terra Workspace Manager Client

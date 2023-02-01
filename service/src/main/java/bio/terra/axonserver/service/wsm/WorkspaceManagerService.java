@@ -2,8 +2,10 @@ package bio.terra.axonserver.service.wsm;
 
 import bio.terra.axonserver.app.configuration.WsmConfiguration;
 import bio.terra.workspace.api.ResourceApi;
+import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.client.ApiClient;
 import bio.terra.workspace.client.ApiException;
+import bio.terra.workspace.model.GcpContext;
 import bio.terra.workspace.model.ResourceDescription;
 import java.util.UUID;
 import javax.ws.rs.NotFoundException;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 /** Service for interacting with the Terra Workspace Manager client. */
 @Component
 public class WorkspaceManagerService {
+
   private final WsmConfiguration wsmConfig;
 
   @Autowired
@@ -44,6 +47,24 @@ public class WorkspaceManagerService {
       return new ResourceApi(getApiClient(accessToken)).getResource(workspaceId, resourceId);
     } catch (ApiException apiException) {
       throw new NotFoundException("Unable to access workspace or resource.");
+    }
+  }
+
+  /**
+   * Get the GCP context for a workspace.
+   *
+   * @param workspaceId terra workspace id
+   * @param accessToken user access token
+   * @return WSM GCP context
+   * @throws NotFoundException if workspace does not exist or user does not have access to workspace
+   */
+  public GcpContext getGcpContext(UUID workspaceId, String accessToken) {
+    try {
+      return new WorkspaceApi(getApiClient(accessToken))
+          .getWorkspace(workspaceId, null)
+          .getGcpContext();
+    } catch (ApiException apiException) {
+      throw new NotFoundException("Unable to access workspace " + workspaceId + ".");
     }
   }
 }

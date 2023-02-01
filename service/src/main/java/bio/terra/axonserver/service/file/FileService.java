@@ -3,6 +3,7 @@ package bio.terra.axonserver.service.file;
 import bio.terra.axonserver.service.cloud.gcp.CloudStorageService;
 import bio.terra.axonserver.service.convert.ConvertService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
+import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.GcpUtils;
 import bio.terra.common.iam.SamUser;
@@ -22,13 +23,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileService {
 
+  private final SamService samService;
   private final WorkspaceManagerService wsmService;
   private final ConvertService convertService;
 
   private record FileWithName(byte[] file, String fileName) {}
 
   @Autowired
-  public FileService(WorkspaceManagerService wsmService, ConvertService convertService) {
+  public FileService(
+      SamService samService, WorkspaceManagerService wsmService, ConvertService convertService) {
+    this.samService = samService;
     this.wsmService = wsmService;
     this.convertService = convertService;
   }
@@ -50,9 +54,10 @@ public class FileService {
       @Nullable String objectPath,
       @Nullable String convertTo) {
 
-    ResourceDescription resource = this.getResource(user, workspaceId, resourceId);
+    ResourceDescription resource =
+        wsmService.getResource(user.getBearerToken().getToken(), workspaceId, resourceId);
 
-    FileWithName fileWithName = this.getFileHandler(resource, objectPath, user);
+    FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, user);
     byte[] file = fileWithName.file;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
@@ -62,20 +67,20 @@ public class FileService {
   }
 
   private FileWithName getFileHandler(
-      ResourceDescription resource, @Nullable String objectPath, SamUser user) {
+      UUID workspaceId, ResourceDescription resource, @Nullable String objectPath, SamUser user) {
 
     return switch (resource.getMetadata().getResourceType()) {
-      case GCS_OBJECT -> getGcsObjectFile(resource, user);
-      case GCS_BUCKET -> getGcsBucketFile(resource, objectPath, user);
+      case GCS_OBJECT -> getGcsObjectFile(workspaceId, resource, user);
+      case GCS_BUCKET -> getGcsBucketFile(workspaceId, resource, objectPath, user);
       default -> throw new InvalidResourceTypeException(
           resource.getMetadata().getResourceType()
               + " is not a type of resource that contains files");
     };
   }
 
-  private FileWithName getGcsObjectFile(ResourceDescription resource, SamUser user) {
-    GoogleCredentials googleCredentials =
-        GcpUtils.getGoogleCredentialsFromToken(user.getBearerToken().getToken());
+  private FileWithName getGcsObjectFile(
+      UUID workspaceId, ResourceDescription resource, SamUser user) {
+    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, user);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
     String objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
@@ -85,9 +90,8 @@ public class FileService {
   }
 
   private FileWithName getGcsBucketFile(
-      ResourceDescription resource, String objectPath, SamUser user) {
-    GoogleCredentials googleCredentials =
-        GcpUtils.getGoogleCredentialsFromToken(user.getBearerToken().getToken());
+      UUID workspaceId, ResourceDescription resource, String objectPath, SamUser user) {
+    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, user);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
     byte[] file =
@@ -95,7 +99,10 @@ public class FileService {
     return new FileWithName(file, objectPath);
   }
 
-  private ResourceDescription getResource(SamUser user, UUID workspaceId, UUID resourceId) {
-    return wsmService.getResource(user.getBearerToken().getToken(), workspaceId, resourceId);
+  private GoogleCredentials getGoogleCredentials(UUID workspaceId, SamUser user) {
+    String projectId =
+        wsmService.getGcpContext(workspaceId, user.getBearerToken().getToken()).getProjectId();
+    String petAccessToken = samService.getPetAccessToken(projectId, user.getBearerToken());
+    return GcpUtils.getGoogleCredentialsFromToken(petAccessToken);
   }
 }
