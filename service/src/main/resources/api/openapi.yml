@@ -38,10 +38,10 @@ paths:
   /api/auth/exchangeAuthorizationCode:
     parameters:
       - $ref: '#/components/parameters/AuthCode'
-    post:
+    get:
       summary: |
         Exchange an authorization code for an access token and refresh token.
-      operationId: exchangeAuthCode
+      operationId: getAuthTokens
       tags: [ Authorization ]
       responses:
         '200':
@@ -56,7 +56,7 @@ paths:
   /api/auth/refreshToken:
     parameters:
       - $ref: '#/components/parameters/RefreshToken'
-    post:
+    get:
       summary: |
         Pass in a refresh token to receive an access token.
       operationId: getRefreshedAccessToken

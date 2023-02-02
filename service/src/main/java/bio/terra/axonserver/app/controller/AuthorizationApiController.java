@@ -42,7 +42,7 @@ public class AuthorizationApiController implements AuthorizationApi {
   }
 
   @Override
-  public ResponseEntity<ApiTokenReport> exchangeAuthCode(String authCode) {
+  public ResponseEntity<ApiTokenReport> getAuthTokens(String authCode) {
     var request =
         new GoogleAuthorizationCodeTokenRequest(
             new NetHttpTransport(),
