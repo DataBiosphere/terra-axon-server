@@ -14,10 +14,10 @@ paths:
   # Unauthenticated Paths
   /status:
     get:
-      security: []
+      security: [ ]
       summary: Returns the operational status of the service
       operationId: serviceStatus
-      tags: [Public]
+      tags: [ Public ]
       responses:
         "200":
           description: Service can process requests
@@ -28,10 +28,10 @@ paths:
 
   /version:
     get:
-      security: []
+      security: [ ]
       summary: Returns the deployed version of the service
       operationId: serviceVersion
-      tags: [Public]
+      tags: [ Public ]
       responses:
         "200":
           description: Version properties
@@ -43,17 +43,17 @@ paths:
   # GetFile paths
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/file:
     parameters:
-      - $ref: "#/components/parameters/WorkspaceId"
-      - $ref: "#/components/parameters/ResourceId"
-      - in: query
-        name: convertTo
-        description: A file type to convert the requested file into before returning
-        schema:
-          type: string
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    - in: query
+      name: convertTo
+      description: A file type to convert the requested file into before returning
+      schema:
+        type: string
     get:
       summary: Retrieves a file referenced by the given WSM resource
       operationId: getFile
-      tags: [GetFile]
+      tags: [ GetFile ]
       responses:
         "200":
           description: OK
@@ -65,18 +65,18 @@ paths:
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/file/objects/{objectPath}:
     parameters:
-      - $ref: "#/components/parameters/WorkspaceId"
-      - $ref: "#/components/parameters/ResourceId"
-      - $ref: "#/components/parameters/ObjectPath"
-      - in: query
-        name: convertTo
-        description: A file type to convert the requested file into before returning
-        schema:
-          type: string
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    - $ref: "#/components/parameters/ObjectPath"
+    - in: query
+      name: convertTo
+      description: A file type to convert the requested file into before returning
+      schema:
+        type: string
     get:
       summary: Retrieves an object in a provided file containing WSM resource
       operationId: getFileInBucket
-      tags: [GetFile]
+      tags: [ GetFile ]
       responses:
         "200":
           description: OK
@@ -86,12 +86,48 @@ paths:
                 type: string
                 format: binary
 
+  /api/auth/exchangeAuthorizationCode:
+    parameters:
+    - $ref: '#/components/parameters/AuthCode'
+    get:
+      summary: |
+        Exchange an authorization code for an access token and refresh token.
+      operationId: getAuthTokens
+      tags: [ Authorization ]
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/PermissionDenied'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/refreshToken:
+    parameters:
+    - $ref: '#/components/parameters/RefreshToken'
+    get:
+      summary: |
+        Pass in a refresh token to receive an access token.
+      operationId: getRefreshedAccessToken
+      tags: [ Authorization ]
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/PermissionDenied'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   schemas:
     # Please keep alphabetized
     ErrorReport:
       type: object
-      required: [message, statusCode, causes]
+      required: [ message, statusCode, causes ]
       properties:
         message:
           type: string
@@ -102,9 +138,27 @@ components:
           items:
             type: string
 
+    TokenReport:
+      type: object
+      required: [ accessToken, tokenType ]
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        tokenType:
+          type: string
+        scope:
+          type: string
+        refreshToken:
+          type: string
+        idToken:
+          type: string
+
     VersionProperties:
       type: object
-      required: [gitTag, gitHash, github, build]
+      required: [ gitTag, gitHash, github, build ]
       properties:
         gitTag:
           type: string
@@ -148,6 +202,14 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorReport"
 
+    TokenResultResponse:
+      description: Result of a token request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenReport'
+
+
   parameters:
     ResourceId:
       name: resourceId
@@ -174,6 +236,23 @@ components:
       required: true
       schema:
         type: string
+
+    AuthCode:
+      name: authCode
+      description: OAuth 2.0 authorization code provided by Google.
+      in: query
+      required: true
+      schema:
+        type: string
+
+    RefreshToken:
+      name: refreshToken
+      description: OAuth 2.0 refresh token provided by Google.
+      in: query
+      required: true
+      schema:
+        type: string
+
 
   securitySchemes:
     authorization:
