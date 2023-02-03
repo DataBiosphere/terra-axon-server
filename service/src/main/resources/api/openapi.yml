@@ -35,12 +35,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/VersionProperties'
 
+  /api/auth/exchangeAuthorizationCode:
+    parameters:
+      - $ref: '#/components/parameters/AuthCode'
+    get:
+      summary: |
+        Exchange an authorization code for an access token and refresh token.
+      operationId: getAuthTokens
+      tags: [ Authorization ]
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/PermissionDenied'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/auth/refreshToken:
+    parameters:
+      - $ref: '#/components/parameters/RefreshToken'
+    get:
+      summary: |
+        Pass in a refresh token to receive an access token.
+      operationId: getRefreshedAccessToken
+      tags: [ Authorization ]
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResultResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/PermissionDenied'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   schemas:
     # Please keep alphabetized
     ErrorReport:
       type: object
-      required: [message, statusCode, causes]
+      required: [ message, statusCode, causes ]
       properties:
         message:
           type: string
@@ -50,6 +86,24 @@ components:
           type: array
           items:
             type: string
+
+    TokenReport:
+      type: object
+      required: [ accessToken, tokenType ]
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+        tokenType:
+          type: string
+        scope:
+          type: string
+        refreshToken:
+          type: string
+        idToken:
+          type: string
 
     VersionProperties:
       type: object
@@ -67,6 +121,23 @@ components:
         build:
           type: string
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
+
+  parameters:
+    AuthCode:
+      name: authCode
+      description: OAuth 2.0 authorization code provided by Google.
+      in: query
+      required: true
+      schema:
+        type: string
+
+    RefreshToken:
+      name: refreshToken
+      description: OAuth 2.0 refresh token provided by Google.
+      in: query
+      required: true
+      schema:
+        type: string
 
   responses:
     # Keep alphabetized please
@@ -97,6 +168,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorReport'
+
+    TokenResultResponse:
+      description: Result of a token request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TokenReport'
 
   securitySchemes:
     authorization:
