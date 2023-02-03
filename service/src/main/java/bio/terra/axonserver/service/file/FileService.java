@@ -70,7 +70,7 @@ public class FileService {
       UUID workspaceId, ResourceDescription resource, @Nullable String objectPath, SamUser user) {
 
     return switch (resource.getMetadata().getResourceType()) {
-      case GCS_OBJECT -> getGcsObjectFile(workspaceId, resource, user);
+      case GCS_OBJECT -> getGcsObjectFile(workspaceId, resource, objectPath, user);
       case GCS_BUCKET -> getGcsBucketFile(workspaceId, resource, objectPath, user);
       default -> throw new InvalidResourceTypeException(
           resource.getMetadata().getResourceType()
@@ -79,11 +79,17 @@ public class FileService {
   }
 
   private FileWithName getGcsObjectFile(
-      UUID workspaceId, ResourceDescription resource, SamUser user) {
+      UUID workspaceId, ResourceDescription resource, @Nullable String objectPath, SamUser user) {
     GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, user);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
-    String objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
+    // If objectPath is not provided, assume provided gcsObject is a prefix and retrieve the full
+    // objectPath from the resource
+    // If objectPath is not provided, assume provided gcsObject is a full path and use it
+    if (objectPath == null) {
+      objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
+    }
+
     byte[] file =
         new CloudStorageService().getBucketObject(googleCredentials, bucketName, objectPath);
     return new FileWithName(file, objectPath);

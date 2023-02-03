@@ -46,7 +46,7 @@ public class CloudStorageService {
 
       return outputStream.toByteArray();
     } catch (IOException e) {
-      throw new CloudObjectReadException("Error reading object" + objectName);
+      throw new CloudObjectReadException("Error reading object: " + objectName);
     }
   }
 }

@@ -25,6 +25,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan("bio.terra.axonserver")
 public class App {
   public static void main(String[] args) {
+    // allows to use %2F in path segments
+    System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
     new SpringApplicationBuilder(App.class).initializers(new LoggingInitializer()).run(args);
   }
 }
