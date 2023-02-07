@@ -1,21 +1,45 @@
-package bio.terra.axonserver.service.cloud.gcp;
+package bio.terra.axonserver.utils;
 
 import bio.terra.axonserver.service.exception.CloudObjectReadException;
-import bio.terra.axonserver.utils.BoundedByteArrayOutputStream;
+import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
+import org.springframework.util.unit.DataSize;
 
 /** Service for interacting with Google Cloud Storage */
-public class CloudStorageService {
+public class CloudStorageUtils {
 
-  private static final int MAX_OBJECT_SIZE = 512 * 1024 * 1024; // 512 MB
-  private static final int MAX_BUFFER_SIZE = 64 * 1024; // 64 KB
+  private static final int MAX_OBJECT_SIZE = (int) DataSize.ofMegabytes(512).toBytes();
+  private static final int MAX_BUFFER_SIZE = (int) DataSize.ofKilobytes(64).toBytes();
 
-  public CloudStorageService() {}
+  // Google pet service account scopes for accessing Google Cloud APIs.
+  private static final List<String> PET_SA_SCOPES =
+      ImmutableList.of(
+          "openid", "email", "profile", "https://www.googleapis.com/auth/cloud-platform");
+
+  public CloudStorageUtils() {}
+
+  public static List<String> getPetScopes() {
+    return PET_SA_SCOPES;
+  }
+
+  /**
+   * Get GoogleCredentials from an access token
+   *
+   * @param token token to use for the credentials
+   * @return GoogleCredentials
+   */
+  public static GoogleCredentials getGoogleCredentialsFromToken(String token) {
+    // The expirationTime argument is only used for refresh tokens, not access tokens.
+    AccessToken accessToken = new AccessToken(token, null);
+    return GoogleCredentials.create(accessToken);
+  }
 
   /**
    * Get the contents of a GCS bucket object
@@ -25,7 +49,7 @@ public class CloudStorageService {
    * @param objectName Name of the object
    * @return Contents of the object
    */
-  public byte[] getBucketObject(
+  public static byte[] getBucketObject(
       GoogleCredentials googleCredentials, String bucketName, String objectName) {
 
     BlobId blobId = BlobId.of(bucketName, objectName);

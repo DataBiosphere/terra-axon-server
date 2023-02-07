@@ -1,7 +1,7 @@
 package bio.terra.axonserver.service.iam;
 
 import bio.terra.axonserver.app.configuration.SamConfiguration;
-import bio.terra.axonserver.utils.GcpUtils;
+import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.sam.exception.SamExceptionFactory;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
@@ -40,7 +40,7 @@ public class SamService {
   public String getPetAccessToken(String projectId, BearerToken userRequest) {
     try {
       return new GoogleApi(getApiClient(userRequest.getToken()))
-          .getPetServiceAccountToken(projectId, GcpUtils.getPetScopes());
+          .getPetServiceAccountToken(projectId, CloudStorageUtils.getPetScopes());
     } catch (ApiException apiException) {
       throw SamExceptionFactory.create("Error getting user's pet SA access token", apiException);
     }

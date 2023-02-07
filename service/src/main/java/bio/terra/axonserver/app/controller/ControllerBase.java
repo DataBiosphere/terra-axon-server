@@ -1,8 +1,7 @@
 package bio.terra.axonserver.app.controller;
 
-import bio.terra.axonserver.app.configuration.SamConfiguration;
-import bio.terra.common.iam.SamUser;
-import bio.terra.common.iam.SamUserFactory;
+import bio.terra.common.iam.BearerToken;
+import bio.terra.common.iam.BearerTokenFactory;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -11,20 +10,15 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class ControllerBase {
 
-  private final SamConfiguration samConfiguration;
-  private final SamUserFactory samUserFactory;
   private final HttpServletRequest request;
+  private final BearerTokenFactory bearerTokenFactory;
 
-  public ControllerBase(
-      SamConfiguration samConfiguration,
-      SamUserFactory samUserFactory,
-      HttpServletRequest request) {
-    this.samConfiguration = samConfiguration;
-    this.samUserFactory = samUserFactory;
+  public ControllerBase(BearerTokenFactory bearerTokenFactory, HttpServletRequest request) {
+    this.bearerTokenFactory = bearerTokenFactory;
     this.request = request;
   }
 
-  public SamUser getUser() {
-    return samUserFactory.from(request, samConfiguration.basePath());
+  public BearerToken getToken() {
+    return bearerTokenFactory.from(request);
   }
 }

@@ -36,6 +36,7 @@ dependencies {
     // Terra Workspace Manager Client
     implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.545-SNAPSHOT'
     // hk2 is required to use WSM client, but not correctly exposed by the client
+    // TODO: Remove after version 0.254.563-SNAPSHOT or later is released and bumped
     implementation group: 'org.glassfish.jersey.inject', name: 'jersey-hk2', version: '2.38'
 
     // Spring dependencies

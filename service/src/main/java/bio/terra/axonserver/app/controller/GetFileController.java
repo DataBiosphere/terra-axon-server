@@ -1,10 +1,9 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GetFileApi;
-import bio.terra.axonserver.app.configuration.SamConfiguration;
 import bio.terra.axonserver.service.file.FileService;
-import bio.terra.common.iam.SamUser;
-import bio.terra.common.iam.SamUserFactory;
+import bio.terra.common.iam.BearerToken;
+import bio.terra.common.iam.BearerTokenFactory;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
@@ -26,11 +25,8 @@ public class GetFileController extends ControllerBase implements GetFileApi {
 
   @Autowired
   public GetFileController(
-      SamConfiguration samConfiguration,
-      SamUserFactory samUserFactory,
-      HttpServletRequest request,
-      FileService fileService) {
-    super(samConfiguration, samUserFactory, request);
+      BearerTokenFactory bearerTokenFactory, HttpServletRequest request, FileService fileService) {
+    super(bearerTokenFactory, request);
     this.fileService = fileService;
   }
 
@@ -47,10 +43,10 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   public ResponseEntity<Resource> getFile(
       UUID workspaceId, UUID resourceId, @Nullable String convertTo) {
 
-    SamUser user = this.getUser();
+    BearerToken token = getToken();
 
     ByteArrayResource resourceObj =
-        fileService.getFile(user, workspaceId, resourceId, null, convertTo);
+        fileService.getFile(token, workspaceId, resourceId, null, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 
@@ -68,10 +64,10 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   public ResponseEntity<Resource> getFileInBucket(
       UUID workspaceId, UUID resourceId, String objectPath, @Nullable String convertTo) {
 
-    SamUser user = getUser();
+    BearerToken token = getToken();
 
     Resource resourceObj =
-        fileService.getFile(user, workspaceId, resourceId, objectPath, convertTo);
+        fileService.getFile(token, workspaceId, resourceId, objectPath, convertTo);
     return new ResponseEntity<>(resourceObj, HttpStatus.OK);
   }
 }
