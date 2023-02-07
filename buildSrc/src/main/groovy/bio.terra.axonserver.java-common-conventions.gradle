@@ -70,6 +70,7 @@ group = 'bio.terra'
 spotless {
     java {
         targetExclude "${buildDir}/**"
+        targetExclude "**/swagger-code/**"
         targetExclude "**/swagger-code-*/**"
         googleJavaFormat()
     }
