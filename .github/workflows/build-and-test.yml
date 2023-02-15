@@ -2,11 +2,11 @@ name: Build and Test
 
 on:
   workflow_dispatch: {}
-
-  pull_request:
-    branches: [ '**' ]
-
   push:
+    branches: [ 'main' ]
+    paths-ignore: [ '*.md' ]
+  pull_request:
+    # Branch settings require status checks before merging, so don't add paths-ignore.
     branches: [ 'main' ]
 
 jobs:
