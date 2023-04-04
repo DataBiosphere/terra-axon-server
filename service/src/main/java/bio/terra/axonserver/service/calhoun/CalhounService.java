@@ -5,9 +5,7 @@ import bio.terra.calhoun.api.ConvertApi;
 import bio.terra.calhoun.client.ApiClient;
 import bio.terra.calhoun.client.ApiException;
 import java.io.File;
-import java.nio.file.Files;
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,14 +41,9 @@ public class CalhounService {
    * @return converted notebook file
    * @throws BadRequestException if conversion fails
    */
-  public byte[] convertNotebook(String accessToken, byte[] file) {
+  public File convertNotebook(String accessToken, File file) {
     try {
-      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertNotebook(file);
-      try {
-        return Files.readAllBytes(convertedFile.toPath());
-      } catch (Exception e) {
-        throw new InternalServerErrorException("Failed to parse converted notebook");
-      }
+      return new ConvertApi(getApiClient(accessToken)).convertNotebook(file);
     } catch (ApiException apiException) {
       throw new BadRequestException("Failed to convert notebook");
     }
@@ -64,14 +57,9 @@ public class CalhounService {
    * @return converted notebook file
    * @throws BadRequestException if conversion fails
    */
-  public byte[] convertRmd(String accessToken, byte[] file) {
+  public File convertRmd(String accessToken, File file) {
     try {
-      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertRmd(file);
-      try {
-        return Files.readAllBytes(convertedFile.toPath());
-      } catch (Exception e) {
-        throw new InternalServerErrorException("Failed to parse converted R markdown");
-      }
+      return new ConvertApi(getApiClient(accessToken)).convertRmd(file);
     } catch (ApiException apiException) {
       throw new BadRequestException("Failed to convert R markdown");
     }

@@ -8,6 +8,8 @@ import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.collect.ImmutableList;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.http.HttpRange;
 import org.springframework.util.unit.DataSize;
 
@@ -56,7 +59,7 @@ public class CloudStorageUtils {
    * @param byteRange Byte range to read from the object
    * @return Contents of the object
    */
-  public static byte[] getBucketObject(
+  public static File getBucketObject(
       GoogleCredentials googleCredentials,
       String bucketName,
       String objectName,
@@ -77,6 +80,12 @@ public class CloudStorageUtils {
             .getService()
             .reader(blobId)) {
 
+      File outputFile =
+          File.createTempFile(
+              FilenameUtils.getBaseName(objectName) + "-",
+              "." + FilenameUtils.getExtension(objectName));
+      FileOutputStream outputStream = new FileOutputStream(outputFile);
+
       long startByteIdx =
           Optional.ofNullable(byteRange).isPresent() ? byteRange.getRangeStart(Long.MAX_VALUE) : 0;
       long endByteIdx =
@@ -84,8 +93,10 @@ public class CloudStorageUtils {
               ? byteRange.getRangeEnd(Long.MAX_VALUE)
               : Long.MAX_VALUE - 1;
       long bytesToRead = endByteIdx - startByteIdx;
+      System.out.println("startByteIdx: " + startByteIdx);
+      System.out.println("endByteIdx: " + endByteIdx);
+      System.out.println("bytesToRead: " + bytesToRead);
 
-      BoundedByteArrayOutputStream outputStream = new BoundedByteArrayOutputStream(MAX_OBJECT_SIZE);
       ByteBuffer buffer = ByteBuffer.allocate((int) Math.min(MAX_BUFFER_SIZE, bytesToRead));
 
       long totalBytesRead = 0;
@@ -103,7 +114,12 @@ public class CloudStorageUtils {
         totalBytesRead += bytesRead;
       }
 
-      return outputStream.toByteArray();
+      System.out.println(outputFile.getAbsolutePath());
+      System.out.println(outputFile.length());
+      outputFile.deleteOnExit();
+      outputStream.close();
+      return outputFile;
+
     } catch (IndexOutOfBoundsException e) {
       throw new CloudObjectReadException("Object size too large: " + objectName);
     } catch (IOException e) {
