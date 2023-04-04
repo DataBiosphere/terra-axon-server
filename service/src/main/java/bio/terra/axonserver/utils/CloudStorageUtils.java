@@ -93,9 +93,6 @@ public class CloudStorageUtils {
               ? byteRange.getRangeEnd(Long.MAX_VALUE)
               : Long.MAX_VALUE - 1;
       long bytesToRead = endByteIdx - startByteIdx;
-      System.out.println("startByteIdx: " + startByteIdx);
-      System.out.println("endByteIdx: " + endByteIdx);
-      System.out.println("bytesToRead: " + bytesToRead);
 
       ByteBuffer buffer = ByteBuffer.allocate((int) Math.min(MAX_BUFFER_SIZE, bytesToRead));
 
@@ -114,8 +111,6 @@ public class CloudStorageUtils {
         totalBytesRead += bytesRead;
       }
 
-      System.out.println(outputFile.getAbsolutePath());
-      System.out.println(outputFile.length());
       outputFile.deleteOnExit();
       outputStream.close();
       return outputFile;
