@@ -7,8 +7,9 @@ import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -17,6 +18,7 @@ import javax.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,21 +52,7 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   @Override
   public ResponseEntity<Resource> getFile(
       UUID workspaceId, UUID resourceId, @Nullable String convertTo) {
-
-    BearerToken token = getToken();
-
-    HttpRange byteRange = getByteRange();
-
-    HttpStatus resStatus = byteRange == null ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
-
-    File resourceObj =
-        fileService.getFile(token, workspaceId, resourceId, null, convertTo, byteRange);
-    try {
-      InputStream inputStream = new FileInputStream(resourceObj);
-      return new ResponseEntity<>(new InputStreamResource(inputStream), resStatus);
-    } catch (FileNotFoundException e) {
-      throw new InternalServerErrorException("Failed to read: " + resourceObj.getName());
-    }
+    return buildResponse(workspaceId, resourceId, null, convertTo);
   }
 
   /**
@@ -80,19 +68,31 @@ public class GetFileController extends ControllerBase implements GetFileApi {
   @Override
   public ResponseEntity<Resource> getFileInBucket(
       UUID workspaceId, UUID resourceId, String objectPath, @Nullable String convertTo) {
+    return buildResponse(workspaceId, resourceId, objectPath, convertTo);
+  }
 
+  private ResponseEntity<Resource> buildResponse(
+      UUID workspaceId, UUID resourceId, @Nullable String objectPath, @Nullable String convertTo) {
     BearerToken token = getToken();
 
     HttpRange byteRange = getByteRange();
 
-    HttpStatus resStatus = byteRange == null ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
-
     File resourceObj =
         fileService.getFile(token, workspaceId, resourceId, objectPath, convertTo, byteRange);
+    String contentType =
+        convertTo == null
+            ? URLConnection.guessContentTypeFromName(resourceObj.getPath())
+            : URLConnection.guessContentTypeFromName((resourceObj.getName() + "." + convertTo));
+
+    HttpStatus resStatus = byteRange == null ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
+    HttpHeaders resHeaders = new HttpHeaders();
+    resHeaders.set(HttpHeaders.CONTENT_TYPE, contentType);
+
     try {
       InputStream inputStream = new FileInputStream(resourceObj);
-      return new ResponseEntity<>(new InputStreamResource(inputStream), resStatus);
-    } catch (FileNotFoundException e) {
+
+      return new ResponseEntity<>(new InputStreamResource(inputStream), resHeaders, resStatus);
+    } catch (IOException e) {
       throw new InternalServerErrorException("Failed to read: " + resourceObj.getName());
     }
   }
