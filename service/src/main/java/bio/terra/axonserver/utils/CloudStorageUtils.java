@@ -14,8 +14,13 @@ import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.http.HttpRange;
@@ -80,10 +85,13 @@ public class CloudStorageUtils {
             .getService()
             .reader(blobId)) {
 
+      Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
       File outputFile =
           File.createTempFile(
               FilenameUtils.getBaseName(objectName) + "-",
-              "." + FilenameUtils.getExtension(objectName));
+              "." + FilenameUtils.getExtension(objectName),
+              new File(CreateDownloadsFolder.DOWNLOADS_DIR.toString()));
+      Files.setPosixFilePermissions(Paths.get(outputFile.getPath()), permissions);
       FileOutputStream outputStream = new FileOutputStream(outputFile);
 
       long startByteIdx =
