@@ -25,6 +25,7 @@ public class CreateDownloadsFolder {
       }
     } catch (IOException e) {
       logger.error("Failed to create downloads directory: " + DOWNLOADS_DIR.toString());
+      throw new RuntimeException(e);
     }
   }
 }

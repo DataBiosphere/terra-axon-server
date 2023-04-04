@@ -85,42 +85,45 @@ public class CloudStorageUtils {
             .getService()
             .reader(blobId)) {
 
+      // Create a temporary file to store the object contents and set its permissions to 700
       Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
       File outputFile =
           File.createTempFile(
               FilenameUtils.getBaseName(objectName) + "-",
               "." + FilenameUtils.getExtension(objectName),
               new File(CreateDownloadsFolder.DOWNLOADS_DIR.toString()));
-      Files.setPosixFilePermissions(Paths.get(outputFile.getPath()), permissions);
-      FileOutputStream outputStream = new FileOutputStream(outputFile);
-
-      long startByteIdx =
-          Optional.ofNullable(byteRange).isPresent() ? byteRange.getRangeStart(Long.MAX_VALUE) : 0;
-      long endByteIdx =
-          Optional.ofNullable(byteRange).isPresent()
-              ? byteRange.getRangeEnd(Long.MAX_VALUE)
-              : Long.MAX_VALUE - 1;
-      long bytesToRead = endByteIdx - startByteIdx;
-
-      ByteBuffer buffer = ByteBuffer.allocate((int) Math.min(MAX_BUFFER_SIZE, bytesToRead));
-
-      long totalBytesRead = 0;
-      int bytesRead;
-      reader.seek(startByteIdx);
-      while (totalBytesRead < bytesToRead && reader.read(buffer) > 0) {
-        bytesRead = buffer.position();
-
-        // write bytes in buffer to output stream
-        buffer.flip();
-        outputStream.write(buffer.array(), 0, buffer.limit());
-
-        // clear buffer and increment bytesRead
-        buffer.clear();
-        totalBytesRead += bytesRead;
-      }
-
       outputFile.deleteOnExit();
-      outputStream.close();
+      Files.setPosixFilePermissions(Paths.get(outputFile.getPath()), permissions);
+
+      // Read the object contents into the temporary file
+      try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+        long startByteIdx =
+            Optional.ofNullable(byteRange).isPresent()
+                ? byteRange.getRangeStart(Long.MAX_VALUE)
+                : 0;
+        long endByteIdx =
+            Optional.ofNullable(byteRange).isPresent()
+                ? byteRange.getRangeEnd(Long.MAX_VALUE)
+                : Long.MAX_VALUE - 1;
+        long bytesToRead = endByteIdx - startByteIdx;
+
+        ByteBuffer buffer = ByteBuffer.allocate((int) Math.min(MAX_BUFFER_SIZE, bytesToRead));
+
+        long totalBytesRead = 0;
+        int bytesRead;
+        reader.seek(startByteIdx);
+        while (totalBytesRead < bytesToRead && reader.read(buffer) > 0) {
+          bytesRead = buffer.position();
+
+          // write bytes in buffer to output stream
+          buffer.flip();
+          outputStream.write(buffer.array(), 0, buffer.limit());
+
+          // clear buffer and increment bytesRead
+          buffer.clear();
+          totalBytesRead += bytesRead;
+        }
+      }
       return outputFile;
 
     } catch (IndexOutOfBoundsException e) {

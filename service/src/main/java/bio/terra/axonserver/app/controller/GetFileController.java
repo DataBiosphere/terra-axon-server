@@ -79,6 +79,9 @@ public class GetFileController extends ControllerBase implements GetFileApi {
 
     File resourceObj =
         fileService.getFile(token, workspaceId, resourceId, objectPath, convertTo, byteRange);
+
+    // Infer the content type from the file extension of requested convertTo file extension.
+    // The convertTo value is already validated by fileService.
     String contentType =
         convertTo == null
             ? URLConnection.guessContentTypeFromName(resourceObj.getPath())
@@ -92,6 +95,8 @@ public class GetFileController extends ControllerBase implements GetFileApi {
       InputStream inputStream = new FileInputStream(resourceObj);
       return new ResponseEntity<>(new InputStreamResource(inputStream), resHeaders, resStatus);
     } catch (IOException e) {
+      // This should never happen since we just created the file to return. But if it fails, we
+      // throw an internal server error
       throw new InternalServerErrorException("Failed to read: " + resourceObj.getName());
     }
   }
