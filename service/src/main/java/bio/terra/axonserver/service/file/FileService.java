@@ -11,6 +11,9 @@ import com.google.auth.oauth2.GoogleCredentials;
 import java.io.File;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import javax.ws.rs.InternalServerErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRange;
 import org.springframework.stereotype.Component;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class FileService {
+  Logger logger = LoggerFactory.getLogger(FileService.class);
 
   private final SamService samService;
   private final WorkspaceManagerService wsmService;
@@ -59,8 +63,14 @@ public class FileService {
         wsmService.getResource(token.getToken(), workspaceId, resourceId);
 
     File file = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
+
+    // Handle file conversion
     if (convertTo != null) {
-      file = convertService.convertFile(file, convertTo, token);
+      File convertedFile = convertService.convertFile(file, convertTo, token);
+      if (!convertedFile.renameTo(file)) {
+        // Should the renaming of the converted file fail, throw an internal server error
+        throw new InternalServerErrorException("Failed to write converted file");
+      }
     }
     return file;
   }

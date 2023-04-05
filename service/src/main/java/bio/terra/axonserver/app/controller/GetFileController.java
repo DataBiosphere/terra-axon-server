@@ -2,13 +2,12 @@ package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GetFileApi;
 import bio.terra.axonserver.service.file.FileService;
+import bio.terra.axonserver.utils.CleanupInputStreamResource;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.UUID;
@@ -16,7 +15,6 @@ import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
@@ -92,8 +90,9 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     resHeaders.set(HttpHeaders.CONTENT_TYPE, contentType);
 
     try {
-      InputStream inputStream = new FileInputStream(resourceObj);
-      return new ResponseEntity<>(new InputStreamResource(inputStream), resHeaders, resStatus);
+      // InputStream inputStream = new FileInputStream(resourceObj);
+      return new ResponseEntity<>(
+          new CleanupInputStreamResource(resourceObj), resHeaders, resStatus);
     } catch (IOException e) {
       // This should never happen since we just created the file to return. But if it fails, we
       // throw an internal server error
