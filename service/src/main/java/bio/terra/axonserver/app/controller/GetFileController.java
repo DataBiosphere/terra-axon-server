@@ -90,7 +90,6 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     resHeaders.set(HttpHeaders.CONTENT_TYPE, contentType);
 
     try {
-      // InputStream inputStream = new FileInputStream(resourceObj);
       return new ResponseEntity<>(
           new CleanupInputStreamResource(resourceObj), resHeaders, resStatus);
     } catch (IOException e) {

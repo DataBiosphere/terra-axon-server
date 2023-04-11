@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import org.springframework.core.io.InputStreamResource;
 
-// Custom Spring Resource that deletes the
+// Custom Spring Resource that deletes the underlying file when the Input Stream is closed
 public class CleanupInputStreamResource extends InputStreamResource {
   File file;
 
@@ -17,8 +17,6 @@ public class CleanupInputStreamResource extends InputStreamResource {
           @Override
           public void close() throws IOException {
             super.close();
-            System.out.println("Deleting file: " + file.getAbsolutePath());
-            System.out.println("Deleting file: " + file.getPath());
             Files.delete(file.toPath());
           }
         });
