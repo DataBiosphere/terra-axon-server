@@ -5,7 +5,8 @@ import bio.terra.calhoun.api.ConvertApi;
 import bio.terra.calhoun.client.ApiClient;
 import bio.terra.calhoun.client.ApiException;
 import java.io.File;
-import java.nio.file.Files;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,15 +40,15 @@ public class CalhounService {
    * Convert a .ipynb jupyter notebook file to a html file.
    *
    * @param accessToken user access token
-   * @param file notebook file to convert
+   * @param fileStream notebook file to convert
    * @return converted notebook file
    * @throws BadRequestException if conversion fails
    */
-  public byte[] convertNotebook(String accessToken, byte[] file) {
+  public InputStream convertNotebook(String accessToken, InputStream fileStream) {
     try {
-      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertNotebook(file);
+      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertNotebook(fileStream);
       try {
-        return Files.readAllBytes(convertedFile.toPath());
+        return new FileInputStream(convertedFile);
       } catch (Exception e) {
         throw new InternalServerErrorException("Failed to parse converted notebook");
       }
@@ -60,15 +61,15 @@ public class CalhounService {
    * Convert a .rmd R markdown file to a html file.
    *
    * @param accessToken user access token
-   * @param file notebook file to convert
+   * @param fileStream notebook file to convert
    * @return converted notebook file
    * @throws BadRequestException if conversion fails
    */
-  public byte[] convertRmd(String accessToken, byte[] file) {
+  public InputStream convertRmd(String accessToken, InputStream fileStream) {
     try {
-      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertRmd(file);
+      File convertedFile = new ConvertApi(getApiClient(accessToken)).convertRmd(fileStream);
       try {
-        return Files.readAllBytes(convertedFile.toPath());
+        return new FileInputStream(convertedFile);
       } catch (Exception e) {
         throw new InternalServerErrorException("Failed to parse converted R markdown");
       }

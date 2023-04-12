@@ -8,6 +8,7 @@ import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.workspace.model.ResourceDescription;
 import com.google.auth.oauth2.GoogleCredentials;
+import java.io.InputStream;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
@@ -26,7 +27,7 @@ public class FileService {
   private final WorkspaceManagerService wsmService;
   private final ConvertService convertService;
 
-  private record FileWithName(byte[] file, String fileName) {}
+  private record FileWithName(InputStream fileStream, String fileName) {}
 
   @Autowired
   public FileService(
@@ -37,7 +38,7 @@ public class FileService {
   }
 
   /**
-   * Gets a file from a given resource. Optionally converts the file to a desired format.
+   * Gets a fileStream for a given resource. Optionally converts the file to a desired format.
    *
    * @param token Bearer token for the requester
    * @param workspaceId The workspace that the resource is in
@@ -47,7 +48,7 @@ public class FileService {
    * @param byteRange The range of bytes to return. If null, the entire file is returned.
    * @return The file as a byte array
    */
-  public byte[] getFile(
+  public InputStream getFile(
       BearerToken token,
       UUID workspaceId,
       UUID resourceId,
@@ -59,12 +60,12 @@ public class FileService {
         wsmService.getResource(token.getToken(), workspaceId, resourceId);
 
     FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
-    byte[] file = fileWithName.file;
+    InputStream fileStream = fileWithName.fileStream;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
-      file = convertService.convertFile(file, fileExtension, convertTo, token);
+      fileStream = convertService.convertFile(fileStream, fileExtension, convertTo, token);
     }
-    return file;
+    return fileStream;
   }
 
   private FileWithName getFileHandler(
@@ -99,9 +100,9 @@ public class FileService {
       objectPath = resource.getResourceAttributes().getGcpGcsObject().getFileName();
     }
 
-    byte[] file =
+    InputStream fileStream =
         CloudStorageUtils.getBucketObject(googleCredentials, bucketName, objectPath, byteRange);
-    return new FileWithName(file, objectPath);
+    return new FileWithName(fileStream, objectPath);
   }
 
   private FileWithName getGcsBucketFile(
@@ -113,9 +114,9 @@ public class FileService {
     GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
-    byte[] file =
+    InputStream fileStream =
         CloudStorageUtils.getBucketObject(googleCredentials, bucketName, objectPath, byteRange);
-    return new FileWithName(file, objectPath);
+    return new FileWithName(fileStream, objectPath);
   }
 
   private GoogleCredentials getGoogleCredentials(UUID workspaceId, BearerToken token) {

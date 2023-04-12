@@ -5,15 +5,17 @@ import bio.terra.common.exception.BadRequestException;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URLDecoder;
-import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpRange;
 import org.springframework.util.unit.DataSize;
@@ -54,9 +56,9 @@ public class CloudStorageUtils {
    * @param bucketName Name of the bucket
    * @param objectName Name of the object
    * @param byteRange Byte range to read from the object
-   * @return Contents of the object
+   * @return InputStream for the object content
    */
-  public static byte[] getBucketObject(
+  public static InputStream getBucketObject(
       GoogleCredentials googleCredentials,
       String bucketName,
       String objectName,
@@ -69,45 +71,21 @@ public class CloudStorageUtils {
       throw new BadRequestException("Bad object path: " + objectName);
     }
 
-    BlobId blobId = BlobId.of(bucketName, objectName);
-    try (ReadChannel reader =
-        StorageOptions.newBuilder()
-            .setCredentials(googleCredentials)
-            .build()
-            .getService()
-            .reader(blobId)) {
+    try {
+      // Get the ReadChannel for the object
+      Storage gcs =
+          StorageOptions.newBuilder().setCredentials(googleCredentials).build().getService();
+      Blob blob = gcs.get(BlobId.of(bucketName, objectName));
+      ReadChannel readChannel = blob.reader();
 
-      long startByteIdx =
-          Optional.ofNullable(byteRange).isPresent() ? byteRange.getRangeStart(Long.MAX_VALUE) : 0;
-      long endByteIdx =
-          Optional.ofNullable(byteRange).isPresent()
-              ? byteRange.getRangeEnd(Long.MAX_VALUE)
-              : Long.MAX_VALUE - 1;
-      long bytesToRead = endByteIdx - startByteIdx;
-
-      BoundedByteArrayOutputStream outputStream = new BoundedByteArrayOutputStream(MAX_OBJECT_SIZE);
-      ByteBuffer buffer = ByteBuffer.allocate((int) Math.min(MAX_BUFFER_SIZE, bytesToRead));
-
-      long totalBytesRead = 0;
-      int bytesRead;
-      reader.seek(startByteIdx);
-      while (totalBytesRead < bytesToRead && reader.read(buffer) > 0) {
-        bytesRead = buffer.position();
-
-        // write bytes in buffer to output stream
-        buffer.flip();
-        outputStream.write(buffer.array(), 0, buffer.limit());
-
-        // clear buffer and increment bytesRead
-        buffer.clear();
-        totalBytesRead += bytesRead;
+      // Seek to the specified readChannel range if byteRange is provided
+      if (byteRange != null) {
+        readChannel.seek(byteRange.getRangeStart(Long.MAX_VALUE));
+        readChannel.limit(byteRange.getRangeEnd(Long.MAX_VALUE));
       }
-
-      return outputStream.toByteArray();
-    } catch (IndexOutOfBoundsException e) {
-      throw new CloudObjectReadException("Object size too large: " + objectName);
+      return Channels.newInputStream(readChannel);
     } catch (IOException e) {
-      throw new CloudObjectReadException("Error reading object: " + objectName);
+      throw new CloudObjectReadException("Error reading GCS object: " + objectName);
     }
   }
 }

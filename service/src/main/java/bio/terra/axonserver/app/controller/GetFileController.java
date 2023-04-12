@@ -5,11 +5,16 @@ import bio.terra.axonserver.service.file.FileService;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
+import java.io.InputStream;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,16 +46,9 @@ public class GetFileController extends ControllerBase implements GetFileApi {
    * @return - A ResponseEntity containing the file
    */
   @Override
-  public ResponseEntity<byte[]> getFile(
+  public ResponseEntity<Resource> getFile(
       UUID workspaceId, UUID resourceId, @Nullable String convertTo) {
-
-    BearerToken token = getToken();
-
-    HttpRange byteRange = getByteRange();
-
-    byte[] resourceObj =
-        fileService.getFile(token, workspaceId, resourceId, null, convertTo, byteRange);
-    return new ResponseEntity<>(resourceObj, HttpStatus.OK);
+    return buildResponse(workspaceId, resourceId, null, convertTo);
   }
 
   /**
@@ -64,16 +62,32 @@ public class GetFileController extends ControllerBase implements GetFileApi {
    * @return - A ResponseEntity containing the file
    */
   @Override
-  public ResponseEntity<byte[]> getFileInBucket(
+  public ResponseEntity<Resource> getFileInBucket(
       UUID workspaceId, UUID resourceId, String objectPath, @Nullable String convertTo) {
+    return buildResponse(workspaceId, resourceId, objectPath, convertTo);
+  }
 
+  private ResponseEntity<Resource> buildResponse(
+      UUID workspaceId, UUID resourceId, @Nullable String objectPath, @Nullable String convertTo) {
     BearerToken token = getToken();
 
     HttpRange byteRange = getByteRange();
 
-    byte[] resourceObj =
+    InputStream resourceObjectStream =
         fileService.getFile(token, workspaceId, resourceId, objectPath, convertTo, byteRange);
-    return new ResponseEntity<>(resourceObj, HttpStatus.OK);
+
+    // // Infer the content type from the file extension of requested convertTo file extension.
+    // // The convertTo value is already validated by fileService.
+    String contentType =
+        convertTo == null
+            ? URLConnection.guessContentTypeFromName(objectPath)
+            : URLConnection.guessContentTypeFromName(("." + convertTo));
+
+    HttpStatus resStatus = byteRange == null ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
+    HttpHeaders resHeaders = new HttpHeaders();
+    resHeaders.set(HttpHeaders.CONTENT_TYPE, contentType);
+
+    return new ResponseEntity<>(new InputStreamResource(resourceObjectStream), resHeaders, resStatus);
   }
 
   private HttpRange getByteRange() {
