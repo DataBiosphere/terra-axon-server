@@ -76,8 +76,8 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     InputStream resourceObjectStream =
         fileService.getFile(token, workspaceId, resourceId, objectPath, convertTo, byteRange);
 
-    // // Infer the content type from the file extension of requested convertTo file extension.
-    // // The convertTo value is already validated by fileService.
+    // Infer the content type from the file extension of requested convertTo file extension.
+    // The convertTo value is already validated by fileService.
     String contentType =
         convertTo == null
             ? URLConnection.guessContentTypeFromName(objectPath)
