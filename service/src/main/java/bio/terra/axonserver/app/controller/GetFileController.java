@@ -87,7 +87,8 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     HttpHeaders resHeaders = new HttpHeaders();
     resHeaders.set(HttpHeaders.CONTENT_TYPE, contentType);
 
-    return new ResponseEntity<>(new InputStreamResource(resourceObjectStream), resHeaders, resStatus);
+    return new ResponseEntity<>(
+        new InputStreamResource(resourceObjectStream), resHeaders, resStatus);
   }
 
   private HttpRange getByteRange() {
