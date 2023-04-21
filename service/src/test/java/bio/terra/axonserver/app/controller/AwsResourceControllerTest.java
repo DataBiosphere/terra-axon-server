@@ -26,19 +26,16 @@ public class AwsResourceControllerTest extends BaseUnitTest {
           workspaceId.toString(), resourceId.toString());
 
   @Test
-  void awsOn() throws Exception {
+  void getSignedConsoleUrl_awsOn() throws Exception {
     Mockito.when(flagsmithService.isFeatureEnabled("terra__aws_enabled"))
         .thenReturn(Optional.of(true));
-
-    System.out.println(path);
     mockMvc.perform(get(path)).andExpect(status().isOk());
   }
 
   @Test
-  void awsOff() throws Exception {
+  void getSignedConsoleUrl_awsOff() throws Exception {
     Mockito.when(flagsmithService.isFeatureEnabled("terra__aws_enabled"))
         .thenReturn(Optional.of(false));
-
     mockMvc.perform(get(path)).andExpect(status().isNotImplemented());
   }
 }
