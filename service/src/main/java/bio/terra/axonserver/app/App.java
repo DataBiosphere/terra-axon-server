@@ -13,6 +13,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
       DataSourceAutoConfiguration.class,
     },
     scanBasePackages = {
+      // Scan for flagsmith service
+      "bio.terra.common.flagsmith",
       // Scan for iam components
       "bio.terra.common.iam",
       // Scan for logging-related components & configs

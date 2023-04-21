@@ -148,6 +148,22 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/consoleLink:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: |
+        Gets a signed URL providing a view of the AWS console with access limited to the user's
+        permissions on a single resource based on the access scope of the passed credential.
+      operationId: getSignedConsoleUrl
+      tags: [AwsResource]
+      responses:
+        "200":
+          $ref: "#/components/responses/SignedUrlResultResponse"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
 components:
   schemas:
     # Please keep alphabetized
@@ -223,6 +239,13 @@ components:
 
     NotFound:
       description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorReport"
+
+    NotImplemented:
+      description: Not implemented
       content:
         application/json:
           schema:
