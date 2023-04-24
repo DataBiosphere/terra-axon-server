@@ -1436,7 +1436,7 @@ definitions:
             type: array
             items:
               type: string
-  # Fixed label response yml specification - PF-2651
+  # Fixed label response yml specification - (PF-2651)
   LabelsResponse:
     type: object
     required:
