@@ -20,4 +20,15 @@ dependencies {
     implementation 'bio.terra:terra-test-runner:0.1.5-SNAPSHOT'
     // This is required due to a dependency conflict between jib and srcclr. Removing it will cause jib to fail.
     implementation 'org.apache.commons:commons-compress:1.21'
+    implementation files('libs/womtool-81.jar')
+    implementation files('libs/cromwell-81.jar')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/main/java'
+            compileClasspath += files('libs/cromwell-81.jar')
+        }
+    }
 }

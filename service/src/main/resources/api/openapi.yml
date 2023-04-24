@@ -125,6 +125,27 @@ paths:
                 type: string
                 format: binary
 
+  #workspaces/{workspaceId}/cromwell/parseInputsAndZip?mainWdl=path/to/wdl/file&outputDir=gs://path/in/gcs
+  /api/workspaces/v1/{workspaceId}/cromwell/parseInputsAndZip:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+    get:
+      summary: |
+        todo
+      operationId: parseInputs
+      tags: [ ParseInputs ]
+      responses:
+        "200":
+          $ref: "#/components/responses/ParsedInputsResultResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/signedUrl/objects/{objectPath}:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
@@ -180,6 +201,13 @@ components:
         refreshToken:
           type: string
         idToken:
+          type: string
+
+    ParsedInputsReport:
+      type: object
+      required: [ inputs ]
+      properties:
+        inputs:
           type: string
 
     SignedUrlReport:
@@ -241,6 +269,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorReport"
+
+    ParsedInputsResultResponse:
+      description: todo
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ParsedInputsReport"
 
     SignedUrlResultResponse:
       description: Result of a signed URl request.
