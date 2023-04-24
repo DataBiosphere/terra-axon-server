@@ -5,7 +5,6 @@ import static bio.terra.axonserver.testutils.MockMvcUtils.addAuth;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
-import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
@@ -22,7 +21,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 public class CromwellWorkflowControllerTest extends BaseUnitTest {
   @Autowired private MockMvc mockMvc;
-  @MockBean private WorkspaceManagerService wsmService;
   @MockBean private CromwellWorkflowService cromwellWorkflowService;
 
   private final UUID workspaceId = UUID.randomUUID();
@@ -93,17 +91,6 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .when(cromwellWorkflowService)
         .validateWorkspaceAccessAndWorkflowLabelMatches(
             workflowId, workspaceId, USER_REQUEST.getToken());
-    //    // Stub the workspace access check.
-    //    Mockito.when(wsmService.getWorkspace(workspaceId, IamRole.READER,
-    // USER_REQUEST.getToken()))
-    //        .thenReturn(new WorkspaceDescription());
-    //
-    //    // Stub the workflow having the workflow id label.
-    //    Mockito.when(cromwellWorkflowService.getLabels(workflowId))
-    //        .thenReturn(
-    //            new CromwellApiLabelsResponse()
-    //                .putLabelsItem(
-    //                    CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString()));
 
     // Stub the client metadata response.
     Mockito.when(
