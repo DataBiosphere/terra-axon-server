@@ -4,6 +4,7 @@ import bio.terra.axonserver.app.configuration.CromwellConfiguration;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
+import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
@@ -22,7 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Wrapper service for calling cromwell. When applicable, the precondition is:
+ * Wrapper service for calling cromwell. When applicable, the precondition for calling the client is:
  *
  * <p>- the user has access to the workspace
  *
@@ -33,13 +34,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class CromwellWorkflowService {
   private final CromwellConfiguration cromwellConfig;
+  private final WorkspaceManagerService wsmService;
 
   private final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
   private final String CROMWELL_CLIENT_API_VERSION = "v1";
 
   @Autowired
-  public CromwellWorkflowService(CromwellConfiguration cromwellConfig) {
+  public CromwellWorkflowService(CromwellConfiguration cromwellConfig, WorkspaceManagerService wsmService) {
     this.cromwellConfig = cromwellConfig;
+    this.wsmService = wsmService;
   }
 
   private ApiClient getApiClient() {
@@ -132,13 +135,29 @@ public class CromwellWorkflowService {
    * Checks if the workflow has the required workspace id label (e.g.,
    * "terra-workspace-id:workspaceId").
    */
-  public void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId)
+  private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId)
       throws bio.terra.cromwell.client.ApiException {
     Map<String, String> labels = getLabels(workflowId).getLabels();
     if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
         || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
       throw new ApiException("Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
+  }
+
+  /**
+   * Check if the user has workspace access and if the workflow has the required workpace id label (e.g., "terra-workspace-id:workspaceId").
+   * @param workflowId identifier of the workflow
+   * @param workspaceId workspace where the workflow located
+   * @param accessToken access token
+   * @throws bio.terra.cromwell.client.ApiException Exception thrown by Cromwell client.
+   */
+  public void validateWorkspaceAccessAndWorkflowLabelMatches(
+      UUID workflowId, UUID workspaceId, String accessToken)
+      throws bio.terra.cromwell.client.ApiException {
+    // Check workspace access.
+    wsmService.checkWorkspaceReadAccess(workspaceId,accessToken);
+    // Then check if the workflow has the corresponding workspace id.
+    validateWorkflowLabelMatchesWorkspaceId(workflowId,workspaceId);
   }
 
   public ApiWorkflowQueryResponse toApiQueryResponse(

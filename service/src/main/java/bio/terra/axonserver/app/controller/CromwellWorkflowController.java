@@ -43,12 +43,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   @Override
   public ResponseEntity<ApiWorkflowIdAndStatus> getWorkflowStatus(
       UUID workspaceId, UUID workflowId) {
-    // Check if the user has access to the workspace.
-    wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
     try {
-      // Check if the workflow label matches the workspace id.
-      cromwellWorkflowService.validateWorkflowLabelMatchesWorkspaceId(workflowId, workspaceId);
-
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId,workspaceId,getToken().getToken());
       CromwellApiWorkflowIdAndStatus workflowStatus = cromwellWorkflowService.getStatus(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndStatus()
@@ -63,12 +59,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   @Override
   public ResponseEntity<ApiWorkflowIdAndLabel> getWorkflowLabels(
       UUID workspaceId, UUID workflowId) {
-    // Check if the user has access to the workspace.
-    wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
     try {
-      // Check if the workflow label matches the workspace id.
-      cromwellWorkflowService.validateWorkflowLabelMatchesWorkspaceId(workflowId, workspaceId);
-
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId,workspaceId,getToken().getToken());
       CromwellApiLabelsResponse workflowLabels = cromwellWorkflowService.getLabels(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndLabel()
@@ -87,11 +79,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       @Nullable List<String> includeKey,
       @Nullable List<String> excludeKey,
       @Nullable Boolean expandSubWorkflows) {
-    // Check if the user has access to the workspace.
-    wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
     try {
-      // Check if the workflow label matches the workspace id.
-      cromwellWorkflowService.validateWorkflowLabelMatchesWorkspaceId(workflowId, workspaceId);
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId, workspaceId, getToken().getToken());
       CromwellApiWorkflowMetadataResponse workflowMetadata =
           cromwellWorkflowService.getMetadata(
               workflowId, includeKey, excludeKey, expandSubWorkflows);
