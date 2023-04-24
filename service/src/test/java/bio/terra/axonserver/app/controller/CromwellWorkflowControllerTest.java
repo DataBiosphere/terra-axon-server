@@ -5,6 +5,7 @@ import static bio.terra.axonserver.testutils.MockMvcUtils.addAuth;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
+import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
@@ -22,6 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 public class CromwellWorkflowControllerTest extends BaseUnitTest {
   @Autowired private MockMvc mockMvc;
   @MockBean private CromwellWorkflowService cromwellWorkflowService;
+  @MockBean private WorkspaceManagerService wsmService;
 
   private final UUID workspaceId = UUID.randomUUID();
   private final UUID workflowId = UUID.randomUUID();
@@ -114,11 +116,11 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
 
   @Test
   void query() throws Exception {
-    // Stub the workspace access check, and workspace id label matching.
+    // Stub the workspace access check. The query is restricted to only workflows containing the
+    // corresponding workspace id label.
     Mockito.doNothing()
-        .when(cromwellWorkflowService)
-        .validateWorkspaceAccessAndWorkflowLabelMatches(
-            workflowId, workspaceId, USER_REQUEST.getToken());
+        .when(wsmService)
+        .checkWorkspaceReadAccess(workspaceId, USER_REQUEST.getToken());
 
     // Stub the client metadata response.
     Mockito.when(
