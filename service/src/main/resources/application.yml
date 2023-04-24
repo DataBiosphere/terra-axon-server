@@ -15,7 +15,7 @@ env:
   calhoun:
     basePath: ${CALHOUN_ADDRESS:https://terra-calhoun.api.verily.com}
   cromwell:
-    basePath: http://localhost:8000
+    basePath: ${CROMWELL_ADDRESS:http://localhost:8000}
 
 # Below here is non-deployment-specific
 

@@ -137,9 +137,7 @@ public class CromwellWorkflowService {
     Map<String, String> labels = getLabels(workflowId).getLabels();
     if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
         || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
-      throw new ApiException(
-          "Able to access workspace %s, but cannot access workflow %s"
-              .formatted(workspaceId, workflowId));
+      throw new ApiException("Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
   }
 
