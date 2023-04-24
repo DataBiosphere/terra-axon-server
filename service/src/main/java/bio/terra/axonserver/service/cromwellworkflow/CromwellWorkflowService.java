@@ -13,7 +13,6 @@ import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Wrapper service for calling cromwell. When applicable, the precondition for calling the client is:
+ * Wrapper service for calling cromwell. When applicable, the precondition for calling the client
+ * is:
  *
  * <p>- the user has access to the workspace
  *
@@ -40,7 +40,8 @@ public class CromwellWorkflowService {
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
 
   @Autowired
-  public CromwellWorkflowService(CromwellConfiguration cromwellConfig, WorkspaceManagerService wsmService) {
+  public CromwellWorkflowService(
+      CromwellConfiguration cromwellConfig, WorkspaceManagerService wsmService) {
     this.cromwellConfig = cromwellConfig;
     this.wsmService = wsmService;
   }
@@ -134,12 +135,15 @@ public class CromwellWorkflowService {
     Map<String, String> labels = getLabels(workflowId).getLabels();
     if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
         || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
-      throw new ApiException("Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
+      throw new ApiException(
+          "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
   }
 
   /**
-   * Check if the user has workspace access and if the workflow has the required workspace id label (e.g., "terra-workspace-id:workspaceId").
+   * Check if the user has workspace access and if the workflow has the required workspace id label
+   * (e.g., "terra-workspace-id:workspaceId").
+   *
    * @param workflowId identifier of the workflow
    * @param workspaceId workspace where the workflow located
    * @param accessToken access token
@@ -149,9 +153,9 @@ public class CromwellWorkflowService {
       UUID workflowId, UUID workspaceId, String accessToken)
       throws bio.terra.cromwell.client.ApiException {
     // Check workspace access.
-    wsmService.checkWorkspaceReadAccess(workspaceId,accessToken);
+    wsmService.checkWorkspaceReadAccess(workspaceId, accessToken);
     // Then check if the workflow has the corresponding workspace id.
-    validateWorkflowLabelMatchesWorkspaceId(workflowId,workspaceId);
+    validateWorkflowLabelMatchesWorkspaceId(workflowId, workspaceId);
   }
 
   public ApiWorkflowQueryResponse toApiQueryResponse(

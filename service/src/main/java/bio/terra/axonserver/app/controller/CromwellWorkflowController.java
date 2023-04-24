@@ -1,5 +1,7 @@
 package bio.terra.axonserver.app.controller;
 
+import static bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY;
+
 import bio.terra.axonserver.api.CromwellWorkflowApi;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
@@ -13,7 +15,6 @@ import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -25,8 +26,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-
-import static bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY;
 
 @Controller
 public class CromwellWorkflowController extends ControllerBase implements CromwellWorkflowApi {
@@ -48,7 +47,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   public ResponseEntity<ApiWorkflowIdAndStatus> getWorkflowStatus(
       UUID workspaceId, UUID workflowId) {
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId,workspaceId,getToken().getToken());
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+          workflowId, workspaceId, getToken().getToken());
       CromwellApiWorkflowIdAndStatus workflowStatus = cromwellWorkflowService.getStatus(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndStatus()
@@ -64,7 +64,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   public ResponseEntity<ApiWorkflowIdAndLabel> getWorkflowLabels(
       UUID workspaceId, UUID workflowId) {
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId,workspaceId,getToken().getToken());
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+          workflowId, workspaceId, getToken().getToken());
       CromwellApiLabelsResponse workflowLabels = cromwellWorkflowService.getLabels(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndLabel()
@@ -84,7 +85,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       @Nullable List<String> excludeKey,
       @Nullable Boolean expandSubWorkflows) {
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(workflowId, workspaceId, getToken().getToken());
+      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+          workflowId, workspaceId, getToken().getToken());
       CromwellApiWorkflowMetadataResponse workflowMetadata =
           cromwellWorkflowService.getMetadata(
               workflowId, includeKey, excludeKey, expandSubWorkflows);

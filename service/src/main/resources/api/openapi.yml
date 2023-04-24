@@ -266,7 +266,7 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
-  /api/workflows/{workspaceId}/cromwell/workflows/query:
+  /api/workspaces/{workspaceId}/cromwell/workflows/query:
     parameters:
       - $ref: '#/components/parameters/WorkspaceId'
       - name: submission
