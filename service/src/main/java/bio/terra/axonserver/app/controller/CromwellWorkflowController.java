@@ -13,6 +13,8 @@ import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -23,6 +25,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+
+import static bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY;
 
 @Controller
 public class CromwellWorkflowController extends ControllerBase implements CromwellWorkflowApi {
@@ -109,9 +113,13 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
     // Check if the user has access to the workspace.
     wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
     try {
+      if (label == null) {
+        label = new ArrayList<>();
+      }
+      // Restrict the subset to only workflows with the corresponding workspace id label.
+      label.add("%s:%s".formatted(WORKSPACE_ID_LABEL_KEY, workspaceId));
       CromwellApiWorkflowQueryResponse workflowQuery =
           cromwellWorkflowService.getQuery(
-              workspaceId,
               submission,
               start,
               end,

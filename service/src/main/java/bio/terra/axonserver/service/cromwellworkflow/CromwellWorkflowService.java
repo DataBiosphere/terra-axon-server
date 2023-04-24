@@ -36,8 +36,8 @@ public class CromwellWorkflowService {
   private final CromwellConfiguration cromwellConfig;
   private final WorkspaceManagerService wsmService;
 
-  private final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
-  private final String CROMWELL_CLIENT_API_VERSION = "v1";
+  public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
+  private static final String CROMWELL_CLIENT_API_VERSION = "v1";
 
   @Autowired
   public CromwellWorkflowService(CromwellConfiguration cromwellConfig, WorkspaceManagerService wsmService) {
@@ -88,7 +88,6 @@ public class CromwellWorkflowService {
    * workspace id label (e.g., "{WORKSPACE_ID_LABEL_KEY}:{workspaceId}").
    */
   public CromwellApiWorkflowQueryResponse getQuery(
-      UUID workspaceId,
       @Nullable Date submission,
       @Nullable Date start,
       @Nullable Date end,
@@ -102,11 +101,6 @@ public class CromwellWorkflowService {
       @Nullable List<String> additionalQueryResultFields,
       @Nullable Boolean includeSubworkflows)
       throws bio.terra.cromwell.client.ApiException {
-    if (label == null) {
-      label = new ArrayList<>();
-    }
-    // Restrict the subset to only workflows with the corresponding workspace id label.
-    label.add("%s:%s".formatted(WORKSPACE_ID_LABEL_KEY, workspaceId));
     return new WorkflowsApi(getApiClient())
         .queryGet(
             CROMWELL_CLIENT_API_VERSION,
@@ -145,7 +139,7 @@ public class CromwellWorkflowService {
   }
 
   /**
-   * Check if the user has workspace access and if the workflow has the required workpace id label (e.g., "terra-workspace-id:workspaceId").
+   * Check if the user has workspace access and if the workflow has the required workspace id label (e.g., "terra-workspace-id:workspaceId").
    * @param workflowId identifier of the workflow
    * @param workspaceId workspace where the workflow located
    * @param accessToken access token
