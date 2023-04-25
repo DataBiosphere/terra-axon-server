@@ -33,22 +33,4 @@ public class MockMvcUtils {
         .getResponse()
         .getContentAsString();
   }
-
-  // private String getSerializedResponseForPost(
-  //    AuthenticatedUserRequest userRequest, String path, String request) throws Exception {
-  //    return mockMvc
-  //        .perform(
-  //            addAuth(
-  //                post(path)
-  //                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-  //                    .accept(MediaType.APPLICATION_JSON)
-  //                    .characterEncoding("UTF-8")
-  //                    .content(request),
-  //                userRequest))
-  //        .andExpect(status().is2xxSuccessful())
-  //        .andReturn()
-  //        .getResponse()
-  //        .getContentAsString();
-  // }
-
 }

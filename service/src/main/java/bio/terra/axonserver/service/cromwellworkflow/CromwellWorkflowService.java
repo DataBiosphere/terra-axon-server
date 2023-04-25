@@ -1,6 +1,8 @@
 package bio.terra.axonserver.service.cromwellworkflow;
 
 import bio.terra.axonserver.app.configuration.CromwellConfiguration;
+import bio.terra.axonserver.model.ApiCallMetadata;
+import bio.terra.axonserver.model.ApiFailureMessage;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
@@ -8,7 +10,8 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.client.model.CromwellApiCallMetadata;
+import io.swagger.client.model.CromwellApiFailureMessage;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
@@ -17,6 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -180,7 +184,53 @@ public class CromwellWorkflowService {
 
   public ApiWorkflowMetadataResponse toApiMetadataResponse(
       CromwellApiWorkflowMetadataResponse metadataResponse) {
-    ObjectMapper mapper = new ObjectMapper();
-    return mapper.convertValue(metadataResponse, ApiWorkflowMetadataResponse.class);
+    Map<String, List<CromwellApiCallMetadata>> cromwellCallMetadataMap =
+        metadataResponse.getCalls();
+
+    // Convert each value of the map from list of cromwell call metadata into a list of api call
+    // metadata.
+    Map<String, List<ApiCallMetadata>> callMetadataMap =
+        cromwellCallMetadataMap.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        entry.getValue().stream()
+                            .map(
+                                m ->
+                                    new ApiCallMetadata()
+                                        .inputs(m.getInputs())
+                                        .executionStatus(m.getExecutionStatus())
+                                        .backend(m.getBackend())
+                                        .backendStatus(m.getBackendStatus())
+                                        .start(m.getStart())
+                                        .end(m.getEnd())
+                                        .jobId(m.getJobId())
+                                        .failures(toApiFailureMessage(m.getFailures()))
+                                        .returnCode(m.getReturnCode())
+                                        .stdout(m.getStdout())
+                                        .stderr(m.getStderr())
+                                        .backendLogs(m.getBackendLogs()))
+                            .toList()));
+
+    return new ApiWorkflowMetadataResponse()
+        .id(UUID.fromString(metadataResponse.getId()))
+        .status(metadataResponse.getStatus())
+        .submission(metadataResponse.getSubmission())
+        .start(metadataResponse.getStart())
+        .end(metadataResponse.getEnd())
+        .inputs(metadataResponse.getInputs())
+        .outputs(metadataResponse.getOutputs())
+        .calls(callMetadataMap)
+        .failures(toApiFailureMessage(metadataResponse.getFailures()));
+  }
+
+  private ApiFailureMessage toApiFailureMessage(CromwellApiFailureMessage failureMessage) {
+    if (failureMessage == null) {
+      return null;
+    }
+    return new ApiFailureMessage()
+        .failure(failureMessage.getFailure())
+        .timestamp(failureMessage.getTimestamp());
   }
 }
