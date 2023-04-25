@@ -106,20 +106,14 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       @Nullable List<String> status,
       @Nullable List<String> name,
       @Nullable List<String> id,
-      @Nullable List<String> label,
-      @Nullable List<String> labelor,
-      @Nullable List<String> excludeLabelAnd,
-      @Nullable List<String> excludeLabelOr,
       @Nullable List<String> additionalQueryResultFields,
       @Nullable Boolean includeSubworkflows) {
     // Check if the user has access to the workspace.
     wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
     try {
-      if (label == null) {
-        label = new ArrayList<>();
-      }
+      List<String> workspaceValidationLabel = new ArrayList<>();
       // Restrict the subset to only workflows with the corresponding workspace id label.
-      label.add("%s:%s".formatted(WORKSPACE_ID_LABEL_KEY, workspaceId));
+      workspaceValidationLabel.add("%s:%s".formatted(WORKSPACE_ID_LABEL_KEY, workspaceId));
       CromwellApiWorkflowQueryResponse workflowQuery =
           cromwellWorkflowService.getQuery(
               submission,
@@ -128,10 +122,10 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
               status,
               name,
               id,
-              label,
-              labelor,
-              excludeLabelOr,
-              excludeLabelAnd,
+              workspaceValidationLabel,
+              /*labelor=*/ null,
+              /*excludeLabelAnd=*/ null,
+              /*excludeLabelOr=*/ null,
               additionalQueryResultFields,
               includeSubworkflows);
 
