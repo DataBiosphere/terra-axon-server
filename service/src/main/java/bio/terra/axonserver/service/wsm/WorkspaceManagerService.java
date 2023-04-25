@@ -48,6 +48,15 @@ public class WorkspaceManagerService {
     return new ApiClient().setBasePath(wsmConfig.basePath());
   }
 
+  private WorkspaceDescription getWorkspace(
+      String accessToken, UUID workspaceId, @Nullable IamRole minimumHighestRole) {
+    try {
+      return new WorkspaceApi(getApiClient(accessToken)).getWorkspace(workspaceId, minimumHighestRole);
+    } catch (ApiException e) {
+      throw new NotFoundException("Unable to access workspace " + workspaceId + ".");
+    }
+  }
+
   /**
    * Get a resource from a workspace.
    *
