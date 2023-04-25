@@ -51,7 +51,8 @@ public class WorkspaceManagerService {
   private WorkspaceDescription getWorkspace(
       String accessToken, UUID workspaceId, @Nullable IamRole minimumHighestRole) {
     try {
-      return new WorkspaceApi(getApiClient(accessToken)).getWorkspace(workspaceId, minimumHighestRole);
+      return new WorkspaceApi(getApiClient(accessToken))
+          .getWorkspace(workspaceId, minimumHighestRole);
     } catch (ApiException e) {
       throw new NotFoundException("Unable to access workspace " + workspaceId + ".");
     }
