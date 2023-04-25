@@ -1,32 +1,43 @@
 package bio.terra.axonserver.app.controller;
 
 import static bio.terra.axonserver.testutils.MockMvcUtils.USER_REQUEST;
-import static bio.terra.axonserver.testutils.MockMvcUtils.addAuth;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
+import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
+import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
+import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
+import bio.terra.axonserver.testutils.MockMvcUtils;
+import bio.terra.common.iam.BearerToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResult;
+import java.util.Date;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 public class CromwellWorkflowControllerTest extends BaseUnitTest {
-  @Autowired private MockMvc mockMvc;
+  @Autowired private MockMvcUtils mockMvcUtils;
+  @Autowired private ObjectMapper objectMapper;
+
   @MockBean private CromwellWorkflowService cromwellWorkflowService;
   @MockBean private WorkspaceManagerService wsmService;
 
   private final UUID workspaceId = UUID.randomUUID();
   private final UUID workflowId = UUID.randomUUID();
+  private final String DEFAULT_WORKFLOW_STATUS = "Submitted";
+  private final Date DEFAULT_WORKFLOW_SUBMISSION_DATE = new Date(0);
 
   private final String CROMWELL_WORKFLOW_STATUS_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows/%s/status";
@@ -48,17 +59,13 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
     // Stub the client status response.
     Mockito.when(cromwellWorkflowService.getStatus(workflowId))
         .thenReturn(
-            new CromwellApiWorkflowIdAndStatus().id(workflowId.toString()).status("Fake status"));
+            new CromwellApiWorkflowIdAndStatus()
+                .id(workflowId.toString())
+                .status(DEFAULT_WORKFLOW_STATUS));
 
-    var status =
-        mockMvc
-            .perform(
-                addAuth(
-                    get(CROMWELL_WORKFLOW_STATUS_PATH_FORMAT.formatted(workspaceId, workflowId)),
-                    USER_REQUEST))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn()
-            .getResponse();
+    ApiWorkflowIdAndStatus result = getWorkflowStatus(USER_REQUEST, workspaceId, workflowId);
+    Assertions.assertEquals(result.getId(), workflowId);
+    Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
   }
 
   @Test
@@ -69,21 +76,24 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .validateWorkspaceAccessAndWorkflowLabelMatches(
             workflowId, workspaceId, USER_REQUEST.getToken());
 
+    CromwellApiLabelsResponse fakeLabelResponse = new CromwellApiLabelsResponse()
+        .id(workflowId.toString())
+        .putLabelsItem(
+            CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString())
+        .putLabelsItem("fake-label-key", "fake-label-value");
+
     // Stub the workflow having the workflow id label, and the label response
     Mockito.when(cromwellWorkflowService.getLabels(workflowId))
-        .thenReturn(
-            new CromwellApiLabelsResponse()
-                .id(workflowId.toString())
-                .putLabelsItem(
-                    CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString())
-                .putLabelsItem("fake-label-key", "fake-label-value"));
+        .thenReturn(fakeLabelResponse);
 
-    mockMvc
-        .perform(
-            addAuth(
-                get(CROMWELL_WORKFLOW_LABELS_PATH_FORMAT.formatted(workspaceId, workflowId)),
-                USER_REQUEST))
-        .andExpect(MockMvcResultMatchers.status().isOk());
+    ApiWorkflowIdAndLabel result = getWorkflowLabels(USER_REQUEST, workspaceId, workflowId);
+    Assertions.assertEquals(result.getId(), workflowId);
+
+    // Check the labels deserialize properly.
+    Assertions.assertEquals(result.getLabels().size(),2);
+    Assertions.assertEquals(result.getLabels().get("fake-label-key"),"fake-label-value");
+    Assertions.assertEquals(result.getLabels().get(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY),workspaceId.toString());
+
   }
 
   @Test
@@ -101,17 +111,16 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 /*includeKey=*/ null,
                 /*excludeKey=*/ null,
                 /*expandSubWorkflows=*/ null))
-        .thenReturn(new CromwellApiWorkflowMetadataResponse().id(workspaceId.toString()));
+        .thenReturn(
+            new CromwellApiWorkflowMetadataResponse()
+                .id(workflowId.toString())
+                .status(DEFAULT_WORKFLOW_STATUS)
+                .submission(DEFAULT_WORKFLOW_SUBMISSION_DATE));
 
-    var status =
-        mockMvc
-            .perform(
-                addAuth(
-                    get(CROMWELL_WORKFLOW_METADATA_PATH_FORMAT.formatted(workspaceId, workflowId)),
-                    USER_REQUEST))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn()
-            .getResponse();
+    ApiWorkflowMetadataResponse result = getWorkflowMetadata(USER_REQUEST, workspaceId, workflowId);
+    Assertions.assertEquals(result.getId(), workflowId);
+    Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
+    Assertions.assertEquals(result.getSubmission(), DEFAULT_WORKFLOW_SUBMISSION_DATE);
   }
 
   @Test
@@ -122,21 +131,70 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .when(wsmService)
         .checkWorkspaceReadAccess(workspaceId, USER_REQUEST.getToken());
 
+    CromwellApiWorkflowQueryResult fakeWorkflowQueryResult =
+        new CromwellApiWorkflowQueryResult()
+            .id(workflowId.toString())
+            .name("fake-workflow")
+            .status(DEFAULT_WORKFLOW_STATUS);
+
     // Stub the client metadata response.
     Mockito.when(
             cromwellWorkflowService.getQuery(
-                null, null, null, null, null, null, null, null, null, null, null, null))
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.anyList(),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null),
+                Mockito.eq(null)))
         .thenReturn(
             new CromwellApiWorkflowQueryResponse()
-                .addResultsItem(new CromwellApiWorkflowQueryResult().id(workflowId.toString())));
+                .totalResultsCount(1)
+                .addResultsItem(fakeWorkflowQueryResult));
 
-    var status =
-        mockMvc
-            .perform(
-                addAuth(
-                    get(CROMWELL_WORKFLOW_QUERY_PATH_FORMAT.formatted(workspaceId)), USER_REQUEST))
-            .andExpect(MockMvcResultMatchers.status().isOk())
-            .andReturn()
-            .getResponse();
+    ApiWorkflowQueryResponse result = getWorkflowQuery(USER_REQUEST, workspaceId);
+    Assertions.assertEquals(result.getTotalResultsCount(), 1);
+
+    ApiWorkflowQueryResult queryResult = result.getResults().get(0);
+    Assertions.assertEquals(queryResult.getId(), fakeWorkflowQueryResult.getId());
+    Assertions.assertEquals(queryResult.getName(), fakeWorkflowQueryResult.getName());
+    Assertions.assertEquals(queryResult.getStatus(), fakeWorkflowQueryResult.getStatus());
+  }
+
+  private ApiWorkflowIdAndStatus getWorkflowStatus(
+      BearerToken token, UUID workspaceId, UUID workflowId) throws Exception {
+    String serializedResponse =
+        mockMvcUtils.getSerializedResponseForGet(
+            token, CROMWELL_WORKFLOW_STATUS_PATH_FORMAT.formatted(workspaceId, workflowId));
+    return objectMapper.readValue(serializedResponse, ApiWorkflowIdAndStatus.class);
+  }
+
+  private ApiWorkflowIdAndLabel getWorkflowLabels(
+      BearerToken token, UUID workspaceId, UUID workflowId) throws Exception {
+    String serializedResponse =
+        mockMvcUtils.getSerializedResponseForGet(
+            token, CROMWELL_WORKFLOW_LABELS_PATH_FORMAT.formatted(workspaceId, workflowId));
+    return objectMapper.readValue(serializedResponse, ApiWorkflowIdAndLabel.class);
+  }
+
+  private ApiWorkflowMetadataResponse getWorkflowMetadata(
+      BearerToken token, UUID workspaceId, UUID workflowId) throws Exception {
+    String serializedResponse =
+        mockMvcUtils.getSerializedResponseForGet(
+            token, CROMWELL_WORKFLOW_METADATA_PATH_FORMAT.formatted(workspaceId, workflowId));
+    return objectMapper.readValue(serializedResponse, ApiWorkflowMetadataResponse.class);
+  }
+
+  private ApiWorkflowQueryResponse getWorkflowQuery(BearerToken token, UUID workspaceId)
+      throws Exception {
+    String serializedResponse =
+        mockMvcUtils.getSerializedResponseForGet(
+            token, CROMWELL_WORKFLOW_QUERY_PATH_FORMAT.formatted(workspaceId));
+    return objectMapper.readValue(serializedResponse, ApiWorkflowQueryResponse.class);
   }
 }

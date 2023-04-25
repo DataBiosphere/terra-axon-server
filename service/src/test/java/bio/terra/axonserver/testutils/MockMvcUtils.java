@@ -5,10 +5,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import bio.terra.common.iam.BearerToken;
 // import bio.terra.workspace.model
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+@Component
 public class MockMvcUtils {
   @Autowired private MockMvc mockMvc;
   public static final BearerToken USER_REQUEST = new BearerToken("FakeBearerToken");
@@ -24,7 +26,7 @@ public class MockMvcUtils {
     return request.contentType("application/json");
   }
 
-  private String getSerializedResponseForGet(BearerToken userRequest, String formattedPath)
+  public String getSerializedResponseForGet(BearerToken userRequest, String formattedPath)
       throws Exception {
     return mockMvc
         .perform(addAuth(get(formattedPath), userRequest))

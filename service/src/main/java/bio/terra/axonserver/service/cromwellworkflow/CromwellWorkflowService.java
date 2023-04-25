@@ -90,7 +90,8 @@ public class CromwellWorkflowService {
 
   /**
    * Queries workflows based on user-supplied criteria, and additionally requires the corresponding
-   * workspace id label (e.g., "{WORKSPACE_ID_LABEL_KEY}:{workspaceId}").
+   * workspace id label (e.g., "{WORKSPACE_ID_LABEL_KEY}:{workspaceId}"). For now, do not accept
+   * user supplied label queries. Only the controller may provide label queries.
    */
   public CromwellApiWorkflowQueryResponse getQuery(
       @Nullable Date submission,
@@ -162,27 +163,29 @@ public class CromwellWorkflowService {
     validateWorkflowLabelMatchesWorkspaceId(workflowId, workspaceId);
   }
 
-  public ApiWorkflowQueryResponse toApiQueryResponse(
+  public static ApiWorkflowQueryResponse toApiQueryResponse(
       CromwellApiWorkflowQueryResponse workflowQuery) {
     List<ApiWorkflowQueryResult> results =
-        workflowQuery.getResults().stream()
-            .map(
-                r ->
-                    new ApiWorkflowQueryResult()
-                        .id(r.getId())
-                        .name(r.getName())
-                        .status(r.getStatus())
-                        .submission(r.getSubmission())
-                        .start(r.getStart())
-                        .end(r.getEnd()))
-            .toList();
+        workflowQuery.getResults() == null
+            ? null
+            : workflowQuery.getResults().stream()
+                .map(
+                    r ->
+                        new ApiWorkflowQueryResult()
+                            .id(r.getId())
+                            .name(r.getName())
+                            .status(r.getStatus())
+                            .submission(r.getSubmission())
+                            .start(r.getStart())
+                            .end(r.getEnd()))
+                .toList();
 
     return new ApiWorkflowQueryResponse()
         .results(results)
         .totalResultsCount(workflowQuery.getTotalResultsCount());
   }
 
-  public ApiWorkflowMetadataResponse toApiMetadataResponse(
+  public static ApiWorkflowMetadataResponse toApiMetadataResponse(
       CromwellApiWorkflowMetadataResponse metadataResponse) {
     Map<String, List<CromwellApiCallMetadata>> cromwellCallMetadataMap =
         metadataResponse.getCalls();
@@ -190,28 +193,30 @@ public class CromwellWorkflowService {
     // Convert each value of the map from list of cromwell call metadata into a list of api call
     // metadata.
     Map<String, List<ApiCallMetadata>> callMetadataMap =
-        cromwellCallMetadataMap.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    entry ->
-                        entry.getValue().stream()
-                            .map(
-                                m ->
-                                    new ApiCallMetadata()
-                                        .inputs(m.getInputs())
-                                        .executionStatus(m.getExecutionStatus())
-                                        .backend(m.getBackend())
-                                        .backendStatus(m.getBackendStatus())
-                                        .start(m.getStart())
-                                        .end(m.getEnd())
-                                        .jobId(m.getJobId())
-                                        .failures(toApiFailureMessage(m.getFailures()))
-                                        .returnCode(m.getReturnCode())
-                                        .stdout(m.getStdout())
-                                        .stderr(m.getStderr())
-                                        .backendLogs(m.getBackendLogs()))
-                            .toList()));
+        cromwellCallMetadataMap == null
+            ? null
+            : cromwellCallMetadataMap.entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry ->
+                            entry.getValue().stream()
+                                .map(
+                                    m ->
+                                        new ApiCallMetadata()
+                                            .inputs(m.getInputs())
+                                            .executionStatus(m.getExecutionStatus())
+                                            .backend(m.getBackend())
+                                            .backendStatus(m.getBackendStatus())
+                                            .start(m.getStart())
+                                            .end(m.getEnd())
+                                            .jobId(m.getJobId())
+                                            .failures(toApiFailureMessage(m.getFailures()))
+                                            .returnCode(m.getReturnCode())
+                                            .stdout(m.getStdout())
+                                            .stderr(m.getStderr())
+                                            .backendLogs(m.getBackendLogs()))
+                                .toList()));
 
     return new ApiWorkflowMetadataResponse()
         .id(UUID.fromString(metadataResponse.getId()))
@@ -225,7 +230,7 @@ public class CromwellWorkflowService {
         .failures(toApiFailureMessage(metadataResponse.getFailures()));
   }
 
-  private ApiFailureMessage toApiFailureMessage(CromwellApiFailureMessage failureMessage) {
+  private static ApiFailureMessage toApiFailureMessage(CromwellApiFailureMessage failureMessage) {
     if (failureMessage == null) {
       return null;
     }
