@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 public class CromwellWorkflowControllerTest extends BaseUnitTest {
   @Autowired private MockMvcUtils mockMvcUtils;
@@ -76,24 +75,24 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .validateWorkspaceAccessAndWorkflowLabelMatches(
             workflowId, workspaceId, USER_REQUEST.getToken());
 
-    CromwellApiLabelsResponse fakeLabelResponse = new CromwellApiLabelsResponse()
-        .id(workflowId.toString())
-        .putLabelsItem(
-            CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString())
-        .putLabelsItem("fake-label-key", "fake-label-value");
+    CromwellApiLabelsResponse fakeLabelResponse =
+        new CromwellApiLabelsResponse()
+            .id(workflowId.toString())
+            .putLabelsItem(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString())
+            .putLabelsItem("fake-label-key", "fake-label-value");
 
     // Stub the workflow having the workflow id label, and the label response
-    Mockito.when(cromwellWorkflowService.getLabels(workflowId))
-        .thenReturn(fakeLabelResponse);
+    Mockito.when(cromwellWorkflowService.getLabels(workflowId)).thenReturn(fakeLabelResponse);
 
     ApiWorkflowIdAndLabel result = getWorkflowLabels(USER_REQUEST, workspaceId, workflowId);
     Assertions.assertEquals(result.getId(), workflowId);
 
     // Check the labels deserialize properly.
-    Assertions.assertEquals(result.getLabels().size(),2);
-    Assertions.assertEquals(result.getLabels().get("fake-label-key"),"fake-label-value");
-    Assertions.assertEquals(result.getLabels().get(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY),workspaceId.toString());
-
+    Assertions.assertEquals(result.getLabels().size(), 2);
+    Assertions.assertEquals(result.getLabels().get("fake-label-key"), "fake-label-value");
+    Assertions.assertEquals(
+        result.getLabels().get(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY),
+        workspaceId.toString());
   }
 
   @Test
