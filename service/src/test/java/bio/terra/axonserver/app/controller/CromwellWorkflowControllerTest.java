@@ -12,6 +12,7 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import bio.terra.axonserver.testutils.MockMvcUtils;
 import bio.terra.common.iam.BearerToken;
+import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
@@ -25,9 +26,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 public class CromwellWorkflowControllerTest extends BaseUnitTest {
   @Autowired private MockMvcUtils mockMvcUtils;
+  @Autowired private MockMvc mockMvc;
   @Autowired private ObjectMapper objectMapper;
 
   @MockBean private CromwellWorkflowService cromwellWorkflowService;
@@ -46,6 +49,24 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
       "/api/workspaces/%s/cromwell/workflows/%s/metadata";
   private final String CROMWELL_WORKFLOW_QUERY_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows/query";
+
+  @Test
+  void workspaceAccess_or_labelValidation_failure() throws Exception {
+    Mockito.doThrow(new ApiException(403, "No workspace access"))
+        .when(cromwellWorkflowService)
+        .validateWorkspaceAccessAndWorkflowLabelMatches(
+            workflowId, workspaceId, USER_REQUEST.getToken());
+
+    // Stub the client status response.
+    Mockito.when(cromwellWorkflowService.getStatus(workflowId))
+        .thenReturn(
+            new CromwellApiWorkflowIdAndStatus()
+                .id(workflowId.toString())
+                .status(DEFAULT_WORKFLOW_STATUS));
+
+    mockMvcUtils.getSerializedResponseForGetExpect(
+        USER_REQUEST, CROMWELL_WORKFLOW_STATUS_PATH_FORMAT.formatted(workspaceId, workflowId), 500);
+  }
 
   @Test
   void status() throws Exception {

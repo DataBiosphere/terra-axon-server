@@ -93,7 +93,7 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
           cromwellWorkflowService.getMetadata(
               workflowId, includeKey, excludeKey, expandSubWorkflows);
       return new ResponseEntity<>(
-          cromwellWorkflowService.toApiMetadataResponse(workflowMetadata), HttpStatus.OK);
+          CromwellWorkflowService.toApiMetadataResponse(workflowMetadata), HttpStatus.OK);
     } catch (bio.terra.cromwell.client.ApiException e) {
       throw new ApiException(
           "Error getting workflow metadata. %s: %s".formatted(e.getCode(), e.getResponseBody()));
@@ -133,7 +133,7 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
               includeSubworkflows);
 
       return new ResponseEntity<>(
-          cromwellWorkflowService.toApiQueryResponse(workflowQuery), HttpStatus.OK);
+          CromwellWorkflowService.toApiQueryResponse(workflowQuery), HttpStatus.OK);
     } catch (bio.terra.cromwell.client.ApiException e) {
       throw new ApiException(
           "Error querying workflows. %s: %s".formatted(e.getCode(), e.getResponseBody()));

@@ -35,4 +35,14 @@ public class MockMvcUtils {
         .getResponse()
         .getContentAsString();
   }
+
+  public String getSerializedResponseForGetExpect(
+      BearerToken userRequest, String formattedPath, int code) throws Exception {
+    return mockMvc
+        .perform(addAuth(get(formattedPath), userRequest))
+        .andExpect(MockMvcResultMatchers.status().is(code))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+  }
 }
