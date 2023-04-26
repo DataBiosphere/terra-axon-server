@@ -374,6 +374,32 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /api/workspaces/{workspaceId}/cromwell/workflows:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+    post:
+      operationId: submitWorkflow
+      summary: Submit a workflow for execution
+      description: Submits a workflow to Cromwell.
+      tags: [CromwellWorkflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitWorkflowRequestBody'
+      responses:
+        '201':
+          description: Successful Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowIdAndStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+          
 components:
   schemas:
     # Please keep alphabetized
@@ -495,6 +521,62 @@ components:
               $ref: "#/components/schemas/CallMetadata"
         failures:
           $ref: '#/components/schemas/FailureMessage'
+
+    SubmitWorkflowRequestBody:
+      type: object
+      properties:
+        workflowGcsUri:
+          description: GCS uri which points to the workflow. Either workflow GCS uri or workflow url is required. If both are specified, then workflow URL takes precedence.
+          type: string
+        workflowUrl:
+          description: URL which points to the workflow. Either workflow GCS uri or workflow url is required. If both are specified, then workflow URL takes precedence.
+          type: string
+        workflowOnHold:
+          description: Put workflow on hold upon submission. By default, it is taken as false.
+          type: boolean
+          default: false
+        workflowInputs:
+          description: JSON or YAML file containing the inputs as an object. For WDL workflows a skeleton file can be generated from WOMtool using the "inputs" subcommand.
+          type: string
+        workflowOptions:
+          description: JSON file containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
+          type: object
+          additionalProperties: true
+          properties:
+            jes_gcs_root:
+              type: string
+            delete_intermediate_output_files:
+              type: string
+            memory_retry_multiplier:
+              type: string
+            write_to_cache:
+              type: string
+            read_from_cache:
+              type: string
+            final_workflow_log_dir:
+              type: string
+            final_call_logs_dir:
+              type: string
+          required:
+            - jes_gcs_root
+        workflowType:
+          description: The workflow language for the file you submitted. Cromwell currently supports WDL.
+          type: string
+          enum: [ WDL ]
+        workflowTypeVersion:
+          description: The specification version for the workflow language being used. For WDL, Cromwell currently supports draft-2 and 1.0.
+          type: string
+          enum: [ "1.0", "draft-2"]
+        labels:
+          description: JSON object of labels to apply to this workflow.
+          type: string
+        workflowDependenciesGcsUri:
+          description: GCS URI to ZIP file containing workflow source files that are used to resolve local imports. This zip bundle will be unpacked in a sandbox accessible to this workflow.
+          type: string
+        requestedWorkflowId:
+          description: An ID to ascribe to this workflow. Must be a JSON string in UUID-format. If not supplied a random ID will be generated for the workflow.
+          type: string
+          format: uuid
 
     CallMetadata:
       description: Call level metadata

@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRange;
@@ -71,6 +72,17 @@ public class FileService {
         wsmService.getResource(token.getToken(), workspaceId, resourceId);
 
     FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
+    InputStream fileStream = fileWithName.fileStream;
+    if (convertTo != null) {
+      String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
+      fileStream = convertService.convertFile(fileStream, fileExtension, convertTo, token);
+    }
+    return fileStream;
+  }
+
+  public InputStream getFile(
+      BearerToken token, UUID workspaceId, @NotNull String gcsURI, @Nullable String convertTo) {
+    FileWithName fileWithName = getGcsObjectFromURI(workspaceId, gcsURI, token);
     InputStream fileStream = fileWithName.fileStream;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
@@ -135,6 +147,17 @@ public class FileService {
           resource.getMetadata().getResourceType()
               + " is not a type of resource that contains files");
     };
+  }
+
+  private FileWithName getGcsObjectFromURI(UUID workspaceId, String gcsURI, BearerToken token) {
+    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
+
+    BlobId blob = BlobId.fromGsUtilUri(gcsURI);
+
+    InputStream fileStream =
+        CloudStorageUtils.getBucketObject(
+            googleCredentials, blob.getBucket(), blob.getName(), null);
+    return new FileWithName(fileStream, blob.getName());
   }
 
   private FileWithName getGcsObjectFile(
