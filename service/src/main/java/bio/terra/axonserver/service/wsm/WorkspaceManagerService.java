@@ -1,12 +1,15 @@
 package bio.terra.axonserver.service.wsm;
 
 import bio.terra.axonserver.app.configuration.WsmConfiguration;
+import bio.terra.common.exception.ForbiddenException;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.client.ApiClient;
 import bio.terra.workspace.client.ApiException;
 import bio.terra.workspace.model.GcpContext;
+import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
+import bio.terra.workspace.model.WorkspaceDescription;
 import java.util.UUID;
 import javax.ws.rs.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,5 +69,19 @@ public class WorkspaceManagerService {
     } catch (ApiException apiException) {
       throw new NotFoundException("Unable to access workspace " + workspaceId + ".");
     }
+  }
+
+  public WorkspaceDescription getWorkspace(
+      UUID workspaceId, IamRole minimumHighestRole, String accessToken) {
+    try {
+      return new WorkspaceApi(getApiClient(accessToken))
+          .getWorkspace(workspaceId, minimumHighestRole);
+    } catch (ApiException apiException) {
+      throw new ForbiddenException("Unable to access workspace %s.".formatted(workspaceId));
+    }
+  }
+
+  public void checkWorkspaceReadAccess(UUID workspaceId, String accessToken) {
+    getWorkspace(workspaceId, IamRole.READER, accessToken);
   }
 }
