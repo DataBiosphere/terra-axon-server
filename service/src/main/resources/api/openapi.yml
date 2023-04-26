@@ -592,6 +592,10 @@ components:
           type: string
           format: date-time
           description: Workflow end datetime
+        labels:
+          type: object
+          additionalProperties:
+            type: string
 
   responses:
     BadRequest:

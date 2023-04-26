@@ -1403,6 +1403,10 @@ definitions:
         type: string
         format: date-time
         description: Workflow end datetime
+      labels:
+        type: object
+        additionalProperties:
+          type: string
   BackendResponse:
     required:
       - supportedBackends

@@ -180,7 +180,8 @@ public class CromwellWorkflowService {
                             .status(r.getStatus())
                             .submission(r.getSubmission())
                             .start(r.getStart())
-                            .end(r.getEnd()))
+                            .end(r.getEnd())
+                            .labels(r.getLabels()))
                 .toList();
 
     return new ApiWorkflowQueryResponse()
