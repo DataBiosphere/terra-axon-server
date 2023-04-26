@@ -228,16 +228,16 @@ public class CromwellWorkflowService {
         metadataResponse.getSubmittedFiles();
 
     var submittedFiles =
-        new ApiWorkflowMetadataResponseSubmittedFiles()
-            .workflow(cromwellSubmittedFiles.getWorkflow())
-            .options(cromwellSubmittedFiles.getOptions())
-            .inputs(cromwellSubmittedFiles.getInputs())
-            .workflowType(cromwellSubmittedFiles.getWorkflowType())
-            .root(cromwellSubmittedFiles.getRoot())
-            .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
-            .root(cromwellSubmittedFiles.getRoot())
-            .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
-            .labels(cromwellSubmittedFiles.getLabels());
+        cromwellSubmittedFiles == null
+            ? null
+            : new ApiWorkflowMetadataResponseSubmittedFiles()
+                .workflow(cromwellSubmittedFiles.getWorkflow())
+                .options(cromwellSubmittedFiles.getOptions())
+                .inputs(cromwellSubmittedFiles.getInputs())
+                .workflowType(cromwellSubmittedFiles.getWorkflowType())
+                .root(cromwellSubmittedFiles.getRoot())
+                .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
+                .labels(cromwellSubmittedFiles.getLabels());
 
     return new ApiWorkflowMetadataResponse()
         .id(UUID.fromString(metadataResponse.getId()))
