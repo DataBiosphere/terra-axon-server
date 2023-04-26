@@ -109,12 +109,20 @@ public class GetFileController extends ControllerBase implements GetFileApi {
       throw new BadRequestException("Access token is null. Try refreshing your access.");
     }
     String projectId = wsmService.getGcpContext(workspaceId, accessToken).getProjectId();
-    String bucketName =
-        wsmService
-            .getResource(accessToken, workspaceId, resourceId)
-            .getResourceAttributes()
-            .getGcpGcsBucket()
-            .getBucketName();
+    String bucketName;
+    var attributes =
+        wsmService.getResource(accessToken, workspaceId, resourceId).getResourceAttributes();
+    var bucket = attributes.getGcpGcsBucket();
+    if (bucket != null) {
+      bucketName = bucket.getBucketName();
+    } else {
+      var object = attributes.getGcpGcsObject();
+      if (object != null) {
+        bucketName = object.getBucketName();
+      } else {
+        throw new BadRequestException(String.format("%s is not a GCS resource", resourceId));
+      }
+    }
     try {
       String result =
           fileService
