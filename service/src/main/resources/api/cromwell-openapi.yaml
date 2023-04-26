@@ -960,6 +960,24 @@ definitions:
       outputs:
         type: object
         description: Map of output keys to output values
+      # Added submittedFiles yml spec - (PF-2651).
+      submittedFiles:
+        type: object
+        properties:
+          workflow:
+            type: string
+          options:
+            type: string
+          inputs:
+            type: string
+          workflowType:
+            type: string
+          root:
+            type: string
+          workflowUrl:
+            type: string
+          labels:
+            type: string
       # Fixed call metadata yml specification - (PF-2651)
       calls:
         type: object
@@ -1003,6 +1021,8 @@ definitions:
       returnCode:
         type: integer
         description: Call execution return code
+      callRoot:
+        type: string
       stdout:
         type: string
         description: Path to the standard output file for this call

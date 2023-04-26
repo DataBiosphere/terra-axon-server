@@ -4,6 +4,7 @@ import bio.terra.axonserver.app.configuration.CromwellConfiguration;
 import bio.terra.axonserver.model.ApiCallMetadata;
 import bio.terra.axonserver.model.ApiFailureMessage;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
@@ -16,6 +17,7 @@ import io.swagger.client.model.CromwellApiFailureMessage;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
+import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.util.Date;
 import java.util.List;
@@ -216,10 +218,26 @@ public class CromwellWorkflowService {
                                             .jobId(m.getJobId())
                                             .failures(toApiFailureMessage(m.getFailures()))
                                             .returnCode(m.getReturnCode())
+                                            .callRoot(m.getCallRoot())
                                             .stdout(m.getStdout())
                                             .stderr(m.getStderr())
                                             .backendLogs(m.getBackendLogs()))
                                 .toList()));
+
+    CromwellApiWorkflowMetadataResponseSubmittedFiles cromwellSubmittedFiles =
+        metadataResponse.getSubmittedFiles();
+
+    var submittedFiles =
+        new ApiWorkflowMetadataResponseSubmittedFiles()
+            .workflow(cromwellSubmittedFiles.getWorkflow())
+            .options(cromwellSubmittedFiles.getOptions())
+            .inputs(cromwellSubmittedFiles.getInputs())
+            .workflowType(cromwellSubmittedFiles.getWorkflowType())
+            .root(cromwellSubmittedFiles.getRoot())
+            .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
+            .root(cromwellSubmittedFiles.getRoot())
+            .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
+            .labels(cromwellSubmittedFiles.getLabels());
 
     return new ApiWorkflowMetadataResponse()
         .id(UUID.fromString(metadataResponse.getId()))
@@ -229,6 +247,7 @@ public class CromwellWorkflowService {
         .end(metadataResponse.getEnd())
         .inputs(metadataResponse.getInputs())
         .outputs(metadataResponse.getOutputs())
+        .submittedFiles(submittedFiles)
         .calls(callMetadataMap)
         .failures(toApiFailureMessage(metadataResponse.getFailures()));
   }
