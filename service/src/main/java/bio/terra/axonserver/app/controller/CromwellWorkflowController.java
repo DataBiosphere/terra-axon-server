@@ -46,9 +46,9 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   @Override
   public ResponseEntity<ApiWorkflowIdAndStatus> getWorkflowStatus(
       UUID workspaceId, UUID workflowId) {
+    cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+        workflowId, workspaceId, getToken().getToken());
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
-          workflowId, workspaceId, getToken().getToken());
       CromwellApiWorkflowIdAndStatus workflowStatus = cromwellWorkflowService.getStatus(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndStatus()
@@ -64,9 +64,9 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   @Override
   public ResponseEntity<ApiWorkflowIdAndLabel> getWorkflowLabels(
       UUID workspaceId, UUID workflowId) {
+    cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+        workflowId, workspaceId, getToken().getToken());
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
-          workflowId, workspaceId, getToken().getToken());
       CromwellApiLabelsResponse workflowLabels = cromwellWorkflowService.getLabels(workflowId);
       return new ResponseEntity<>(
           new ApiWorkflowIdAndLabel()
@@ -86,9 +86,9 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       @Nullable List<String> includeKey,
       @Nullable List<String> excludeKey,
       @Nullable Boolean expandSubWorkflows) {
+    cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
+        workflowId, workspaceId, getToken().getToken());
     try {
-      cromwellWorkflowService.validateWorkspaceAccessAndWorkflowLabelMatches(
-          workflowId, workspaceId, getToken().getToken());
       CromwellApiWorkflowMetadataResponse workflowMetadata =
           cromwellWorkflowService.getMetadata(
               workflowId, includeKey, excludeKey, expandSubWorkflows);

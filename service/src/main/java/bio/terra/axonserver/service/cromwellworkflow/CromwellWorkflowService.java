@@ -7,9 +7,10 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
-import bio.terra.common.exception.ApiException;
+import bio.terra.common.exception.BadRequestException;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
+import bio.terra.cromwell.client.ApiException;
 import io.swagger.client.model.CromwellApiCallMetadata;
 import io.swagger.client.model.CromwellApiFailureMessage;
 import io.swagger.client.model.CromwellApiLabelsResponse;
@@ -135,12 +136,16 @@ public class CromwellWorkflowService {
    * Checks if the workflow has the required workspace id label (e.g.,
    * "terra-workspace-id:workspaceId").
    */
-  private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId)
-      throws bio.terra.cromwell.client.ApiException {
-    Map<String, String> labels = getLabels(workflowId).getLabels();
-    if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
-        || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
-      throw new ApiException(
+  private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId) {
+    try {
+      Map<String, String> labels = getLabels(workflowId).getLabels();
+      if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
+          || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
+        throw new BadRequestException(
+            "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
+      }
+    } catch (ApiException e) {
+      throw new BadRequestException(
           "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
   }
@@ -152,11 +157,9 @@ public class CromwellWorkflowService {
    * @param workflowId identifier of the workflow
    * @param workspaceId workspace where the workflow located
    * @param accessToken access token
-   * @throws bio.terra.cromwell.client.ApiException Exception thrown by Cromwell client.
    */
   public void validateWorkspaceAccessAndWorkflowLabelMatches(
-      UUID workflowId, UUID workspaceId, String accessToken)
-      throws bio.terra.cromwell.client.ApiException {
+      UUID workflowId, UUID workspaceId, String accessToken) {
     // Check workspace access.
     wsmService.checkWorkspaceReadAccess(workspaceId, accessToken);
     // Then check if the workflow has the corresponding workspace id.

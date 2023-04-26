@@ -1,6 +1,7 @@
 package bio.terra.axonserver.service.wsm;
 
 import bio.terra.axonserver.app.configuration.WsmConfiguration;
+import bio.terra.common.exception.ForbiddenException;
 import bio.terra.workspace.api.ResourceApi;
 import bio.terra.workspace.api.WorkspaceApi;
 import bio.terra.workspace.client.ApiClient;
@@ -76,7 +77,7 @@ public class WorkspaceManagerService {
       return new WorkspaceApi(getApiClient(accessToken))
           .getWorkspace(workspaceId, minimumHighestRole);
     } catch (ApiException apiException) {
-      throw new NotFoundException("Unable to access workspace %s.".formatted(workspaceId));
+      throw new ForbiddenException("Unable to access workspace %s.".formatted(workspaceId));
     }
   }
 
