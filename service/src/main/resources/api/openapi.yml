@@ -513,7 +513,7 @@ components:
         failures:
           type: array
           items:
-            $ref: '#/components/schemas/FailureMessage'
+            $ref: '#/components/schemas/FailureMessages'
 
     CallMetadata:
       description: Call level metadata
@@ -544,7 +544,7 @@ components:
         failures:
           type: array
           items:
-            $ref: '#/components/schemas/FailureMessage'
+            $ref: '#/components/schemas/FailureMessages'
         returnCode:
           type: integer
           description: Call execution return code
@@ -560,14 +560,14 @@ components:
           type: object
           description: Paths to backend specific logs for this call
 
-    FailureMessage:
+    FailureMessages:
       description: Failure messages
       type: object
       properties:
         causedBy:
           type: array
           items:
-            $ref: "#/components/schemas/FailureMessage"
+            $ref: "#/components/schemas/FailureMessages"
         message:
           type: string
           description: The error message.
