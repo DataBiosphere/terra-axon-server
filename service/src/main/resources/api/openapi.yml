@@ -487,6 +487,23 @@ components:
         outputs:
           type: object
           description: Map of output keys to output values
+        submittedFiles:
+          type: object
+          properties:
+            workflow:
+              type: string
+            options:
+              type: string
+            inputs:
+              type: string
+            workflowType:
+              type: string
+            root:
+              type: string
+            workflowUrl:
+              type: string
+            labels:
+              type: string
         calls:
           type: object
           additionalProperties:
@@ -531,6 +548,8 @@ components:
         returnCode:
           type: integer
           description: Call execution return code
+        callRoot:
+          type: string
         stdout:
           type: string
           description: Path to the standard output file for this call
