@@ -15,7 +15,7 @@ import bio.terra.common.exception.ForbiddenException;
 import bio.terra.common.iam.BearerToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiCallMetadata;
-import io.swagger.client.model.CromwellApiFailureMessage;
+import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
@@ -178,15 +178,16 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
     // Verify failure message is correctly returned.
     var failureMessage =
         Collections.singletonList(
-            new CromwellApiFailureMessage()
+            new CromwellApiFailureMessages()
                 .message("root")
                 .causedBy(
                     Collections.singletonList(
-                        new CromwellApiFailureMessage()
+                        new CromwellApiFailureMessages()
                             .message("one level down")
                             .causedBy(
                                 Collections.singletonList(
-                                    new CromwellApiFailureMessage().message("two levels down"))))));
+                                    new CromwellApiFailureMessages()
+                                        .message("two levels down"))))));
 
     // Stub the client metadata response.
     Mockito.when(
