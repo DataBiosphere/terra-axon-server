@@ -111,7 +111,7 @@ public class GetFileController extends ControllerBase implements GetFileApi {
     String projectId = wsmService.getGcpContext(workspaceId, accessToken).getProjectId();
     String bucketName;
     var attributes =
-        wsmService.getResource(accessToken, workspaceId, resourceId).getResourceAttributes();
+        wsmService.getResource(workspaceId, resourceId, accessToken).getResourceAttributes();
     var bucket = attributes.getGcpGcsBucket();
     if (bucket != null) {
       bucketName = bucket.getBucketName();

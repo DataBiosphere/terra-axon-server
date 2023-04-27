@@ -47,15 +47,35 @@ public class WorkspaceManagerService {
   }
 
   /**
+   * Get a workspace.
+   *
+   * @param workspaceId terra workspace id
+   * @param minimumHighestRole require that user has minimum role on workspace, or null for any role
+   * @param accessToken user access token
+   * @return WSM Workspace description
+   * @throws ForbiddenException if minimumHighestRole is not null and user does not have at least
+   *     minimumHighestRole role on workspace
+   */
+  public WorkspaceDescription getWorkspace(
+      UUID workspaceId, @Nullable IamRole minimumHighestRole, String accessToken) {
+    try {
+      return new WorkspaceApi(getApiClient(accessToken))
+          .getWorkspace(workspaceId, minimumHighestRole);
+    } catch (ApiException apiException) {
+      throw new ForbiddenException("Unable to access workspace %s.".formatted(workspaceId));
+    }
+  }
+
+  /**
    * Get a resource from a workspace.
    *
-   * @param accessToken user access token
    * @param workspaceId terra workspace id
    * @param resourceId terra resource id
+   * @param accessToken user access token
    * @return WSM resource description
    * @throws NotFoundException if workspace or resource does not exist
    */
-  public ResourceDescription getResource(String accessToken, UUID workspaceId, UUID resourceId) {
+  public ResourceDescription getResource(UUID workspaceId, UUID resourceId, String accessToken) {
     try {
       return new ResourceApi(getApiClient(accessToken)).getResource(workspaceId, resourceId);
     } catch (ApiException apiException) {
@@ -89,16 +109,6 @@ public class WorkspaceManagerService {
   public IamRole getHighestRole(
       UUID workspaceId, @Nullable IamRole minimumHighestRole, String accessToken) {
     return getWorkspace(workspaceId, minimumHighestRole, accessToken).getHighestRole();
-  }
-
-  public WorkspaceDescription getWorkspace(
-      UUID workspaceId, IamRole minimumHighestRole, String accessToken) {
-    try {
-      return new WorkspaceApi(getApiClient(accessToken))
-          .getWorkspace(workspaceId, minimumHighestRole);
-    } catch (ApiException apiException) {
-      throw new ForbiddenException("Unable to access workspace %s.".formatted(workspaceId));
-    }
   }
 
   public void checkWorkspaceReadAccess(UUID workspaceId, String accessToken) {

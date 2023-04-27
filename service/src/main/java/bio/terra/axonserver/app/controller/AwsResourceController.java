@@ -66,7 +66,7 @@ public class AwsResourceController extends ControllerBase implements AwsResource
 
     String accessToken = getAccessToken();
     ResourceDescription resourceDescription =
-        wsmService.getResource(accessToken, workspaceId, resourceId);
+        wsmService.getResource(workspaceId, resourceId, accessToken);
 
     AwsCredentialAccessScope accessScope =
         WorkspaceManagerService.inferAwsCredentialAccessScope(
