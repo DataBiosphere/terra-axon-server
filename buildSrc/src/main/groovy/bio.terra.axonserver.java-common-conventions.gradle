@@ -54,10 +54,6 @@ dependencies {
     configurations.all {
         exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
     }
-
-    configurations.jacocoAnt {
-        exclude group: 'org.ow2.asm'
-    }
 }
 
 tasks.named('test') {

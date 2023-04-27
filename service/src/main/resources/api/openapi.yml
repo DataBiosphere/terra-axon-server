@@ -148,19 +148,27 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
-  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/consoleLink:
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/consoleUrl:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: |
-        Gets a signed URL providing a view of the AWS console with access limited to the user's
-        permissions on a single resource based on the access scope of the passed credential.
+        Gets a signed URL providing a view of a single resource in the AWS console with access 
+        limited to the user's workspace-level permissions.
       operationId: getSignedConsoleUrl
       tags: [AwsResource]
       responses:
         "200":
           $ref: "#/components/responses/SignedUrlResultResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
         "501":
           $ref: "#/components/responses/NotImplemented"
 
