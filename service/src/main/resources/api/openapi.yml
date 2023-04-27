@@ -494,7 +494,9 @@ components:
             items:
               $ref: "#/components/schemas/CallMetadata"
         failures:
-          $ref: '#/components/schemas/FailureMessage'
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureMessage'
 
     CallMetadata:
       description: Call level metadata
@@ -523,7 +525,9 @@ components:
           type: string
           description: Backend-specific job ID
         failures:
-          $ref: '#/components/schemas/FailureMessage'
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureMessage'
         returnCode:
           type: integer
           description: Call execution return code
@@ -539,16 +543,15 @@ components:
 
     FailureMessage:
       description: Failure messages
-      required: [failure, timestamp]
       type: object
       properties:
-        failure:
+        causedBy:
+          type: array
+          items:
+            $ref: "#/components/schemas/FailureMessage"
+        message:
           type: string
-          description: The failure message
-        timestamp:
-          type: string
-          format: date-time
-          description: The at which this failure occurred
+          description: The error message.
 
     WorkflowQueryResponse:
       description: Response to a workflow query

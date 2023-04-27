@@ -214,7 +214,7 @@ public class CromwellWorkflowService {
                                             .start(m.getStart())
                                             .end(m.getEnd())
                                             .jobId(m.getJobId())
-                                            .failures(toApiFailureMessage(m.getFailures()))
+                                            .failures(toApiFailureMessageList(m.getFailures()))
                                             .returnCode(m.getReturnCode())
                                             .stdout(m.getStdout())
                                             .stderr(m.getStderr())
@@ -230,15 +230,20 @@ public class CromwellWorkflowService {
         .inputs(metadataResponse.getInputs())
         .outputs(metadataResponse.getOutputs())
         .calls(callMetadataMap)
-        .failures(toApiFailureMessage(metadataResponse.getFailures()));
+        .failures(toApiFailureMessageList(metadataResponse.getFailures()));
   }
 
-  private static ApiFailureMessage toApiFailureMessage(CromwellApiFailureMessage failureMessage) {
+  private static List<ApiFailureMessage> toApiFailureMessageList(
+      List<CromwellApiFailureMessage> failureMessage) {
     if (failureMessage == null) {
       return null;
     }
-    return new ApiFailureMessage()
-        .failure(failureMessage.getFailure())
-        .timestamp(failureMessage.getTimestamp());
+    return failureMessage.stream()
+        .map(
+            failure ->
+                new ApiFailureMessage()
+                    .message(failure.getMessage())
+                    .causedBy(toApiFailureMessageList(failure.getCausedBy())))
+        .toList();
   }
 }
