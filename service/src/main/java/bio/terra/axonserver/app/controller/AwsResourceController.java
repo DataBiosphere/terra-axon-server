@@ -11,6 +11,7 @@ import bio.terra.common.exception.NotFoundException;
 import bio.terra.common.iam.BearerTokenFactory;
 import bio.terra.workspace.model.AwsCredential;
 import bio.terra.workspace.model.AwsCredentialAccessScope;
+import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
 import java.net.URL;
 import java.util.UUID;
@@ -69,14 +70,14 @@ public class AwsResourceController extends ControllerBase implements AwsResource
 
     AwsCredentialAccessScope accessScope =
         WorkspaceManagerService.inferAwsCredentialAccessScope(
-            wsmService.getHighestRole(accessToken, workspaceId));
+            wsmService.getHighestRole(workspaceId, IamRole.READER, accessToken));
 
     AwsCredential awsCredential =
         wsmService.getAwsResourceCredential(
-            accessToken,
             resourceDescription,
             accessScope,
-            WorkspaceManagerService.AWS_RESOURCE_CREDENTIAL_DURATION_MIN);
+            WorkspaceManagerService.AWS_RESOURCE_CREDENTIAL_DURATION_MIN,
+            accessToken);
 
     URL signedConsoleUrl =
         awsService.createSignedConsoleUrl(

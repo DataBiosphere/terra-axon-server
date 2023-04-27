@@ -69,7 +69,7 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
         InvalidResourceTypeException.class,
         () ->
             workspaceManagerService.getAwsResourceCredential(
-                fakeAccessToken, mockResourceDescription, accessScope, duration));
+                mockResourceDescription, accessScope, duration, fakeAccessToken));
   }
 
   @Test
@@ -91,7 +91,7 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
 
     AwsCredential outCredential =
         wsmServiceSpy.getAwsResourceCredential(
-            fakeAccessToken, mockResourceDescription, accessScope, duration);
+            mockResourceDescription, accessScope, duration, fakeAccessToken);
     assertEquals(mockAwsCredential, outCredential);
 
     ArgumentCaptor<String> tokenArgumentCaptor = ArgumentCaptor.forClass(String.class);
@@ -103,11 +103,11 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
 
     Mockito.verify(wsmServiceSpy)
         .getAwsS3StorageFolderCredential(
-            tokenArgumentCaptor.capture(),
             workspaceArgumentCaptor.capture(),
             resourceArgumentCaptor.capture(),
             accessScopeArgumentCaptor.capture(),
-            durationArgumentCaptor.capture());
+            durationArgumentCaptor.capture(),
+            tokenArgumentCaptor.capture());
 
     assertEquals(fakeAccessToken, tokenArgumentCaptor.getValue());
     assertEquals(fakeWorkspaceId, workspaceArgumentCaptor.getValue());

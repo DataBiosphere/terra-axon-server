@@ -1,7 +1,6 @@
 package bio.terra.axonserver.service.wsm;
 
 import bio.terra.axonserver.app.configuration.WsmConfiguration;
-import bio.terra.common.exception.ForbiddenException;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.common.exception.ForbiddenException;
 import bio.terra.workspace.api.ControlledAwsResourceApi;
@@ -14,7 +13,6 @@ import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.GcpContext;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
-import bio.terra.workspace.model.WorkspaceDescription;
 import bio.terra.workspace.model.ResourceMetadata;
 import bio.terra.workspace.model.WorkspaceDescription;
 import com.google.common.annotations.VisibleForTesting;
@@ -46,16 +44,6 @@ public class WorkspaceManagerService {
 
   private ApiClient getApiClient() {
     return new ApiClient().setBasePath(wsmConfig.basePath());
-  }
-
-  private WorkspaceDescription getWorkspace(
-      String accessToken, UUID workspaceId, @Nullable IamRole minimumHighestRole) {
-    try {
-      return new WorkspaceApi(getApiClient(accessToken))
-          .getWorkspace(workspaceId, minimumHighestRole);
-    } catch (ApiException e) {
-      throw new NotFoundException("Unable to access workspace " + workspaceId + ".");
-    }
   }
 
   /**
@@ -90,28 +78,17 @@ public class WorkspaceManagerService {
   /**
    * Get the highest IAM role on a workspace for a given user.
    *
-   * @param accessToken user access token
    * @param workspaceId terra workspace ID
+   * @param minimumHighestRole require that user has minimum role on workspace, or null for any role
+   * @param accessToken user access token
    * @return Highest IAM role of the user on the workspace
    * @throws NotFoundException if workspace does not exist or user does not have access to workspace
+   * @throws ForbiddenException if minimumHighestRole is not null and user does not have at least
+   *     minimumHighestRole role on workspace
    */
-  public IamRole getHighestRole(String accessToken, UUID workspaceId) {
-    return getWorkspace(workspaceId, null, accessToken).getHighestRole();
-  }
-
-  @VisibleForTesting
-  public AwsCredential getAwsS3StorageFolderCredential(
-      String accessToken,
-      UUID workspaceId,
-      UUID resourceId,
-      AwsCredentialAccessScope accessScope,
-      Integer duration) {
-    try {
-      return new ControlledAwsResourceApi(getApiClient(accessToken))
-          .getAwsS3StorageFolderCredential(workspaceId, resourceId, accessScope, duration);
-    } catch (ApiException e) {
-      throw new NotFoundException("Unable to access workspace or resource.");
-    }
+  public IamRole getHighestRole(
+      UUID workspaceId, @Nullable IamRole minimumHighestRole, String accessToken) {
+    return getWorkspace(workspaceId, minimumHighestRole, accessToken).getHighestRole();
   }
 
   public WorkspaceDescription getWorkspace(
@@ -126,6 +103,21 @@ public class WorkspaceManagerService {
 
   public void checkWorkspaceReadAccess(UUID workspaceId, String accessToken) {
     getWorkspace(workspaceId, IamRole.READER, accessToken);
+  }
+
+  @VisibleForTesting
+  public AwsCredential getAwsS3StorageFolderCredential(
+      UUID workspaceId,
+      UUID resourceId,
+      AwsCredentialAccessScope accessScope,
+      Integer duration,
+      String accessToken) {
+    try {
+      return new ControlledAwsResourceApi(getApiClient(accessToken))
+          .getAwsS3StorageFolderCredential(workspaceId, resourceId, accessScope, duration);
+    } catch (ApiException e) {
+      throw new NotFoundException("Unable to access workspace or resource.");
+    }
   }
 
   /**
@@ -153,29 +145,29 @@ public class WorkspaceManagerService {
   /**
    * Request a temporary credential that provides access to an AWS controlled resource.
    *
-   * @param accessToken user access token
    * @param resourceDescription description of resource to request credential for
    * @param accessScope access scope to request
    * @param duration requested lifetime duration for credeential in seconds (between {@link
    *     WorkspaceManagerService#AWS_RESOURCE_CREDENTIAL_DURATION_MIN} and {@link
    *     WorkspaceManagerService#AWS_RESOURCE_CREDENTIAL_DURATION_MAX} (inclusive)
+   * @param accessToken user access token
    * @return a temporary credential
    * @throws InvalidResourceTypeException if resource is not a supported AWS resource type
    * @throws NotFoundException if workspace does not exist or user does not have access to workspace
    */
   public AwsCredential getAwsResourceCredential(
-      String accessToken,
       ResourceDescription resourceDescription,
       AwsCredentialAccessScope accessScope,
-      Integer duration) {
+      Integer duration,
+      String accessToken) {
     ResourceMetadata resourceMetadata = resourceDescription.getMetadata();
     return switch (resourceMetadata.getResourceType()) {
       case AWS_S3_STORAGE_FOLDER -> getAwsS3StorageFolderCredential(
-          accessToken,
           resourceMetadata.getWorkspaceId(),
           resourceMetadata.getResourceId(),
           accessScope,
-          duration);
+          duration,
+          accessToken);
       default -> throw new InvalidResourceTypeException(
           String.format(
               "Resource type %s not supported", resourceMetadata.getResourceType().toString()));

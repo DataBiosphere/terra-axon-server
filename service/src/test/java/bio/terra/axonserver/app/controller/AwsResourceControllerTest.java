@@ -68,7 +68,8 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     // highest role.
 
     IamRole iamRole = IamRole.WRITER;
-    Mockito.when(wsmService.getHighestRole(fakeToken, workspaceId)).thenReturn(iamRole);
+    Mockito.when(wsmService.getHighestRole(workspaceId, IamRole.READER, fakeToken))
+        .thenReturn(iamRole);
 
     // Expect the provided fake token, mock resource, cannd IAM role, and any duration will be
     // passed to getAwsResourceCredential and return a mocked credential.  We will verify passed
@@ -77,10 +78,10 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     AwsCredential mockCredential = mock(AwsCredential.class);
     Mockito.when(
             wsmService.getAwsResourceCredential(
-                eq(fakeToken),
                 eq(mockResourceDescription),
                 eq(WorkspaceManagerService.inferAwsCredentialAccessScope(iamRole)),
-                any()))
+                any(),
+                eq(fakeToken)))
         .thenReturn(mockCredential);
 
     URL fakeUrl = new URL("https://example.com");
@@ -113,7 +114,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     // Verify that credential duration requested from WSM was within range.
 
     verify(wsmService)
-        .getAwsResourceCredential(any(), any(), any(), integerArgumentCaptor.capture());
+        .getAwsResourceCredential(any(), any(), integerArgumentCaptor.capture(), any());
 
     assertThat(
         integerArgumentCaptor.getValue(),
@@ -171,13 +172,14 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     IamRole highestRole = IamRole.WRITER;
     Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
         .thenReturn(mockResourceDescription);
-    Mockito.when(wsmService.getHighestRole(fakeToken, workspaceId)).thenReturn(highestRole);
+    Mockito.when(wsmService.getHighestRole(workspaceId, IamRole.READER, fakeToken))
+        .thenReturn(highestRole);
     Mockito.when(
             wsmService.getAwsResourceCredential(
-                eq(fakeToken),
                 eq(mockResourceDescription),
                 eq(WorkspaceManagerService.inferAwsCredentialAccessScope(highestRole)),
-                any()))
+                any(),
+                eq(fakeToken)))
         .thenThrow(new InvalidResourceTypeException("invalid resource type"));
 
     mockMvc
@@ -194,7 +196,8 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     IamRole highestRole = IamRole.DISCOVERER;
     Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
         .thenReturn(mockResourceDescription);
-    Mockito.when(wsmService.getHighestRole(fakeToken, workspaceId)).thenReturn(highestRole);
+    Mockito.when(wsmService.getHighestRole(workspaceId, IamRole.READER, fakeToken))
+        .thenReturn(highestRole);
 
     mockMvc
         .perform(get(path).header("Authorization", String.format("bearer %s", fakeToken)))
