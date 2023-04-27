@@ -43,6 +43,10 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
         ForbiddenException.class,
         () -> WorkspaceManagerService.inferAwsCredentialAccessScope(IamRole.DISCOVERER));
 
+    assertThrows(
+        ForbiddenException.class,
+        () -> WorkspaceManagerService.inferAwsCredentialAccessScope(IamRole.APPLICATION));
+
     assertEquals(
         AwsCredentialAccessScope.READ_ONLY,
         WorkspaceManagerService.inferAwsCredentialAccessScope(IamRole.READER));
@@ -54,10 +58,6 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
     assertEquals(
         AwsCredentialAccessScope.WRITE_READ,
         WorkspaceManagerService.inferAwsCredentialAccessScope(IamRole.OWNER));
-
-    assertEquals(
-        AwsCredentialAccessScope.WRITE_READ,
-        WorkspaceManagerService.inferAwsCredentialAccessScope(IamRole.APPLICATION));
   }
 
   @Test

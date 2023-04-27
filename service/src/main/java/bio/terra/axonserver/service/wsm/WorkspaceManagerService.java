@@ -139,7 +139,9 @@ public class WorkspaceManagerService {
    */
   public static AwsCredentialAccessScope inferAwsCredentialAccessScope(
       @Nullable IamRole highestRole) {
-    if (highestRole == null || highestRole.equals(IamRole.DISCOVERER)) {
+    if (highestRole == null
+        || highestRole.equals(IamRole.DISCOVERER)
+        || highestRole.equals(IamRole.APPLICATION)) {
       throw new ForbiddenException("User has insufficient workspace permissions");
     }
 
