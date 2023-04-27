@@ -61,7 +61,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
 
     // Expect the provided fake token will be passed to getResource, and return our mocked resource.
 
-    Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
+    Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenReturn(mockResourceDescription);
 
     // Expect the provided fake token and WS ID will be passed to getHighestRole, return a canned
@@ -146,7 +146,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void getSignedConsoleUrl_resourceNotFound() throws Exception {
     Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
-    Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
+    Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenThrow(new NotFoundException("not found"));
     mockMvc
         .perform(get(path).header("Authorization", String.format("bearer %s", fakeToken)))
@@ -156,7 +156,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void getSignedConsoleUrl_internalError() throws Exception {
     Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
-    Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
+    Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenThrow(new InternalServerErrorException("internal error"));
     mockMvc
         .perform(get(path).header("Authorization", String.format("bearer %s", fakeToken)))
@@ -170,7 +170,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     ResourceDescription mockResourceDescription = mock(ResourceDescription.class);
 
     IamRole highestRole = IamRole.WRITER;
-    Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
+    Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenReturn(mockResourceDescription);
     Mockito.when(wsmService.getHighestRole(workspaceId, IamRole.READER, fakeToken))
         .thenReturn(highestRole);
@@ -194,7 +194,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     ResourceDescription mockResourceDescription = mock(ResourceDescription.class);
 
     IamRole highestRole = IamRole.DISCOVERER;
-    Mockito.when(wsmService.getResource(fakeToken, workspaceId, resourceId))
+    Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenReturn(mockResourceDescription);
     Mockito.when(wsmService.getHighestRole(workspaceId, IamRole.READER, fakeToken))
         .thenReturn(highestRole);

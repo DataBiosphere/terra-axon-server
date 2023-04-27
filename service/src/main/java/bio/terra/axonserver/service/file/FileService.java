@@ -68,7 +68,7 @@ public class FileService {
       @Nullable HttpRange byteRange) {
 
     ResourceDescription resource =
-        wsmService.getResource(token.getToken(), workspaceId, resourceId);
+        wsmService.getResource(workspaceId, resourceId, token.getToken());
 
     FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
     InputStream fileStream = fileWithName.fileStream;
