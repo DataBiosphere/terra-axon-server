@@ -73,9 +73,27 @@ swaggerSources {
     // generate cromwell java openapi client from modified version of https://raw.githubusercontent.com/broadinstitute/cromwell/83/engine/src/main/resources/swagger/cromwell.yaml
     // Diff from source:
     /*
-962a963
+962a963,981
+>       # Added submittedFiles yml spec - (PF-2651).
+>       submittedFiles:
+>         type: object
+>         properties:
+>           workflow:
+>             type: string
+>           options:
+>             type: string
+>           inputs:
+>             type: string
+>           workflowType:
+>             type: string
+>           root:
+>             type: string
+>           workflowUrl:
+>             type: string
+>           labels:
+>             type: string
 >       # Fixed call metadata yml specification - (PF-2651)
-964c965,969
+964c983,987
 <         $ref: '#/definitions/CallMetadata'
 ---
 >         type: object
@@ -83,19 +101,54 @@ swaggerSources {
 >           type: array
 >           items:
 >             $ref: "#/definitions/CallMetadata"
-1400a1406,1410
->       # Fixed label response in query result - (PF-2672)
->       labels:
->         type: object
->         additionalProperties:
->           type: string
-1433a1444
->   # Fixed label response yml specification - (PF-2651)
-1434a1446
+966c989,991
+<         $ref: '#/definitions/FailureMessage'
+---
+>         type: array
+>         items:
+>           $ref: '#/definitions/FailureMessages'
+997c1022,1024
+<         $ref: '#/definitions/FailureMessage'
+---
+>         type: array
+>         items:
+>           $ref: '#/definitions/FailureMessages'
+1000a1028,1029
+>       callRoot:
+>         type: string
+1010c1039
+<   FailureMessage:
+---
+>   FailureMessages:
+1012,1014c1041
+<     required:
+<       - failure
+<       - timestamp
+---
 >     type: object
-1442d1453
+1016,1019c1043,1047
+<       failure:
+<         type: string
+<         description: The failure message
+<       timestamp:
+---
+>       causedBy:
+>         type: array
+>         items:
+>           $ref: "#/definitions/FailureMessages"
+>       message:
+1021,1022c1049
+<         format: date-time
+<         description: The time at which this failure occurred
+---
+>         description: The error message.
+1433a1461
+>   # Fixed label response yml specification - (PF-2651)
+1434a1463
+>     type: object
+1442d1470
 <         example: label-key-1
-1444,1446c1455,1458
+1444,1446c1472,1475
 <         type: string
 <         description: The labels which have been updated
 <         example: label-value-1
@@ -104,7 +157,6 @@ swaggerSources {
 >         additionalProperties:
 >           type: string
 >
-
      */
     cromwell {
         inputFile = file('../service/src/main/resources/api/cromwell-openapi.yaml')
