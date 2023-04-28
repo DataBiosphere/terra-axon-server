@@ -14,11 +14,16 @@ import bio.terra.axonserver.testutils.MockMvcUtils;
 import bio.terra.common.exception.ForbiddenException;
 import bio.terra.common.iam.BearerToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.client.model.CromwellApiCallMetadata;
+import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
+import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResult;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
@@ -151,6 +156,39 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .validateWorkspaceAccessAndWorkflowLabelMatches(
             workflowId, workspaceId, USER_REQUEST.getToken());
 
+    // Verify callRoot is returned in metadata response.
+    String callRoot = "gs://path/to/root";
+
+    var callMetadata =
+        Arrays.asList(
+            new CromwellApiCallMetadata().callRoot(callRoot).returnCode(0),
+            new CromwellApiCallMetadata().callRoot(callRoot).returnCode(-1));
+
+    // Verify submittedFiles object is returned in response.
+    var submittedFiles =
+        new CromwellApiWorkflowMetadataResponseSubmittedFiles()
+            .workflow("workflow")
+            .options("options")
+            .inputs("inputs")
+            .workflowType("WDL")
+            .root("root")
+            .workflowUrl("url")
+            .labels("{}");
+
+    // Verify failure message is correctly returned.
+    var failureMessage =
+        Collections.singletonList(
+            new CromwellApiFailureMessages()
+                .message("root")
+                .causedBy(
+                    Collections.singletonList(
+                        new CromwellApiFailureMessages()
+                            .message("one level down")
+                            .causedBy(
+                                Collections.singletonList(
+                                    new CromwellApiFailureMessages()
+                                        .message("two levels down"))))));
+
     // Stub the client metadata response.
     Mockito.when(
             cromwellWorkflowService.getMetadata(
@@ -162,12 +200,28 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
             new CromwellApiWorkflowMetadataResponse()
                 .id(workflowId.toString())
                 .status(DEFAULT_WORKFLOW_STATUS)
-                .submission(DEFAULT_WORKFLOW_SUBMISSION_DATE));
+                .submission(DEFAULT_WORKFLOW_SUBMISSION_DATE)
+                .submittedFiles(submittedFiles)
+                .putCallsItem("call-1", callMetadata)
+                .failures(failureMessage));
 
     ApiWorkflowMetadataResponse result = getWorkflowMetadata(USER_REQUEST, workspaceId, workflowId);
     Assertions.assertEquals(result.getId(), workflowId);
     Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
     Assertions.assertEquals(result.getSubmission(), DEFAULT_WORKFLOW_SUBMISSION_DATE);
+
+    Assertions.assertEquals(result.getCalls().get("call-1").get(0).getCallRoot(), callRoot);
+
+    Assertions.assertEquals(submittedFiles.getInputs(), "inputs");
+    Assertions.assertEquals(submittedFiles.getLabels(), "{}");
+    Assertions.assertEquals(submittedFiles.getWorkflow(), "workflow");
+
+    Assertions.assertEquals(failureMessage.get(0).getMessage(), "root");
+    Assertions.assertEquals(
+        failureMessage.get(0).getCausedBy().get(0).getMessage(), "one level down");
+    Assertions.assertEquals(
+        failureMessage.get(0).getCausedBy().get(0).getCausedBy().get(0).getMessage(),
+        "two levels down");
   }
 
   @Test
