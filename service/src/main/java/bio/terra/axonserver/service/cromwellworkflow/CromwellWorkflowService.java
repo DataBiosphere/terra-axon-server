@@ -268,17 +268,15 @@ public class CromwellWorkflowService {
   }
 
   private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
-    if (SystemUtils.IS_OS_UNIX) {
-      FileAttribute<Set<PosixFilePermission>> attr =
-          PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-      return Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
-    } else {
-      File resultFile = Files.createTempFile(filePrefix, fileSuffix).toFile();
+    FileAttribute<Set<PosixFilePermission>> attr =
+        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+    File resultFile = Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
+    if (!SystemUtils.IS_OS_UNIX) {
       resultFile.setReadable(true, true);
       resultFile.setWritable(true, true);
       resultFile.setExecutable(true, true);
-      return resultFile;
     }
+    return resultFile;
   }
 
   private File createTempFileFromInputStream(InputStream inputStream, String tempFilePrefix)
