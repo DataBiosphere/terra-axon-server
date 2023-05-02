@@ -1,5 +1,6 @@
 package bio.terra.axonserver.service.file;
 
+import bio.terra.axonserver.app.configuration.FileConfiguration;
 import bio.terra.axonserver.service.convert.ConvertService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.axonserver.service.iam.SamService;
@@ -32,8 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileService {
 
-  private static final int DEFAULT_SIGNED_URL_EXPIRATION_TIME_IN_MINUTES = 60;
-
+  private final FileConfiguration fileConfig;
   private final SamService samService;
   private final WorkspaceManagerService wsmService;
   private final ConvertService convertService;
@@ -42,7 +42,11 @@ public class FileService {
 
   @Autowired
   public FileService(
-      SamService samService, WorkspaceManagerService wsmService, ConvertService convertService) {
+      FileConfiguration fileConfig,
+      SamService samService,
+      WorkspaceManagerService wsmService,
+      ConvertService convertService) {
+    this.fileConfig = fileConfig;
     this.samService = samService;
     this.wsmService = wsmService;
     this.convertService = convertService;
@@ -116,7 +120,7 @@ public class FileService {
     BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(bucketName, objectName)).build();
     return storage.signUrl(
         blobInfo,
-        DEFAULT_SIGNED_URL_EXPIRATION_TIME_IN_MINUTES,
+        fileConfig.signedUrlExpirationMinutes(),
         TimeUnit.MINUTES,
         Storage.SignUrlOption.withV4Signature());
   }
