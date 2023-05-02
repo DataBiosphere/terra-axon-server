@@ -142,13 +142,19 @@ swaggerSources {
 <         description: The time at which this failure occurred
 ---
 >         description: The error message.
-1433a1461
+1400a1428,1432
+>       # Fixed label response in query result - (PF-2672)
+>       labels:
+>         type: object
+>         additionalProperties:
+>           type: string
+1433a1466
 >   # Fixed label response yml specification - (PF-2651)
-1434a1463
+1434a1468
 >     type: object
-1442d1470
+1442d1475
 <         example: label-key-1
-1444,1446c1472,1475
+1444,1446c1477,1480
 <         type: string
 <         description: The labels which have been updated
 <         example: label-value-1

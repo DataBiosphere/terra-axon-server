@@ -1425,6 +1425,11 @@ definitions:
         type: string
         format: date-time
         description: Workflow end datetime
+      # Fixed label response in query result - (PF-2672)
+      labels:
+        type: object
+        additionalProperties:
+          type: string
   BackendResponse:
     required:
       - supportedBackends
