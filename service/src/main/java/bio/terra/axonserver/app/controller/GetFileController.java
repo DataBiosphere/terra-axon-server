@@ -1,10 +1,14 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GetFileApi;
+import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.service.file.FileService;
+import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.common.exception.ApiException;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLConnection;
 import java.util.List;
@@ -28,12 +32,17 @@ import org.springframework.stereotype.Controller;
 public class GetFileController extends ControllerBase implements GetFileApi {
 
   private final FileService fileService;
+  private final WorkspaceManagerService wsmService;
 
   @Autowired
   public GetFileController(
-      BearerTokenFactory bearerTokenFactory, HttpServletRequest request, FileService fileService) {
+      BearerTokenFactory bearerTokenFactory,
+      HttpServletRequest request,
+      FileService fileService,
+      WorkspaceManagerService wsmService) {
     super(bearerTokenFactory, request);
     this.fileService = fileService;
+    this.wsmService = wsmService;
   }
 
   /**
@@ -89,6 +98,41 @@ public class GetFileController extends ControllerBase implements GetFileApi {
 
     return new ResponseEntity<>(
         new InputStreamResource(resourceObjectStream), resHeaders, resStatus);
+  }
+
+  @Override
+  public ResponseEntity<ApiSignedUrlReport> getSignedUrl(
+      UUID workspaceId, UUID resourceId, String objectName) {
+    BearerToken token = getToken();
+    String accessToken = token.getToken();
+    if (accessToken == null) {
+      throw new BadRequestException("Access token is null. Try refreshing your access.");
+    }
+    String projectId = wsmService.getGcpContext(workspaceId, accessToken).getProjectId();
+    String bucketName;
+    var attributes =
+        wsmService.getResource(workspaceId, resourceId, accessToken).getResourceAttributes();
+    var bucket = attributes.getGcpGcsBucket();
+    if (bucket != null) {
+      bucketName = bucket.getBucketName();
+    } else {
+      var object = attributes.getGcpGcsObject();
+      if (object != null) {
+        bucketName = object.getBucketName();
+      } else {
+        throw new BadRequestException(String.format("%s is not a GCS resource", resourceId));
+      }
+    }
+    try {
+      String result =
+          fileService
+              .generateV4GetObjectSignedUrl(token, projectId, bucketName, objectName)
+              .toString();
+      ApiSignedUrlReport actualResult = new ApiSignedUrlReport().signedUrl(result);
+      return new ResponseEntity<>(actualResult, HttpStatus.OK);
+    } catch (IOException e) {
+      throw new ApiException(e.getMessage(), e);
+    }
   }
 
   private HttpRange getByteRange() {

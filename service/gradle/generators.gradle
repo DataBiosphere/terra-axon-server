@@ -70,6 +70,119 @@ swaggerSources {
             ]
         }
     }
+    // generate cromwell java openapi client from modified version of https://raw.githubusercontent.com/broadinstitute/cromwell/83/engine/src/main/resources/swagger/cromwell.yaml
+    // Diff from source:
+    /*
+962a963,981
+>       # Added submittedFiles yml spec - (PF-2651).
+>       submittedFiles:
+>         type: object
+>         properties:
+>           workflow:
+>             type: string
+>           options:
+>             type: string
+>           inputs:
+>             type: string
+>           workflowType:
+>             type: string
+>           root:
+>             type: string
+>           workflowUrl:
+>             type: string
+>           labels:
+>             type: string
+>       # Fixed call metadata yml specification - (PF-2651)
+964c983,987
+<         $ref: '#/definitions/CallMetadata'
+---
+>         type: object
+>         additionalProperties:
+>           type: array
+>           items:
+>             $ref: "#/definitions/CallMetadata"
+966c989,991
+<         $ref: '#/definitions/FailureMessage'
+---
+>         type: array
+>         items:
+>           $ref: '#/definitions/FailureMessages'
+997c1022,1024
+<         $ref: '#/definitions/FailureMessage'
+---
+>         type: array
+>         items:
+>           $ref: '#/definitions/FailureMessages'
+1000a1028,1029
+>       callRoot:
+>         type: string
+1010c1039
+<   FailureMessage:
+---
+>   FailureMessages:
+1012,1014c1041
+<     required:
+<       - failure
+<       - timestamp
+---
+>     type: object
+1016,1019c1043,1047
+<       failure:
+<         type: string
+<         description: The failure message
+<       timestamp:
+---
+>       causedBy:
+>         type: array
+>         items:
+>           $ref: "#/definitions/FailureMessages"
+>       message:
+1021,1022c1049
+<         format: date-time
+<         description: The time at which this failure occurred
+---
+>         description: The error message.
+1400a1428,1432
+>       # Fixed label response in query result - (PF-2672)
+>       labels:
+>         type: object
+>         additionalProperties:
+>           type: string
+1433a1466
+>   # Fixed label response yml specification - (PF-2651)
+1434a1468
+>     type: object
+1442d1475
+<         example: label-key-1
+1444,1446c1477,1480
+<         type: string
+<         description: The labels which have been updated
+<         example: label-value-1
+---
+>         type: object
+>         additionalProperties:
+>           type: string
+>
+     */
+    cromwell {
+        inputFile = file('../service/src/main/resources/api/cromwell-openapi.yaml')
+        code {
+            language = 'java'
+            library = 'jersey2'
+            components = [
+                    apiDocs  : false, apiTests: false,
+                    modelDocs: false, modelTests: false
+            ]
+            additionalProperties = [
+                    apiPackage    : "${artifactGroup}.cromwell.api",
+                    invokerPackage: "${artifactGroup}.cromwell.client",
+                    dateLibrary   : 'java11',
+                    java8         : true,
+                    errorOnUnknownEnums: 'true',
+                    modelNamePrefix    : 'CromwellApi'
+            ]
+        }
+    }
 }
 
 // https://github.com/int128/gradle-swagger-generator-plugin/issues/221
@@ -79,6 +192,7 @@ swaggerSources.all {
 
 sourceSets.main.java.srcDir "${buildDir}/swagger-code-axonserver/src/main/java"
 sourceSets.main.java.srcDir "${buildDir}/swagger-code-calhoun/src/main/java"
+sourceSets.main.java.srcDir "${buildDir}/swagger-code-cromwell/src/main/java"
 
 generateSwaggerCodeCalhoun.dependsOn downloadCalhounSwagger
 spotlessJava.dependsOn generateSwaggerCode

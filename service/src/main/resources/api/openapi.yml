@@ -156,12 +156,246 @@ paths:
         Generates a signed URL with read-access to the GCS object from the corresponding bucket in WSM.
         These are generated using V4 signatures.
       operationId: getSignedUrl
-      tags: [ SignedUrl ]
+      tags: [GetFile]
       responses:
         "200":
           $ref: "#/components/responses/SignedUrlResultResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/consoleUrl:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: |
+        Gets a signed URL providing a view of a single resource in the AWS console with access 
+        limited to the user's workspace-level permissions.
+      operationId: getSignedConsoleUrl
+      tags: [AwsResource]
+      responses:
+        "200":
+          $ref: "#/components/responses/SignedUrlResultResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  # Cromwell paths.
+  /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/status:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: '#/components/parameters/WorkflowId'
+    get:
+      summary: |
+        Retrieves the current state for a workflow
+      operationId: getWorkflowStatus
+      tags: [ CromwellWorkflow ]
+      responses:
+        "200":
+          $ref: "#/components/responses/WorkflowStatusResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/labels:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: '#/components/parameters/WorkflowId'
+    get:
+      summary: |
+        Retrieves the current state for a workflow
+      operationId: getWorkflowLabels
+      tags: [ CromwellWorkflow ]
+      responses:
+        "200":
+          description: Workflow labels.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowIdAndLabel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/metadata:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: '#/components/parameters/WorkflowId'
+      - name: includeKey
+        description: >
+          When specified, filters metadata to only return fields with names which begins with this value.
+          This key is used relative to the root of the response *and* relative to each call's metadata fields.
+        required: false
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+        in: query
+      - name: excludeKey
+        description: >
+          When specified, filters metadata to not return any field with a name which begins with this value.
+          This key is used relative to the root of the response *and* relative to each call's metadata fields.
+          Use 'calls' to filter out all call level metadata.
+        required: false
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+        in: query
+      - name: expandSubWorkflows
+        description: >
+          When true, metadata for sub workflows will be fetched and inserted automatically in the metadata response.
+        required: false
+        schema:
+          type: boolean
+        in: query
+    get:
+      summary: |
+        Get workflow and call-level metadata for a specified workflow.
+      operationId: getWorkflowMetadata
+      tags: [ CromwellWorkflow ]
+      responses:
+        "200":
+          description: Status of workflow run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowMetadataResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
+  /api/workspaces/{workspaceId}/cromwell/workflows/query:
+    parameters:
+      - $ref: '#/components/parameters/WorkspaceId'
+      - name: submission
+        required: false
+        schema:
+          type: string
+          format: date-time
+        in: query
+        description: >
+          Returns only workflows with an equal or later submission time. Can be specified at most once. If both submission time and start date are
+          specified, submission time should be before or equal to start date.
+      - name: start
+        required: false
+        schema:
+          type: string
+          format: date-time
+        in: query
+        description: >
+          Returns only workflows with an equal or later start datetime.  Can be specified at most once.
+          If both start and end date are specified, start date must be before or equal to end date.
+      - name: end
+        required: false
+        schema:
+          type: string
+          format: date-time
+        in: query
+        description: >
+          Returns only workflows with an equal or earlier end datetime.  Can be specified at most once.
+          If both start and end date are specified, start date must be before or equal to end date.
+      - name: status
+        required: false
+        in: query
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+              - Submitted
+              - Running
+              - Aborting
+              - Failed
+              - Succeeded
+              - Aborted
+        description: >
+          Returns only workflows with the specified status.  If specified multiple times,
+          returns workflows in any of the specified statuses.
+      - name: name
+        required: false
+        in: query
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+            pattern: ^[a-zA-Z][a-zA-Z0-9_]*$
+        description: >
+          Returns only workflows with the specified name.  If specified multiple times,
+          returns workflows with any of the specified names.
+      - name: id
+        required: false
+        in: query
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+            pattern: ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$
+        description: >
+          Returns only workflows with the specified workflow id.  If specified multiple times,
+          returns workflows with any of the specified workflow ids.
+      - name: additionalQueryResultFields
+        required: false
+        in: query
+        style: form
+        schema:
+          type: array
+          items:
+            type: string
+        description: >
+          Currently only 'labels' is a valid value here. Use it to include a list of labels with each result.
+      - name: includeSubworkflows
+        required: false
+        schema:
+          type: boolean
+          format: boolean
+        in: query
+        description: Include subworkflows in results. By default, it is taken as true.
+    get:
+      operationId: getWorkflowQuery
+      summary: Get workflows matching some criteria
+      description: Query for workflows which match various criteria. When a combination of criteria are applied the endpoint will return
+      tags: [CromwellWorkflow]
+      responses:
+        "200":
+          description: Response to workflow query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowQueryResponse'
         "403":
           $ref: "#/components/responses/PermissionDenied"
         "404":
@@ -234,6 +468,193 @@ components:
           type: string
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
 
+    WorkflowIdAndStatus:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          $ref: '#/components/schemas/WorkflowId'
+        status:
+          $ref: '#/components/schemas/WorkflowStatus'
+
+    WorkflowStatus:
+      type: string
+      description: The status of the workflow.
+
+    WorkflowId:
+      type: string
+      format: uuid
+      description: The identifier of the workflow
+
+    WorkflowIdAndLabel:
+      type: object
+      required: [id, labels]
+      properties:
+        id:
+          $ref: '#/components/schemas/WorkflowId'
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
+    WorkflowMetadataResponse:
+      description: Workflow and call level metadata.
+      required: [id, status, submission]
+      properties:
+        id:
+          $ref: '#/components/schemas/WorkflowId'
+        status:
+          $ref: '#/components/schemas/WorkflowStatus'
+        submission:
+          type: string
+          format: date-time
+          description: Submission datetime of the workflow in ISO 8601 format with milliseconds
+        start:
+          type: string
+          format: date-time
+          description: Start datetime of the workflow in ISO 8601 format with milliseconds
+        end:
+          type: string
+          format: date-time
+          description: End datetime of the workflow in ISO 8601 format with milliseconds
+        inputs:
+          type: object
+          description: Map of input keys to input values
+        outputs:
+          type: object
+          description: Map of output keys to output values
+        submittedFiles:
+          type: object
+          properties:
+            workflow:
+              type: string
+            options:
+              type: string
+            inputs:
+              type: string
+            workflowType:
+              type: string
+            root:
+              type: string
+            workflowUrl:
+              type: string
+            labels:
+              type: string
+        calls:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/CallMetadata"
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureMessages'
+
+    CallMetadata:
+      description: Call level metadata
+      properties:
+        inputs:
+          type: object
+          description: Mapping of input fully qualified names to stringified values
+        executionStatus:
+          type: string
+          description: Status in Cromwell execution terms.
+        backend:
+          type: string
+          description: The type of backend on which the call executed (e.g. JES, SGE, Local)
+        backendStatus:
+          type: string
+          description: Status in backend-specific terms.  Currently this will only be defined for the JES backend.
+        start:
+          type: string
+          format: date-time
+          description: Start datetime of the call execution in ISO8601 format with milliseconds
+        end:
+          type: string
+          format: date-time
+          description: End datetime of the call execution in ISO8601 format with milliseconds
+        jobId:
+          type: string
+          description: Backend-specific job ID
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/FailureMessages'
+        returnCode:
+          type: integer
+          description: Call execution return code
+        callRoot:
+          type: string
+        stdout:
+          type: string
+          description: Path to the standard output file for this call
+        stderr:
+          type: string
+          description: Path to the standard error file for this call
+        backendLogs:
+          type: object
+          description: Paths to backend specific logs for this call
+
+    FailureMessages:
+      description: Failure messages
+      type: object
+      properties:
+        causedBy:
+          type: array
+          items:
+            $ref: "#/components/schemas/FailureMessages"
+        message:
+          type: string
+          description: The error message.
+
+    WorkflowQueryResponse:
+      description: Response to a workflow query
+      required: [results, totalResultsCount]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowQueryResult'
+        totalResultsCount:
+          type: integer
+
+    WorkflowQueryResult:
+      description: Result for an individual workflow returned by a workflow query
+      required:
+        - id
+        - name
+        - status
+      properties:
+        id:
+          type: string
+          description: Workflow ID
+        name:
+          type: string
+          description: Workflow name
+        status:
+          type: string
+          description: Workflow status
+        submission:
+          type: string
+          format: date-time
+          description: Workflow submission datetime
+        metadataArchiveStatus:
+          type: string
+          description: Status in metadata archives
+        start:
+          type: string
+          format: date-time
+          description: Workflow start datetime
+        end:
+          type: string
+          format: date-time
+          description: Workflow end datetime
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+
   responses:
     BadRequest:
       description: Bad request
@@ -251,6 +672,13 @@ components:
 
     NotFound:
       description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorReport"
+
+    NotImplemented:
+      description: Not implemented
       content:
         application/json:
           schema:
@@ -291,6 +719,14 @@ components:
           schema:
             $ref: "#/components/schemas/TokenReport"
 
+    WorkflowStatusResponse:
+      description: Status of workflow run.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WorkflowIdAndStatus'
+
+
   parameters:
     ResourceId:
       name: resourceId
@@ -309,6 +745,14 @@ components:
       schema:
         type: string
         format: uuid
+
+    WorkflowId:
+      name: workflowId
+      in: path
+      description: A UUID used to identify the workflow submission ID.
+      required: true
+      schema:
+        $ref: '#/components/schemas/WorkflowId'
 
     ObjectPath:
       name: objectPath

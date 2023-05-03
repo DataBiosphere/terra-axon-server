@@ -18,13 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpRange;
-import org.springframework.util.unit.DataSize;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageUtils {
-
-  private static final int MAX_OBJECT_SIZE = (int) DataSize.ofMegabytes(512).toBytes();
-  private static final int MAX_BUFFER_SIZE = (int) DataSize.ofKilobytes(64).toBytes();
 
   // Google pet service account scopes for accessing Google Cloud APIs.
   private static final List<String> PET_SA_SCOPES =

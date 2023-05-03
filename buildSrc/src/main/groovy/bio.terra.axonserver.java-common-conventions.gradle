@@ -54,12 +54,6 @@ dependencies {
     configurations.all {
         exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
     }
-
-    configurations.jacocoAnt {
-        exclude group: 'org.ow2.asm'
-    }
-    implementation files('libs/womtool-81.jar')
-    implementation files('libs/cromwell-81.jar')
 }
 
 tasks.named('test') {
