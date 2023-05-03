@@ -50,6 +50,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'javax.servlet:jstl:1.2'
 
+    // Cromwell dependencies
+    implementation files('libs/womtool-85.jar')
+    implementation files('libs/cromwell-85.jar')
+
     // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
