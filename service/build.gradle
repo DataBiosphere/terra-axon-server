@@ -51,8 +51,8 @@ dependencies {
     implementation 'javax.servlet:jstl:1.2'
 
     // Cromwell dependencies
-    implementation files('libs/womtool-81.jar')
-    implementation files('libs/cromwell-81.jar')
+    implementation files('libs/womtool-85.jar')
+    implementation files('libs/cromwell-85.jar')
 
     // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
