@@ -58,8 +58,6 @@ dependencies {
     configurations.jacocoAnt {
         exclude group: 'org.ow2.asm'
     }
-    implementation files('libs/womtool-81.jar')
-    implementation files('libs/cromwell-81.jar')
 }
 
 tasks.named('test') {
