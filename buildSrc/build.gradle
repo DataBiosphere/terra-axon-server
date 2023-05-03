@@ -20,6 +20,6 @@ dependencies {
     implementation 'bio.terra:terra-test-runner:0.1.5-SNAPSHOT'
     // This is required due to a dependency conflict between jib and srcclr. Removing it will cause jib to fail.
     implementation 'org.apache.commons:commons-compress:1.21'
-    
+
     testImplementation group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.8.8'
 }
