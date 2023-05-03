@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.SystemUtils;
@@ -64,6 +66,7 @@ public class CromwellWorkflowService {
 
   public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
+  Logger logger = Logger.getLogger(getClass().getName());
 
   @Autowired
   public CromwellWorkflowService(
@@ -196,75 +199,86 @@ public class CromwellWorkflowService {
     // Create temp files from JSON of: workflowInputs, workflowOptions, labels, source,
     // and dependencies.
     // - labels and options will be modified before being sent to Cromwell.
-
     File tempInputsFile = null;
-    if (workflowInputs != null) {
-      tempInputsFile = createSafeTempFile("workflow-label-", "-terra");
-      try (OutputStream out = new FileOutputStream(tempInputsFile)) {
-        out.write(workflowInputs.getBytes(StandardCharsets.UTF_8));
-      }
-    }
-
     File tempOptionsFile = createSafeTempFile("workflow-options-", "-terra");
-    // Adjoin preset options for the options file.
-    // Place the project ID + compute SA into the options.
-    String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
-    workflowOptions.put("google_project", projectId);
-    workflowOptions.put(
-        "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
-    workflowOptions.put(
-        "default_runtime_attributes", new AbstractMap.SimpleEntry("docker", "debian:stable-slim"));
-
-    ObjectMapper mapper = new ObjectMapper();
-    try (OutputStream out = new FileOutputStream(tempOptionsFile)) {
-      out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
-    }
-
     File tempLabelsFile = createSafeTempFile("workflow-labels-", "-terra");
-    // Adjoin the workspace-id label to the workflow.
-    JSONObject jsonLabels = labels == null ? new JSONObject() : new JSONObject(labels);
-    jsonLabels.put(WORKSPACE_ID_LABEL_KEY, workspaceId);
-    labels = jsonLabels.toString();
-    try (OutputStream out = new FileOutputStream(tempLabelsFile)) {
-      out.write(labels.getBytes(StandardCharsets.UTF_8));
-    }
-
     File tempWorkflowSourceFile = null;
-    if (workflowGcsUri != null) {
-      InputStream inputStream =
-          fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
-      tempWorkflowSourceFile = createTempFileFromInputStream(inputStream, "workflow-source-");
-    }
-
     File tempWorkflowDependenciesFile = null;
-    if (workflowDependenciesGcsUri != null) {
-      InputStream inputStream =
-          fileService.getFile(token, workspaceId, workflowDependenciesGcsUri, /*convertTo=*/ null);
-      tempWorkflowDependenciesFile =
-          createTempFileFromInputStream(inputStream, "workflow-dependencies-");
+    try {
+
+      // Create inputs file
+      if (workflowInputs != null) {
+        tempInputsFile = createSafeTempFile("workflow-label-", "-terra");
+        try (OutputStream out = new FileOutputStream(tempInputsFile)) {
+          out.write(workflowInputs.getBytes(StandardCharsets.UTF_8));
+        }
+      }
+
+      // Adjoin preset options for the options file.
+      // Place the project ID + compute SA into the options.
+      String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
+      workflowOptions.put("google_project", projectId);
+      workflowOptions.put(
+          "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
+      workflowOptions.put(
+          "default_runtime_attributes",
+          new AbstractMap.SimpleEntry("docker", "debian:stable-slim"));
+
+      ObjectMapper mapper = new ObjectMapper();
+      try (OutputStream out = new FileOutputStream(tempOptionsFile)) {
+        out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
+      }
+
+      // Adjoin the workspace-id label to the workflow.
+      JSONObject jsonLabels = labels == null ? new JSONObject() : new JSONObject(labels);
+      jsonLabels.put(WORKSPACE_ID_LABEL_KEY, workspaceId);
+      labels = jsonLabels.toString();
+      try (OutputStream out = new FileOutputStream(tempLabelsFile)) {
+        out.write(labels.getBytes(StandardCharsets.UTF_8));
+      }
+      if (workflowGcsUri != null) {
+        InputStream inputStream =
+            fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
+        tempWorkflowSourceFile = createTempFileFromInputStream(inputStream, "workflow-source-");
+      }
+
+      // Get dependencies from GCS and create temp file
+      if (workflowDependenciesGcsUri != null) {
+        InputStream inputStream =
+            fileService.getFile(
+                token, workspaceId, workflowDependenciesGcsUri, /*convertTo=*/ null);
+        tempWorkflowDependenciesFile =
+            createTempFileFromInputStream(inputStream, "workflow-dependencies-");
+      }
+
+      // TODO (PF-2650): Write inputs.json + options.json to jes_gcs_root (to leave artifacts in the
+      // bucket). This is not required, but it's useful for logging.
+      return new WorkflowsApi(getApiClient())
+          .submit(
+              CROMWELL_CLIENT_API_VERSION,
+              tempWorkflowSourceFile,
+              workflowUrl,
+              workflowOnHold,
+              tempInputsFile,
+              /*workflowInputs_2=*/ null,
+              /*workflowInputs_3=*/ null,
+              /*workflowInputs_4=*/ null,
+              /*workflowInputs_5=*/ null,
+              tempOptionsFile,
+              workflowType,
+              /*workflowRoot=*/ null,
+              workflowTypeVersion,
+              tempLabelsFile,
+              tempWorkflowDependenciesFile,
+              requestedWorkflowId != null ? requestedWorkflowId.toString() : null);
+    } finally {
+      cleanupTempFiles(
+          tempInputsFile,
+          tempOptionsFile,
+          tempLabelsFile,
+          tempWorkflowSourceFile,
+          tempWorkflowDependenciesFile);
     }
-
-    // TODO (PF-2650): Write inputs.json + options.json to jes_gcs_root (to leave artifacts in the
-    // bucket). This is not required, but it's useful for logging.
-
-    return new WorkflowsApi(getApiClient())
-        .submit(
-            CROMWELL_CLIENT_API_VERSION,
-            tempWorkflowSourceFile,
-            workflowUrl,
-            workflowOnHold,
-            tempInputsFile,
-            /*workflowInputs_2=*/ null,
-            /*workflowInputs_3=*/ null,
-            /*workflowInputs_4=*/ null,
-            /*workflowInputs_5=*/ null,
-            tempOptionsFile,
-            workflowType,
-            /*workflowRoot=*/ null,
-            workflowTypeVersion,
-            tempLabelsFile,
-            tempWorkflowDependenciesFile,
-            requestedWorkflowId != null ? requestedWorkflowId.toString() : null);
   }
 
   private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
@@ -284,6 +298,28 @@ public class CromwellWorkflowService {
     File tempFile = createSafeTempFile(tempFilePrefix, "-terra");
     Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     return tempFile;
+  }
+
+  public void cleanupTempFiles(File... tempFiles) throws IOException {
+
+    for (File tempFile : tempFiles) {
+      if (tempFile != null) {
+        try {
+          boolean deleted = Files.deleteIfExists(Path.of(tempFile.getPath()));
+          if (!deleted) {
+            // Log a warning if the file didn't exist
+            logger.warning("File not found, so not deleted: " + tempFile.getAbsolutePath());
+          }
+        } catch (IOException e) {
+          // Log the error if it failed to delete the file
+          logger.severe(
+              "Failed to delete temporary file: "
+                  + tempFile.getAbsolutePath()
+                  + "\n"
+                  + e.getMessage());
+        }
+      }
+    }
   }
 
   /** Retrieve the labels of a workflow. */
