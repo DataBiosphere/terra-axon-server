@@ -51,8 +51,8 @@ dependencies {
     implementation 'javax.servlet:jstl:1.2'
 
     // Cromwell dependencies
-    implementation group : 'org.broadinstitute', name: 'cromwell_2.13', version: '81'
-    implementation group : 'org.broadinstitute', name: 'womtool_2.13', version: '81'
+    implementation group : 'org.broadinstitute', name: 'cromwell_2.13', version: '85'
+    implementation group : 'org.broadinstitute', name: 'womtool_2.13', version: '85'
 
     // Testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
