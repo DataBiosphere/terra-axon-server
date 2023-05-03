@@ -1,2 +1,0 @@
-*womtool*.jar filter=lfs diff=lfs merge=lfs -text
-*cromwell*.jar filter=lfs diff=lfs merge=lfs -text
