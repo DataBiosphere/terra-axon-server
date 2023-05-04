@@ -382,11 +382,10 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
-  /api/workspaces/{workspaceId}/cromwell/parseInputsAndZip/{resourceId}/{objectPath}:
+  /api/workspaces/{workspaceId}/cromwell/parseInputsAndZip/{gcsPath}:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
-      - $ref: "#/components/parameters/ResourceId"
-      - $ref: "#/components/parameters/ObjectPath"
+      - $ref: "#/components/parameters/GcsPath"
     get:
       summary: |
         todo
@@ -760,6 +759,14 @@ components:
       name: objectPath
       in: path
       description: File path to object
+      required: true
+      schema:
+        type: string
+
+    GcsPath:
+      name: gcsPath
+      in: path
+      description: Full path to an object in GCS
       required: true
       schema:
         type: string

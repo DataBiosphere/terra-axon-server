@@ -165,12 +165,11 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
 
   @Override
   public ResponseEntity<ApiWorkflowParsedInputsResponse> parseInputs(
-      UUID workspaceId, UUID resourceId, String objectPath) {
+      UUID workspaceId, String gcsPath) {
     // Check if the user has access to the workspace.
     wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
 
-    InputStream resourceObjectStream =
-        fileService.getFile(getToken(), workspaceId, resourceId, objectPath, null, null);
+    InputStream resourceObjectStream = fileService.getFile(getToken(), workspaceId, gcsPath, null);
     String tempFilename = UUID.randomUUID().toString() + ".wdl";
     File targetFile = new File(tempFilename);
     try {

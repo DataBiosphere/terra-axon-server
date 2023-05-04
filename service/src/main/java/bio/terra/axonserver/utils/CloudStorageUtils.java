@@ -72,6 +72,9 @@ public class CloudStorageUtils {
       Storage gcs =
           StorageOptions.newBuilder().setCredentials(googleCredentials).build().getService();
       Blob blob = gcs.get(BlobId.of(bucketName, objectName));
+      if (blob == null) {
+        throw new BadRequestException("GCS Object not found: Bad bucketName or objectName.");
+      }
       ReadChannel readChannel = blob.reader();
 
       // Seek to the specified readChannel range if byteRange is provided
