@@ -6,18 +6,33 @@ import bio.terra.axonserver.api.CromwellWorkflowApi;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
+import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import cromwell.core.path.DefaultPath;
+import cromwell.core.path.DefaultPathBuilder;
+import cromwell.core.path.Path;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
@@ -26,10 +41,16 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import scala.util.Try;
+import womtool.WomtoolMain.SuccessfulTermination;
+import womtool.WomtoolMain.Termination;
+import womtool.WomtoolMain.UnsuccessfulTermination;
+import womtool.inputs.Inputs;
 
 @Controller
 public class CromwellWorkflowController extends ControllerBase implements CromwellWorkflowApi {
   private final CromwellWorkflowService cromwellWorkflowService;
+  private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
   @Autowired
@@ -37,9 +58,11 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
       CromwellWorkflowService cromwellWorkflowService,
+      FileService fileService,
       WorkspaceManagerService wsmService) {
     super(bearerTokenFactory, request);
     this.cromwellWorkflowService = cromwellWorkflowService;
+    this.fileService = fileService;
     this.wsmService = wsmService;
   }
 
@@ -137,6 +160,57 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
     } catch (bio.terra.cromwell.client.ApiException e) {
       throw new ApiException(
           "Error querying workflows. %s: %s".formatted(e.getCode(), e.getResponseBody()));
+    }
+  }
+
+  @Override
+  public ResponseEntity<ApiWorkflowParsedInputsResponse> parseInputs(
+      UUID workspaceId, UUID resourceId, String objectPath) {
+    // Check if the user has access to the workspace.
+    wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
+
+    InputStream resourceObjectStream =
+        fileService.getFile(getToken(), workspaceId, resourceId, objectPath, null, null);
+    String tempFilename = UUID.randomUUID().toString() + ".wdl";
+    File targetFile = new File(tempFilename);
+    try {
+      Try<DefaultPath> pathTry = DefaultPathBuilder.build(tempFilename);
+      Files.copy(resourceObjectStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+      if (pathTry.isSuccess()) {
+        Path path = pathTry.get();
+        boolean showOptionals = true;
+        Termination termination = Inputs.inputsJson(path, showOptionals);
+        if (termination instanceof SuccessfulTermination) {
+          String jsonString = ((SuccessfulTermination) termination).stdout().get();
+          // Use Gson to convert the JSON-like string to a Map<String, String>
+          Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+          Map<String, String> result = new Gson().fromJson(jsonString, mapType);
+          ApiWorkflowParsedInputsResponse actualResult =
+              new ApiWorkflowParsedInputsResponse().inputs(result);
+          return new ResponseEntity<>(actualResult, HttpStatus.OK);
+        } else {
+          String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+          Map<String, String> result = new HashMap<>();
+          result.put("fail", "fail_in_termination " + errorMessage);
+          ApiWorkflowParsedInputsResponse actualResult =
+              new ApiWorkflowParsedInputsResponse().inputs(result);
+          return new ResponseEntity<>(actualResult, HttpStatus.OK);
+        }
+
+      } else {
+        Map<String, String> result = new HashMap<>();
+        result.put("fail", "fail");
+        ApiWorkflowParsedInputsResponse actualResult =
+            new ApiWorkflowParsedInputsResponse().inputs(result);
+        return new ResponseEntity<>(actualResult, HttpStatus.OK);
+      }
+    } catch (IOException e) {
+      throw new ApiException("Error parsing inputs. %s".formatted(e.toString()));
+    } finally {
+      if (targetFile.exists()) {
+        targetFile.delete();
+      }
     }
   }
 }

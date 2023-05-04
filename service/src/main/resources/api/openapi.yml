@@ -125,27 +125,6 @@ paths:
                 type: string
                 format: binary
 
-  #workspaces/{workspaceId}/cromwell/parseInputsAndZip?mainWdl=path/to/wdl/file&outputDir=gs://path/in/gcs
-  /api/workspaces/v1/{workspaceId}/cromwell/parseInputsAndZip:
-    parameters:
-      - $ref: "#/components/parameters/WorkspaceId"
-    get:
-      summary: |
-        todo
-      operationId: parseInputs
-      tags: [ ParseInputs ]
-      responses:
-        "200":
-          $ref: "#/components/responses/ParsedInputsResultResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/PermissionDenied"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/ServerError"
-
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/signedUrl/objects/{objectPath}:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
@@ -403,6 +382,32 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /api/workspaces/{workspaceId}/cromwell/parseInputsAndZip/{resourceId}/{objectPath}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - $ref: "#/components/parameters/ObjectPath"
+    get:
+      summary: |
+        todo
+      operationId: parseInputs
+      tags: [ CromwellWorkflow ]
+      responses:
+        "200":
+          description: todo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowParsedInputsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
 components:
   schemas:
     # Please keep alphabetized
@@ -435,13 +440,6 @@ components:
         refreshToken:
           type: string
         idToken:
-          type: string
-
-    ParsedInputsReport:
-      type: object
-      required: [ inputs ]
-      properties:
-        inputs:
           type: string
 
     SignedUrlReport:
@@ -655,6 +653,17 @@ components:
           additionalProperties:
             type: string
 
+
+    WorkflowParsedInputsResponse:
+      description: todo
+      type: object
+      required: [inputs]
+      properties:
+        inputs:
+          type: object
+          additionalProperties:
+            type: string
+
   responses:
     BadRequest:
       description: Bad request
@@ -697,13 +706,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorReport"
-
-    ParsedInputsResultResponse:
-      description: todo
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ParsedInputsReport"
 
     SignedUrlResultResponse:
       description: Result of a signed URl request.
