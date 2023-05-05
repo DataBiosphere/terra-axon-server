@@ -17,7 +17,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import cromwell.core.path.DefaultPath;
 import cromwell.core.path.DefaultPathBuilder;
-import cromwell.core.path.Path;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
@@ -28,20 +27,23 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import scala.util.Try;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
 import womtool.WomtoolMain.UnsuccessfulTermination;
@@ -166,50 +168,48 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   @Override
   public ResponseEntity<ApiWorkflowParsedInputsResponse> parseInputs(
       UUID workspaceId, String gcsPath) {
-    // Check if the user has access to the workspace.
+    // 1) Check if the user has access to the workspace.
     wsmService.checkWorkspaceReadAccess(workspaceId, getToken().getToken());
 
     InputStream resourceObjectStream = fileService.getFile(getToken(), workspaceId, gcsPath, null);
-    String tempFilename = UUID.randomUUID().toString() + ".wdl";
-    File targetFile = new File(tempFilename);
+
     try {
-      Try<DefaultPath> pathTry = DefaultPathBuilder.build(tempFilename);
+      // 2) Write the WDL file to disk
+      File targetFile = createSafeTempFile(UUID.randomUUID().toString(), "wdl");
+      DefaultPath cromwellPath = DefaultPathBuilder.build(targetFile.toPath());
       Files.copy(resourceObjectStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-      if (pathTry.isSuccess()) {
-        Path path = pathTry.get();
-        boolean showOptionals = true;
-        Termination termination = Inputs.inputsJson(path, showOptionals);
-        if (termination instanceof SuccessfulTermination) {
-          String jsonString = ((SuccessfulTermination) termination).stdout().get();
-          // Use Gson to convert the JSON-like string to a Map<String, String>
-          Type mapType = new TypeToken<Map<String, String>>() {}.getType();
-          Map<String, String> result = new Gson().fromJson(jsonString, mapType);
-          ApiWorkflowParsedInputsResponse actualResult =
-              new ApiWorkflowParsedInputsResponse().inputs(result);
-          return new ResponseEntity<>(actualResult, HttpStatus.OK);
-        } else {
-          String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
-          Map<String, String> result = new HashMap<>();
-          result.put("fail", "fail_in_termination " + errorMessage);
-          ApiWorkflowParsedInputsResponse actualResult =
-              new ApiWorkflowParsedInputsResponse().inputs(result);
-          return new ResponseEntity<>(actualResult, HttpStatus.OK);
-        }
+      // 3) Call Womtool's input parsing method
+      boolean showOptionals = true;
+      Termination termination = Inputs.inputsJson(cromwellPath, showOptionals);
 
-      } else {
-        Map<String, String> result = new HashMap<>();
-        result.put("fail", "fail");
+      // 4) Return the result as json, or return error
+      if (termination instanceof SuccessfulTermination) {
+        String jsonString = ((SuccessfulTermination) termination).stdout().get();
+        // Use Gson to convert the JSON-like string to a Map<String, String>
+        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+        Map<String, String> result = new Gson().fromJson(jsonString, mapType);
         ApiWorkflowParsedInputsResponse actualResult =
             new ApiWorkflowParsedInputsResponse().inputs(result);
         return new ResponseEntity<>(actualResult, HttpStatus.OK);
+      } else {
+        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        throw new ApiException("Error: %s".formatted(errorMessage));
       }
     } catch (IOException e) {
       throw new ApiException("Error parsing inputs. %s".formatted(e.toString()));
-    } finally {
-      if (targetFile.exists()) {
-        targetFile.delete();
-      }
     }
+  }
+
+  private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
+    FileAttribute<Set<PosixFilePermission>> attr =
+        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+    File resultFile = Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
+    if (!SystemUtils.IS_OS_UNIX) {
+      resultFile.setReadable(true, true);
+      resultFile.setWritable(true, true);
+      resultFile.setExecutable(true, true);
+    }
+    return resultFile;
   }
 }
