@@ -388,12 +388,12 @@ paths:
       - $ref: "#/components/parameters/GcsPath"
     get:
       summary: |
-        todo
+        Get parsed inputs for a WDL in a gcsPath
       operationId: parseInputs
       tags: [ CromwellWorkflow ]
       responses:
         "200":
-          description: todo
+          description: An object with the key `inputs` whos value is an object of the parsed inputs.
           content:
             application/json:
               schema:
@@ -654,7 +654,7 @@ components:
 
 
     WorkflowParsedInputsResponse:
-      description: todo
+      description: Result for the parsed inputs of a WDL
       type: object
       required: [inputs]
       properties:
