@@ -7,11 +7,18 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
+import bio.terra.axonserver.service.exception.InvalidWdlException;
+import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.BadRequestException;
+import bio.terra.common.iam.BearerToken;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import cromwell.core.path.DefaultPath;
+import cromwell.core.path.DefaultPathBuilder;
 import io.swagger.client.model.CromwellApiCallMetadata;
 import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
@@ -19,14 +26,29 @@ import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import womtool.WomtoolMain.SuccessfulTermination;
+import womtool.WomtoolMain.Termination;
+import womtool.WomtoolMain.UnsuccessfulTermination;
+import womtool.inputs.Inputs;
 
 /**
  * Wrapper service for calling cromwell. When applicable, the precondition for calling the client
@@ -41,6 +63,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class CromwellWorkflowService {
   private final CromwellConfiguration cromwellConfig;
+  private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
   public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
@@ -48,8 +71,11 @@ public class CromwellWorkflowService {
 
   @Autowired
   public CromwellWorkflowService(
-      CromwellConfiguration cromwellConfig, WorkspaceManagerService wsmService) {
+      CromwellConfiguration cromwellConfig,
+      FileService fileService,
+      WorkspaceManagerService wsmService) {
     this.cromwellConfig = cromwellConfig;
+    this.fileService = fileService;
     this.wsmService = wsmService;
   }
 
@@ -132,6 +158,30 @@ public class CromwellWorkflowService {
       throws bio.terra.cromwell.client.ApiException {
     return new WorkflowsApi(getApiClient())
         .labels(CROMWELL_CLIENT_API_VERSION, workflowId.toString());
+  }
+
+  public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
+      throws IOException, InvalidWdlException {
+    // 1) Get the WDL file and write it to disk
+    InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
+    File targetFile = createSafeTempFile(UUID.randomUUID().toString(), "wdl");
+    DefaultPath cromwellPath = DefaultPathBuilder.build(targetFile.toPath());
+    Files.copy(resourceObjectStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+    // 2) Call Womtool's input parsing method
+    boolean showOptionals = true;
+    Termination termination = Inputs.inputsJson(cromwellPath, showOptionals);
+
+    // 3) Return the result as json, or return error
+    if (termination instanceof SuccessfulTermination) {
+      String jsonString = ((SuccessfulTermination) termination).stdout().get();
+      // Use Gson to convert the JSON-like string to a Map<String, String>
+      Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+      return new Gson().fromJson(jsonString, mapType);
+    } else {
+      String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+      throw new InvalidWdlException(errorMessage);
+    }
   }
 
   /**
@@ -265,5 +315,17 @@ public class CromwellWorkflowService {
                     .message(failure.getMessage())
                     .causedBy(toApiFailureMessages(failure.getCausedBy())))
         .toList();
+  }
+
+  private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
+    FileAttribute<Set<PosixFilePermission>> attr =
+        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+    File resultFile = Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
+    if (!SystemUtils.IS_OS_UNIX) {
+      resultFile.setReadable(true, true);
+      resultFile.setWritable(true, true);
+      resultFile.setExecutable(true, true);
+    }
+    return resultFile;
   }
 }
