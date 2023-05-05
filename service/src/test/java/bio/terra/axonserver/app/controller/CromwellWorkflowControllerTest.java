@@ -292,7 +292,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .thenReturn(fake_parse_results);
 
     ApiWorkflowParsedInputsResponse result =
-        parseInputs(USER_REQUEST, workspaceId, "gs://fake-bucket/path/to/object");
+        parseInputs(USER_REQUEST, workspaceId, "gs%3A%2F%2Ffake-bucket%2Fpath%2Fto%2Fobject");
     Assertions.assertEquals(result.getInputs(), fake_parse_results);
   }
 
