@@ -22,7 +22,6 @@ import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
-import io.swagger.client.model.CromwellApiWorkflowParsedInputsResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResult;
 import java.util.Arrays;
@@ -290,9 +289,9 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 Mockito.eq(workspaceId),
                 /*workflowGcsUri=*/ Mockito.anyString(),
                 Mockito.eq(USER_REQUEST)))
-        .thenReturn(new CromwellApiWorkflowParsedInputsResponse().inputs(fake_parse_results));
+        .thenReturn(fake_parse_results);
 
-    ApiWorkflowIdAndStatus result =
+    ApiWorkflowParsedInputsResponse result =
         parseInputs(USER_REQUEST, workspaceId, "gs://fake-bucket/path/to/object");
     Assertions.assertEquals(result.getInputs(), fake_parse_results);
   }
