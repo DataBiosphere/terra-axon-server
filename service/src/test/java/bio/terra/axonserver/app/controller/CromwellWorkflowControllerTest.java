@@ -5,6 +5,7 @@ import static bio.terra.axonserver.testutils.MockMvcUtils.USER_REQUEST;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
@@ -21,6 +22,7 @@ import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
+import io.swagger.client.model.CromwellApiWorkflowParsedInputsResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResult;
 import java.util.Arrays;
@@ -273,39 +275,27 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
     Assertions.assertEquals(queryResult.getStatus(), fakeWorkflowQueryResult.getStatus());
   }
 
-  // @Test
-  // void parseInputs() throws Exception {
-  //   // Stub the workspace access check. The query is restricted to only buckets within the
-  //   // corresponding workspace id label.
-  //   Mockito.doNothing()
-  //       .when(wsmService)
-  //       .checkWorkspaceReadAccess(workspaceId, USER_REQUEST.getToken());
+  @Test
+  void parseInputs() throws Exception {
+    // Stub the workspace access check. The query is restricted to only buckets within the
+    // corresponding workspace id label.
+    Mockito.doNothing()
+        .when(wsmService)
+        .checkWorkspaceReadAccess(workspaceId, USER_REQUEST.getToken());
 
-  //   // Stub the client submit response.
-  //   Mockito.when(
-  //           cromwellWorkflowService.submitWorkflow(
-  //               Mockito.eq(workspaceId),
-  //               /*workflowGcsUri=*/ Mockito.anyString(),
-  //               Mockito.eq(null),
-  //               /*workflowOnHold=*/ Mockito.eq(false),
-  //               Mockito.eq(null),
-  //               Mockito.eq(null),
-  //               Mockito.eq(null),
-  //               Mockito.eq(null),
-  //               Mockito.eq(null),
-  //               Mockito.eq(null),
-  //               Mockito.eq(workflowId),
-  //               Mockito.eq(USER_REQUEST)))
-  //       .thenReturn(
-  //           new CromwellApiWorkflowIdAndStatus()
-  //               .id(workflowId.toString())
-  //               .status(DEFAULT_WORKFLOW_STATUS));
+    // Stub the client submit response.
+    Map<String, String> fake_parse_results = ImmutableMap.of("input-key", "input-value");
+    Mockito.when(
+            cromwellWorkflowService.parseInputs(
+                Mockito.eq(workspaceId),
+                /*workflowGcsUri=*/ Mockito.anyString(),
+                Mockito.eq(USER_REQUEST)))
+        .thenReturn(new CromwellApiWorkflowParsedInputsResponse().inputs(fake_parse_results));
 
-  //   ApiWorkflowIdAndStatus result = submitWorkflow(USER_REQUEST, workspaceId);
-  //   Assertions.assertEquals(result.getId(), workflowId);
-  //   Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
-
-  // }
+    ApiWorkflowIdAndStatus result =
+        parseInputs(USER_REQUEST, workspaceId, "gs://fake-bucket/path/to/object");
+    Assertions.assertEquals(result.getInputs(), fake_parse_results);
+  }
 
   private ApiWorkflowIdAndStatus getWorkflowStatus(
       BearerToken token, UUID workspaceId, UUID workflowId) throws Exception {

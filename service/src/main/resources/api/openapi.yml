@@ -766,7 +766,7 @@ components:
     GcsPath:
       name: gcsPath
       in: path
-      description: Full path to an object in GCS
+      description: Full path to an object in GCS. Includes gs://
       required: true
       schema:
         type: string
