@@ -147,8 +147,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   public ResponseEntity<ApiWorkflowIdAndStatus> submitWorkflow(
       UUID workspaceId, ApiSubmitWorkflowRequestBody body) {
     BearerToken token = getToken();
-    // Check if the user has access to the workspace.
-    wsmService.checkWorkspaceReadAccess(workspaceId, token.getToken());
+    // Check if the user has write access to the workspace.
+    wsmService.checkWorkspaceWriteAccess(workspaceId, token.getToken());
     try {
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();

@@ -84,4 +84,8 @@ public class WorkspaceManagerService {
   public void checkWorkspaceReadAccess(UUID workspaceId, String accessToken) {
     getWorkspace(workspaceId, IamRole.READER, accessToken);
   }
+
+  public void checkWorkspaceWriteAccess(UUID workspaceId, String accessToken) {
+    getWorkspace(workspaceId, IamRole.READER, accessToken);
+  }
 }
