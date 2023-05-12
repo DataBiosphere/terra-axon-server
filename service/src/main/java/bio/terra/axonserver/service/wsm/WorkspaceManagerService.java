@@ -130,6 +130,21 @@ public class WorkspaceManagerService {
     }
   }
 
+  @VisibleForTesting
+  public AwsCredential getAwsSageMakerNotebookCredential(
+      UUID workspaceId,
+      UUID resourceId,
+      AwsCredentialAccessScope accessScope,
+      Integer duration,
+      String accessToken) {
+    try {
+      return new ControlledAwsResourceApi(getApiClient(accessToken))
+          .getAwsSageMakerNotebookCredential(workspaceId, resourceId, accessScope, duration);
+    } catch (ApiException e) {
+      throw new NotFoundException("Unable to access workspace or resource.");
+    }
+  }
+
   /**
    * Infer the highest level of access that can be requested when obtaining AWS resource
    * credentials, based on the user's highest IAM role in the workspace
@@ -173,6 +188,12 @@ public class WorkspaceManagerService {
     ResourceMetadata resourceMetadata = resourceDescription.getMetadata();
     return switch (resourceMetadata.getResourceType()) {
       case AWS_S3_STORAGE_FOLDER -> getAwsS3StorageFolderCredential(
+          resourceMetadata.getWorkspaceId(),
+          resourceMetadata.getResourceId(),
+          accessScope,
+          duration,
+          accessToken);
+      case AWS_SAGEMAKER_NOTEBOOK -> getAwsSageMakerNotebookCredential(
           resourceMetadata.getWorkspaceId(),
           resourceMetadata.getResourceId(),
           accessScope,

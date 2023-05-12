@@ -6,6 +6,7 @@ import bio.terra.cloudres.common.ClientConfig;
 import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.workspace.model.AwsCredential;
 import bio.terra.workspace.model.AwsS3StorageFolderAttributes;
+import bio.terra.workspace.model.AwsSageMakerNotebookAttributes;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceMetadata;
 import com.google.common.annotations.VisibleForTesting;
@@ -25,11 +26,18 @@ public class AwsService {
   public static final Integer MIN_CONSOLE_SESSION_DURATION = 900;
   public static final Integer MAX_CONSOLE_SESSION_DURATION = 43200;
   @VisibleForTesting public static final String CONSOLE_URL_SCHEME = "https";
+  @VisibleForTesting public static final String CONSOLE_URL_HOST = "console.aws.amazon.com";
 
   @VisibleForTesting
   public static final String CONSOLE_URL_S3_FOLDER_HOST = "s3.console.aws.amazon.com";
 
   @VisibleForTesting public static final String CONSOLE_URL_S3_FOLDER_PATH_PREFIX = "/s3/buckets";
+
+  @VisibleForTesting
+  public static final String CONSOLE_URL_SAGEMAKER_NOTEBOOK_PATH = "/sagemaker/home";
+
+  @VisibleForTesting
+  public static final String CONSOLE_URL_SAGEMAKER_NOTEBOOK_FRAGMENT_PREFIX = "/notebook-instances";
 
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
@@ -46,6 +54,27 @@ public class AwsService {
                   "%s/%s", CONSOLE_URL_S3_FOLDER_PATH_PREFIX, awsS3StorageFolder.getBucketName()))
           .addParameter("prefix", prefix)
           .addParameter("region", region)
+          .build()
+          .toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
+      // This should not be possible since we are doing a parameterized build of the URL.
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  private URL getDestinationForAwsSageMakerNotebook(
+      String region, AwsSageMakerNotebookAttributes awsSageMakerNotebookAttributes) {
+    try {
+      return new URIBuilder()
+          .setScheme(CONSOLE_URL_SCHEME)
+          .setHost(String.format("%s.%s", region, CONSOLE_URL_HOST))
+          .setPath(CONSOLE_URL_SAGEMAKER_NOTEBOOK_PATH)
+          .addParameter("region", region)
+          .setFragment(
+              String.format(
+                  "%s/%s",
+                  CONSOLE_URL_SAGEMAKER_NOTEBOOK_FRAGMENT_PREFIX,
+                  awsSageMakerNotebookAttributes.getInstanceName()))
           .build()
           .toURL();
     } catch (MalformedURLException | URISyntaxException e) {
@@ -71,6 +100,9 @@ public class AwsService {
           case AWS_S3_STORAGE_FOLDER -> getDestinationForAwsS3StorageFolder(
               resourceMetadata.getControlledResourceMetadata().getRegion(),
               resourceDescription.getResourceAttributes().getAwsS3StorageFolder());
+          case AWS_SAGEMAKER_NOTEBOOK -> getDestinationForAwsSageMakerNotebook(
+              resourceMetadata.getControlledResourceMetadata().getRegion(),
+              resourceDescription.getResourceAttributes().getAwsSageMakerNotebook());
           default -> throw new InvalidResourceTypeException(
               String.format(
                   "Resource type %s not supported", resourceMetadata.getResourceType().toString()));
