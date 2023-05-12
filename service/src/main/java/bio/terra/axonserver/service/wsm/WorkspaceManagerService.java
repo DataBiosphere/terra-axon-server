@@ -126,7 +126,8 @@ public class WorkspaceManagerService {
       return new ControlledAwsResourceApi(getApiClient(accessToken))
           .getAwsS3StorageFolderCredential(workspaceId, resourceId, accessScope, duration);
     } catch (ApiException e) {
-      throw new NotFoundException("getAwsS3StorageFolderCredential unable to access workspace or resource.");
+      throw new NotFoundException(
+          "getAwsS3StorageFolderCredential unable to access workspace or resource.");
     }
   }
 
@@ -141,7 +142,8 @@ public class WorkspaceManagerService {
       return new ControlledAwsResourceApi(getApiClient(accessToken))
           .getAwsSageMakerNotebookCredential(workspaceId, resourceId, accessScope, duration);
     } catch (ApiException e) {
-      throw new NotFoundException("getAwsSageMakerNotebookCredential unable to access workspace or resource.");
+      throw new NotFoundException(
+          "getAwsSageMakerNotebookCredential unable to access workspace or resource.");
     }
   }
 
