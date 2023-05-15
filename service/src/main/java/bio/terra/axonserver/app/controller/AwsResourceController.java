@@ -1,11 +1,14 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.AwsResourceApi;
+import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.service.cloud.aws.AwsService;
 import bio.terra.axonserver.service.exception.FeatureNotEnabledException;
 import bio.terra.axonserver.service.features.FeatureService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebook;
+import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.exception.ForbiddenException;
 import bio.terra.common.exception.NotFoundException;
 import bio.terra.common.iam.BearerTokenFactory;
@@ -14,6 +17,7 @@ import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
 import java.net.URL;
+import java.util.Optional;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,5 +89,44 @@ public class AwsResourceController extends ControllerBase implements AwsResource
 
     return new ResponseEntity<>(
         new ApiSignedUrlReport().signedUrl(signedConsoleUrl.toString()), HttpStatus.OK);
+  }
+
+  private AwsSageMakerNotebook getNotebook(UUID workspaceId, UUID resourceId) {
+    if (!featureService.awsEnabled()) {
+      throw new FeatureNotEnabledException("AWS Feature not enabled.");
+    }
+    String accessToken = getAccessToken();
+    return AwsSageMakerNotebook.create(
+        wsmService, wsmService.getResource(workspaceId, resourceId, accessToken), accessToken);
+  }
+
+  @Override
+  public ResponseEntity<Void> putNotebookStart(UUID workspaceId, UUID resourceId, Boolean wait) {
+    getNotebook(workspaceId, resourceId).start(wait);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
+  public ResponseEntity<Void> putNotebookStop(UUID workspaceId, UUID resourceId, Boolean wait) {
+    getNotebook(workspaceId, resourceId).stop(wait);
+    return ResponseEntity.ok().build();
+  }
+
+  @Override
+  public ResponseEntity<ApiNotebookStatus> getNotebookStatus(UUID workspaceId, UUID resourceId) {
+    NotebookStatus notebookStatus = getNotebook(workspaceId, resourceId).getStatus();
+
+    ApiNotebookStatus.NotebookStatusEnum outEnum =
+        Optional.ofNullable(
+                ApiNotebookStatus.NotebookStatusEnum.fromValue(notebookStatus.toString()))
+            .orElse(ApiNotebookStatus.NotebookStatusEnum.STATE_UNSPECIFIED);
+
+    return new ResponseEntity<>(new ApiNotebookStatus().notebookStatus(outEnum), HttpStatus.OK);
+  }
+
+  @Override
+  public ResponseEntity<ApiSignedUrlReport> getNotebookProxyUrl(UUID workspaceId, UUID resourceId) {
+    String proxyUrl = getNotebook(workspaceId, resourceId).getProxyUrl();
+    return new ResponseEntity<>(new ApiSignedUrlReport().signedUrl(proxyUrl), HttpStatus.OK);
   }
 }

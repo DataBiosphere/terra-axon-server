@@ -22,7 +22,7 @@ dependencies {
     // auth
     implementation 'com.google.oauth-client:google-oauth-client:1.30.4'
     implementation 'com.google.http-client:google-http-client-gson:1.42.1'
-    implementation 'com.google.api-client:google-api-client:2.0.0'
+    implementation 'com.google.api-client:google-api-client:1.34.0'
 
     // Google cloud bom
     implementation platform('com.google.cloud:libraries-bom:25.1.0')
@@ -30,6 +30,7 @@ dependencies {
 
     // AWS dependencies
     implementation platform('software.amazon.awssdk:bom:2.18.34')
+    implementation 'software.amazon.awssdk:sagemaker'
     implementation 'software.amazon.awssdk:sts'
 
     // Terra Common Library
@@ -38,7 +39,7 @@ dependencies {
     }
 
     // Terra Cloud Resource library
-    implementation group: 'bio.terra', name: 'terra-cloud-resource-lib', version: '1.2.15-SNAPSHOT'
+    implementation group: 'bio.terra', name: 'terra-cloud-resource-lib', version: '1.2.16-SNAPSHOT'
 
     // Terra Sam Client
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
@@ -58,6 +59,9 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         // Fixes warning about multiple occurrences of JSONObject on the classpath
         exclude group: 'com.vaadin.external.google', module: 'android-json'
+
+    testImplementation 'org.mockito:mockito-core:4.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:4.8.0'
     }
     testImplementation group: 'org.apiguardian', name: 'apiguardian-api', version: '1.1.2'
 }
