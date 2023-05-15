@@ -2,6 +2,7 @@ package bio.terra.axonserver.service.cloud.aws;
 
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.cloudres.aws.console.ConsoleCow;
+import bio.terra.cloudres.aws.notebook.SageMakerNotebookCow;
 import bio.terra.cloudres.common.ClientConfig;
 import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.workspace.model.AwsCredential;
@@ -139,5 +140,19 @@ public class AwsService {
       ResourceDescription resourceDescription, AwsCredential awsCredential, Integer duration) {
     ConsoleCow consoleCow = ConsoleCow.create(clientConfig);
     return createSignedConsoleUrl(consoleCow, resourceDescription, awsCredential, duration);
+  }
+
+  /** For test use only, allows a test to pass a mock {@link SageMakerNotebookCow} instance. */
+  @VisibleForTesting
+  public URL createAwsSageMakerNotebookSignedProxyUrl(
+      SageMakerNotebookCow sageMakerNotebookCow,
+      AwsSageMakerNotebookAttributes notebookAttributes) {
+    return null;
+  }
+
+  public URL createAwsSageMakerNotebookSignedProxyUrl(
+      AwsSageMakerNotebookAttributes notebookAttributes, AwsCredential awsCredential) {
+    SageMakerNotebookCow sageMakerNotebookCow = null;
+    return createAwsSageMakerNotebookSignedProxyUrl(sageMakerNotebookCow, notebookAttributes);
   }
 }
