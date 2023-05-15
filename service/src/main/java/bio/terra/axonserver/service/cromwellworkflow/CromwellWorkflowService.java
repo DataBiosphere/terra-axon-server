@@ -10,13 +10,13 @@ import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.AutoDeletingTempFile;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import bio.terra.axonserver.utils.AutoDeletingTempFile;
 import io.swagger.client.model.CromwellApiCallMetadata;
 import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
@@ -24,28 +24,20 @@ import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.SystemUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -69,7 +61,6 @@ public class CromwellWorkflowService {
 
   public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
-  Logger logger = Logger.getLogger(getClass().getName());
 
   @Autowired
   public CromwellWorkflowService(
@@ -199,20 +190,20 @@ public class CromwellWorkflowService {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
 
-    // Create temp files from JSON of: workflowInputs, workflowOptions, labels, source,
-    // and dependencies.
-    // - labels and options will be modified before being sent to Cromwell.
-    File tempInputsFile = null;
-    File tempOptionsFile = createSafeTempFile("workflow-options-", "-terra");
-    File tempLabelsFile = createSafeTempFile("workflow-labels-", "-terra");
-    File tempWorkflowSourceFile = null;
-    File tempWorkflowDependenciesFile = null;
-    try {
+    try (AutoDeletingTempFile tempInputsFile =
+            new AutoDeletingTempFile("workflow-inputs-", "-terra");
+        AutoDeletingTempFile tempOptionsFile =
+            new AutoDeletingTempFile("workflow-options-", "-terra");
+        AutoDeletingTempFile tempLabelsFile =
+            new AutoDeletingTempFile("workflow-labels-", "-terra");
+        AutoDeletingTempFile tempWorkflowSourceFile =
+            new AutoDeletingTempFile("workflow-source-", "-terra");
+        AutoDeletingTempFile tempWorkflowDependenciesFile =
+            new AutoDeletingTempFile("workflow-source-", "-terra")) {
 
       // Create inputs file
       if (workflowInputs != null) {
-        tempInputsFile = createSafeTempFile("workflow-label-", "-terra");
-        try (OutputStream out = new FileOutputStream(tempInputsFile)) {
+        try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
           out.write(workflowInputs.getBytes(StandardCharsets.UTF_8));
         }
       }
@@ -225,10 +216,10 @@ public class CromwellWorkflowService {
           "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
       workflowOptions.put(
           "default_runtime_attributes",
-          new AbstractMap.SimpleEntry("docker", "debian:stable-slim"));
+          new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
 
       ObjectMapper mapper = new ObjectMapper();
-      try (OutputStream out = new FileOutputStream(tempOptionsFile)) {
+      try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
       }
 
@@ -236,13 +227,16 @@ public class CromwellWorkflowService {
       JSONObject jsonLabels = labels == null ? new JSONObject() : new JSONObject(labels);
       jsonLabels.put(WORKSPACE_ID_LABEL_KEY, workspaceId);
       labels = jsonLabels.toString();
-      try (OutputStream out = new FileOutputStream(tempLabelsFile)) {
+      try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
         out.write(labels.getBytes(StandardCharsets.UTF_8));
       }
       if (workflowGcsUri != null) {
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
-        tempWorkflowSourceFile = createTempFileFromInputStream(inputStream, "workflow-source-");
+        Files.copy(
+            inputStream,
+            tempWorkflowSourceFile.getFile().toPath(),
+            StandardCopyOption.REPLACE_EXISTING);
       }
 
       // Get dependencies from GCS and create temp file
@@ -250,8 +244,10 @@ public class CromwellWorkflowService {
         InputStream inputStream =
             fileService.getFile(
                 token, workspaceId, workflowDependenciesGcsUri, /*convertTo=*/ null);
-        tempWorkflowDependenciesFile =
-            createTempFileFromInputStream(inputStream, "workflow-dependencies-");
+        Files.copy(
+            inputStream,
+            tempWorkflowDependenciesFile.getFile().toPath(),
+            StandardCopyOption.REPLACE_EXISTING);
       }
 
       // TODO (PF-2650): Write inputs.json + options.json to jes_gcs_root (to leave artifacts in the
@@ -259,69 +255,21 @@ public class CromwellWorkflowService {
       return new WorkflowsApi(getApiClient())
           .submit(
               CROMWELL_CLIENT_API_VERSION,
-              tempWorkflowSourceFile,
+              tempWorkflowSourceFile.getFile(),
               workflowUrl,
               workflowOnHold,
-              tempInputsFile,
+              tempInputsFile.getFile(),
               /*workflowInputs_2=*/ null,
               /*workflowInputs_3=*/ null,
               /*workflowInputs_4=*/ null,
               /*workflowInputs_5=*/ null,
-              tempOptionsFile,
+              tempOptionsFile.getFile(),
               workflowType,
               /*workflowRoot=*/ null,
               workflowTypeVersion,
-              tempLabelsFile,
-              tempWorkflowDependenciesFile,
+              tempLabelsFile.getFile(),
+              tempWorkflowDependenciesFile.getFile(),
               requestedWorkflowId != null ? requestedWorkflowId.toString() : null);
-    } finally {
-      cleanupTempFiles(
-          tempInputsFile,
-          tempOptionsFile,
-          tempLabelsFile,
-          tempWorkflowSourceFile,
-          tempWorkflowDependenciesFile);
-    }
-  }
-
-  private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
-    FileAttribute<Set<PosixFilePermission>> attr =
-        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-    File resultFile = Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
-    if (!SystemUtils.IS_OS_UNIX) {
-      resultFile.setReadable(true, true);
-      resultFile.setWritable(true, true);
-      resultFile.setExecutable(true, true);
-    }
-    return resultFile;
-  }
-
-  private File createTempFileFromInputStream(InputStream inputStream, String tempFilePrefix)
-      throws IOException {
-    File tempFile = createSafeTempFile(tempFilePrefix, "-terra");
-    Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    return tempFile;
-  }
-
-  public void cleanupTempFiles(File... tempFiles) throws IOException {
-
-    for (File tempFile : tempFiles) {
-      if (tempFile != null) {
-        try {
-          boolean deleted = Files.deleteIfExists(Path.of(tempFile.getPath()));
-          if (!deleted) {
-            // Log a warning if the file didn't exist
-            logger.warning("File not found, so not deleted: " + tempFile.getAbsolutePath());
-          }
-        } catch (IOException e) {
-          // Log the error if it failed to delete the file
-          logger.severe(
-              "Failed to delete temporary file: "
-                  + tempFile.getAbsolutePath()
-                  + "\n"
-                  + e.getMessage());
-        }
-      }
     }
   }
 
