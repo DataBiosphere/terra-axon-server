@@ -115,6 +115,10 @@ public class WorkspaceManagerService {
     getWorkspace(workspaceId, IamRole.READER, accessToken);
   }
 
+  public void checkWorkspaceWriteAccess(UUID workspaceId, String accessToken) {
+    getWorkspace(workspaceId, IamRole.WRITER, accessToken);
+  }
+
   @VisibleForTesting
   public AwsCredential getAwsS3StorageFolderCredential(
       UUID workspaceId,
