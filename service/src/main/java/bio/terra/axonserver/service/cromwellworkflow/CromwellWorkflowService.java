@@ -16,6 +16,7 @@ import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import bio.terra.axonserver.utils.AutoDeletingTempFile;
 import io.swagger.client.model.CromwellApiCallMetadata;
 import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
