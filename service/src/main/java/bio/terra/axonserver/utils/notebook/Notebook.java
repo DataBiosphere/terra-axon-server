@@ -5,6 +5,11 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
 
+/**
+ * Abstract class representing a Cloud-based compute instance used to develop Jupyter notebooks.
+ * This will be extended by concrete implementations for Google Vertex AI Notebooks and AWS
+ * SageMaker Notebook Instances.
+ */
 public abstract class Notebook {
 
   /**
