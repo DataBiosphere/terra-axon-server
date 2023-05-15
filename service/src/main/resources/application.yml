@@ -62,6 +62,8 @@ axonserver:
     basePath: ${env.calhoun.basePath}
   cromwell:
     basePath: ${env.cromwell.basePath}
+  file:
+    signedUrlExpirationMinutes: 1
 
 terra.common:
   kubernetes:

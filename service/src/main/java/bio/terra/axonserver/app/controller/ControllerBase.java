@@ -1,5 +1,6 @@
 package bio.terra.axonserver.app.controller;
 
+import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
 import javax.servlet.http.HttpServletRequest;
@@ -24,5 +25,13 @@ public class ControllerBase {
 
   public BearerToken getToken() {
     return bearerTokenFactory.from(request);
+  }
+
+  public String getAccessToken() {
+    String accessToken = getToken().getToken();
+    if (accessToken == null) {
+      throw new BadRequestException("Access token is null. Try refreshing your access.");
+    }
+    return accessToken;
   }
 }

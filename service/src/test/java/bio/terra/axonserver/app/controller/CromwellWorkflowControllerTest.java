@@ -15,12 +15,19 @@ import bio.terra.axonserver.testutils.MockMvcUtils;
 import bio.terra.common.exception.ForbiddenException;
 import bio.terra.common.iam.BearerToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import io.swagger.client.model.CromwellApiCallMetadata;
+import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
+import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResult;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -41,6 +48,13 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
   private final UUID workflowId = UUID.randomUUID();
   private final String DEFAULT_WORKFLOW_STATUS = "Submitted";
   private final Date DEFAULT_WORKFLOW_SUBMISSION_DATE = new Date(0);
+
+  private final Map<String, String> DEFAULT_WORKFLOW_LABELS =
+      ImmutableMap.of(
+          CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY,
+          workspaceId.toString(),
+          "fake-label-key",
+          "fake-label-value");
 
   private final String CROMWELL_WORKFLOW_STATUS_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows/%s/status";
@@ -127,10 +141,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
             workflowId, workspaceId, USER_REQUEST.getToken());
 
     CromwellApiLabelsResponse fakeLabelResponse =
-        new CromwellApiLabelsResponse()
-            .id(workflowId.toString())
-            .putLabelsItem(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY, workspaceId.toString())
-            .putLabelsItem("fake-label-key", "fake-label-value");
+        new CromwellApiLabelsResponse().id(workflowId.toString()).labels(DEFAULT_WORKFLOW_LABELS);
 
     // Stub the workflow having the workflow id label, and the label response
     Mockito.when(cromwellWorkflowService.getLabels(workflowId)).thenReturn(fakeLabelResponse);
@@ -140,10 +151,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
 
     // Check the labels deserialize properly.
     Assertions.assertEquals(result.getLabels().size(), 2);
-    Assertions.assertEquals(result.getLabels().get("fake-label-key"), "fake-label-value");
-    Assertions.assertEquals(
-        result.getLabels().get(CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY),
-        workspaceId.toString());
+    Assertions.assertEquals(result.getLabels(), DEFAULT_WORKFLOW_LABELS);
   }
 
   @Test
@@ -153,6 +161,39 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         .when(cromwellWorkflowService)
         .validateWorkspaceAccessAndWorkflowLabelMatches(
             workflowId, workspaceId, USER_REQUEST.getToken());
+
+    // Verify callRoot is returned in metadata response.
+    String callRoot = "gs://path/to/root";
+
+    var callMetadata =
+        Arrays.asList(
+            new CromwellApiCallMetadata().callRoot(callRoot).returnCode(0),
+            new CromwellApiCallMetadata().callRoot(callRoot).returnCode(-1));
+
+    // Verify submittedFiles object is returned in response.
+    var submittedFiles =
+        new CromwellApiWorkflowMetadataResponseSubmittedFiles()
+            .workflow("workflow")
+            .options("options")
+            .inputs("inputs")
+            .workflowType("WDL")
+            .root("root")
+            .workflowUrl("url")
+            .labels("{}");
+
+    // Verify failure message is correctly returned.
+    var failureMessage =
+        Collections.singletonList(
+            new CromwellApiFailureMessages()
+                .message("root")
+                .causedBy(
+                    Collections.singletonList(
+                        new CromwellApiFailureMessages()
+                            .message("one level down")
+                            .causedBy(
+                                Collections.singletonList(
+                                    new CromwellApiFailureMessages()
+                                        .message("two levels down"))))));
 
     // Stub the client metadata response.
     Mockito.when(
@@ -165,12 +206,28 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
             new CromwellApiWorkflowMetadataResponse()
                 .id(workflowId.toString())
                 .status(DEFAULT_WORKFLOW_STATUS)
-                .submission(DEFAULT_WORKFLOW_SUBMISSION_DATE));
+                .submission(DEFAULT_WORKFLOW_SUBMISSION_DATE)
+                .submittedFiles(submittedFiles)
+                .putCallsItem("call-1", callMetadata)
+                .failures(failureMessage));
 
     ApiWorkflowMetadataResponse result = getWorkflowMetadata(USER_REQUEST, workspaceId, workflowId);
     Assertions.assertEquals(result.getId(), workflowId);
     Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
     Assertions.assertEquals(result.getSubmission(), DEFAULT_WORKFLOW_SUBMISSION_DATE);
+
+    Assertions.assertEquals(result.getCalls().get("call-1").get(0).getCallRoot(), callRoot);
+
+    Assertions.assertEquals(submittedFiles.getInputs(), "inputs");
+    Assertions.assertEquals(submittedFiles.getLabels(), "{}");
+    Assertions.assertEquals(submittedFiles.getWorkflow(), "workflow");
+
+    Assertions.assertEquals(failureMessage.get(0).getMessage(), "root");
+    Assertions.assertEquals(
+        failureMessage.get(0).getCausedBy().get(0).getMessage(), "one level down");
+    Assertions.assertEquals(
+        failureMessage.get(0).getCausedBy().get(0).getCausedBy().get(0).getMessage(),
+        "two levels down");
   }
 
   @Test
@@ -185,7 +242,8 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         new CromwellApiWorkflowQueryResult()
             .id(workflowId.toString())
             .name("fake-workflow")
-            .status(DEFAULT_WORKFLOW_STATUS);
+            .status(DEFAULT_WORKFLOW_STATUS)
+            .labels(DEFAULT_WORKFLOW_LABELS);
 
     // Stub the client metadata response.
     Mockito.when(

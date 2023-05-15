@@ -2,8 +2,9 @@ package bio.terra.axonserver.service.cromwellworkflow;
 
 import bio.terra.axonserver.app.configuration.CromwellConfiguration;
 import bio.terra.axonserver.model.ApiCallMetadata;
-import bio.terra.axonserver.model.ApiFailureMessage;
+import bio.terra.axonserver.model.ApiFailureMessages;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.file.FileService;
@@ -16,10 +17,11 @@ import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiCallMetadata;
-import io.swagger.client.model.CromwellApiFailureMessage;
+import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
+import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -377,7 +379,8 @@ public class CromwellWorkflowService {
                             .status(r.getStatus())
                             .submission(r.getSubmission())
                             .start(r.getStart())
-                            .end(r.getEnd()))
+                            .end(r.getEnd())
+                            .labels(r.getLabels()))
                 .toList();
 
     return new ApiWorkflowQueryResponse()
@@ -411,12 +414,28 @@ public class CromwellWorkflowService {
                                             .start(m.getStart())
                                             .end(m.getEnd())
                                             .jobId(m.getJobId())
-                                            .failures(toApiFailureMessage(m.getFailures()))
+                                            .failures(toApiFailureMessages(m.getFailures()))
                                             .returnCode(m.getReturnCode())
+                                            .callRoot(m.getCallRoot())
                                             .stdout(m.getStdout())
                                             .stderr(m.getStderr())
                                             .backendLogs(m.getBackendLogs()))
                                 .toList()));
+
+    CromwellApiWorkflowMetadataResponseSubmittedFiles cromwellSubmittedFiles =
+        metadataResponse.getSubmittedFiles();
+
+    var submittedFiles =
+        cromwellSubmittedFiles == null
+            ? null
+            : new ApiWorkflowMetadataResponseSubmittedFiles()
+                .workflow(cromwellSubmittedFiles.getWorkflow())
+                .options(cromwellSubmittedFiles.getOptions())
+                .inputs(cromwellSubmittedFiles.getInputs())
+                .workflowType(cromwellSubmittedFiles.getWorkflowType())
+                .root(cromwellSubmittedFiles.getRoot())
+                .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
+                .labels(cromwellSubmittedFiles.getLabels());
 
     return new ApiWorkflowMetadataResponse()
         .id(UUID.fromString(metadataResponse.getId()))
@@ -426,16 +445,22 @@ public class CromwellWorkflowService {
         .end(metadataResponse.getEnd())
         .inputs(metadataResponse.getInputs())
         .outputs(metadataResponse.getOutputs())
+        .submittedFiles(submittedFiles)
         .calls(callMetadataMap)
-        .failures(toApiFailureMessage(metadataResponse.getFailures()));
+        .failures(toApiFailureMessages(metadataResponse.getFailures()));
   }
 
-  private static ApiFailureMessage toApiFailureMessage(CromwellApiFailureMessage failureMessage) {
-    if (failureMessage == null) {
+  private static List<ApiFailureMessages> toApiFailureMessages(
+      List<CromwellApiFailureMessages> failureMessages) {
+    if (failureMessages == null) {
       return null;
     }
-    return new ApiFailureMessage()
-        .failure(failureMessage.getFailure())
-        .timestamp(failureMessage.getTimestamp());
+    return failureMessages.stream()
+        .map(
+            failure ->
+                new ApiFailureMessages()
+                    .message(failure.getMessage())
+                    .causedBy(toApiFailureMessages(failure.getCausedBy())))
+        .toList();
   }
 }
