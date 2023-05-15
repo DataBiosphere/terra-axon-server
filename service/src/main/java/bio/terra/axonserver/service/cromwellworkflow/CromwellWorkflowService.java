@@ -199,7 +199,7 @@ public class CromwellWorkflowService {
         AutoDeletingTempFile tempWorkflowSourceFile =
             new AutoDeletingTempFile("workflow-source-", "-terra");
         AutoDeletingTempFile tempWorkflowDependenciesFile =
-            new AutoDeletingTempFile("workflow-source-", "-terra")) {
+            new AutoDeletingTempFile("workflow-dependencies-", "-terra")) {
 
       // Create inputs file
       if (workflowInputs != null) {
