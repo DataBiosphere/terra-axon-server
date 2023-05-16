@@ -3,11 +3,14 @@ plugins {
     id 'de.undercouch.download'
     id 'com.google.cloud.tools.jib'
     id 'com.gorylenko.gradle-git-properties' version '2.3.1'
+    id 'org.sonarqube' version '4.0.0.2929'
 }
 
-apply from: "$projectDir/gradle/generators.gradle"
-apply from: "$projectDir/gradle/publishing.gradle"
-apply from: "$projectDir/gradle/dependency-locking.gradle"
+def gradleIncDir= "$projectDir/gradle"
+apply from: "$gradleIncDir/generators.gradle"
+apply from: "$gradleIncDir/publishing.gradle"
+apply from: "$gradleIncDir/dependency-locking.gradle"
+apply from: "$gradleIncDir/sonarqube.gradle"
 
 dependencies {
     // Google dependencies
