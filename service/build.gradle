@@ -44,7 +44,7 @@ dependencies {
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
 
     // Terra Workspace Manager Client
-    implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.714-SNAPSHOT'
+    implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.723-SNAPSHOT'
 
     // Spring dependencies
     implementation 'org.apache.commons:commons-lang3'

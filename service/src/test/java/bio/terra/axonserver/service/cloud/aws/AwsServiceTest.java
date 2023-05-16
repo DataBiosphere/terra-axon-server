@@ -15,6 +15,7 @@ import bio.terra.cloudres.aws.console.ConsoleCow;
 import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.workspace.model.AwsCredential;
 import bio.terra.workspace.model.AwsS3StorageFolderAttributes;
+import bio.terra.workspace.model.AwsSageMakerNotebookAttributes;
 import bio.terra.workspace.model.ControlledResourceMetadata;
 import bio.terra.workspace.model.ResourceAttributesUnion;
 import bio.terra.workspace.model.ResourceDescription;
@@ -70,9 +71,10 @@ public class AwsServiceTest extends BaseUnitTest {
     Mockito.when(mockS3FolderAttributes.getBucketName()).thenReturn(bucketName);
     Mockito.when(mockS3FolderAttributes.getPrefix()).thenReturn(prefix);
 
+    URL fakeOutput = new URL("https://example.com");
     Mockito.when(mockConsoleCow.createSignedUrl(any(), any(), any()))
         .thenThrow(new IOException())
-        .thenReturn(new URL("https://example.com"));
+        .thenReturn(fakeOutput);
 
     // First call should throw
     assertThrows(
@@ -91,6 +93,7 @@ public class AwsServiceTest extends BaseUnitTest {
             mockResourceDescription,
             fakeAwsCredential,
             AwsService.MAX_CONSOLE_SESSION_DURATION);
+    assertEquals(fakeOutput, consoleUrl);
 
     // Verify passed parameters
     ArgumentCaptor<Credentials> credentialsArgumentCaptor =
@@ -121,6 +124,91 @@ public class AwsServiceTest extends BaseUnitTest {
         URLDecoder.decode(capturedUrl.getQuery(), StandardCharsets.UTF_8).split("&");
     assertThat(String.format("%s=%s/", "prefix", prefix), is(in(queryParams)));
     assertThat(String.format("%s=%s", "region", region.toString()), is(in(queryParams)));
+  }
+
+  @Test
+  void createSignedConsoleUrl_sageMakerNotebookInstance() throws IOException {
+
+    // Chain together mocks to plumb resource type
+    Mockito.when(mockResourceDescription.getMetadata()).thenReturn(mockResourceMetadata);
+    Mockito.when(mockResourceMetadata.getResourceType())
+        .thenReturn(ResourceType.AWS_SAGEMAKER_NOTEBOOK);
+
+    // Chain together mocks to plumb region
+    Region region = Region.US_EAST_1;
+    ControlledResourceMetadata mockControlledResourceMetadata =
+        mock(ControlledResourceMetadata.class);
+    Mockito.when(mockResourceMetadata.getControlledResourceMetadata())
+        .thenReturn(mockControlledResourceMetadata);
+    Mockito.when(mockControlledResourceMetadata.getRegion()).thenReturn(region.toString());
+
+    // Chain together mocks to plumb bucket name and prefix
+    String instanceName = "fakeinstancename";
+    ResourceAttributesUnion mockResourceAttributes = mock(ResourceAttributesUnion.class);
+    AwsSageMakerNotebookAttributes mockNotebookAttributes =
+        mock(AwsSageMakerNotebookAttributes.class);
+    Mockito.when(mockResourceDescription.getResourceAttributes())
+        .thenReturn(mockResourceAttributes);
+    Mockito.when(mockResourceAttributes.getAwsSageMakerNotebook())
+        .thenReturn(mockNotebookAttributes);
+    Mockito.when(mockNotebookAttributes.getInstanceName()).thenReturn(instanceName);
+
+    URL fakeOutput = new URL("https://example.com");
+    Mockito.when(mockConsoleCow.createSignedUrl(any(), any(), any()))
+        .thenThrow(new IOException())
+        .thenReturn(fakeOutput);
+
+    // First call should throw
+    assertThrows(
+        InternalServerErrorException.class,
+        () ->
+            awsService.createSignedConsoleUrl(
+                mockConsoleCow,
+                mockResourceDescription,
+                fakeAwsCredential,
+                AwsService.MAX_CONSOLE_SESSION_DURATION));
+
+    // Second call should succeed
+    URL consoleUrl =
+        awsService.createSignedConsoleUrl(
+            mockConsoleCow,
+            mockResourceDescription,
+            fakeAwsCredential,
+            AwsService.MAX_CONSOLE_SESSION_DURATION);
+    assertEquals(fakeOutput, consoleUrl);
+
+    // Verify passed parameters
+    ArgumentCaptor<Credentials> credentialsArgumentCaptor =
+        ArgumentCaptor.forClass(Credentials.class);
+    ArgumentCaptor<Integer> integerArgumentCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<URL> urlArgumentCaptor = ArgumentCaptor.forClass(URL.class);
+    Mockito.verify(mockConsoleCow, times(2))
+        .createSignedUrl(
+            credentialsArgumentCaptor.capture(),
+            integerArgumentCaptor.capture(),
+            urlArgumentCaptor.capture());
+
+    Credentials capturedCredentials = credentialsArgumentCaptor.getValue();
+    assertEquals(fakeAwsCredential.getAccessKeyId(), capturedCredentials.accessKeyId());
+    assertEquals(fakeAwsCredential.getSecretAccessKey(), capturedCredentials.secretAccessKey());
+    assertEquals(fakeAwsCredential.getSessionToken(), capturedCredentials.sessionToken());
+
+    assertEquals(AwsService.MAX_CONSOLE_SESSION_DURATION, integerArgumentCaptor.getValue());
+
+    URL capturedUrl = urlArgumentCaptor.getValue();
+    assertEquals(AwsService.CONSOLE_URL_SCHEME, capturedUrl.getProtocol());
+    assertEquals(
+        String.format("%s.%s", region, AwsService.CONSOLE_URL_HOST), capturedUrl.getHost());
+    assertEquals(AwsService.CONSOLE_URL_SAGEMAKER_NOTEBOOK_PATH, capturedUrl.getPath());
+
+    String[] queryParams =
+        URLDecoder.decode(capturedUrl.getQuery(), StandardCharsets.UTF_8).split("&");
+    assertThat(String.format("%s=%s", "region", region.toString()), is(in(queryParams)));
+
+    assertEquals(
+        String.format(
+            "%s/%s", AwsService.CONSOLE_URL_SAGEMAKER_NOTEBOOK_FRAGMENT_PREFIX, instanceName),
+        capturedUrl.getRef());
   }
 
   @Test
