@@ -8,12 +8,13 @@ import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceMetadata;
+import com.google.common.annotations.VisibleForTesting;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.sagemaker.model.NotebookInstanceStatus;
 
-public class AwsSagemakerNotebook extends Notebook {
+public class AwsSageMakerNotebook extends Notebook {
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
 
@@ -46,18 +47,23 @@ public class AwsSagemakerNotebook extends Notebook {
             awsCredential.getSessionToken()));
   }
 
-  public AwsSagemakerNotebook(
+  /** For testing use only, allows use of mock {@link SageMakerNotebookCow}. */
+  @VisibleForTesting
+  public AwsSageMakerNotebook(String instanceName, SageMakerNotebookCow sageMakerNotebookCow) {
+    this.instanceName = instanceName;
+    this.sageMakerNotebookCow = sageMakerNotebookCow;
+  }
+
+  public AwsSageMakerNotebook(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resource,
       String accessToken) {
-    this.instanceName =
-        resource.getResourceAttributes().getAwsSageMakerNotebook().getInstanceName();
-
-    this.sageMakerNotebookCow =
+    this(
+        resource.getResourceAttributes().getAwsSageMakerNotebook().getInstanceName(),
         SageMakerNotebookCow.create(
             clientConfig,
             getCredentialProvider(workspaceManagerService, resource, accessToken),
-            resource.getMetadata().getControlledResourceMetadata().getRegion());
+            resource.getMetadata().getControlledResourceMetadata().getRegion()));
   }
 
   @Override
@@ -79,7 +85,16 @@ public class AwsSagemakerNotebook extends Notebook {
   }
 
   private static NotebookStatus toNotebookStatus(NotebookInstanceStatus status) {
-    return NotebookStatus.STATE_UNSPECIFIED;
+    return switch (status) {
+      case DELETING -> NotebookStatus.DELETING;
+      case FAILED -> NotebookStatus.FAILED;
+      case IN_SERVICE -> NotebookStatus.ACTIVE;
+      case PENDING -> NotebookStatus.PENDING;
+      case STOPPED -> NotebookStatus.STOPPED;
+      case STOPPING -> NotebookStatus.STOPPING;
+      case UNKNOWN_TO_SDK_VERSION -> NotebookStatus.STATE_UNSPECIFIED;
+      case UPDATING -> NotebookStatus.UPDATING;
+    };
   }
 
   @Override
@@ -88,7 +103,7 @@ public class AwsSagemakerNotebook extends Notebook {
   }
 
   @Override
-  public String getNotebookProxyUrl() {
+  public String getProxyUrl() {
     return sageMakerNotebookCow.createPresignedUrl(instanceName);
   }
 }

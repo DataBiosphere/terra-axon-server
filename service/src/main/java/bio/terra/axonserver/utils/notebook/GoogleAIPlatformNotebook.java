@@ -8,9 +8,11 @@ import bio.terra.cloudres.google.notebooks.AIPlatformNotebooksCow;
 import bio.terra.workspace.model.ResourceDescription;
 import com.google.api.services.notebooks.v1.model.Instance;
 import com.google.api.services.notebooks.v1.model.Operation;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
+import javax.ws.rs.InternalServerErrorException;
 
 public class GoogleAIPlatformNotebook extends Notebook {
 
@@ -19,19 +21,25 @@ public class GoogleAIPlatformNotebook extends Notebook {
   private final String instanceName;
   private final AIPlatformNotebooksCow aiPlatformNotebooksCow;
 
-  public GoogleAIPlatformNotebook(ResourceDescription resource, String accessToken) {
-    this.instanceName = resource.getResourceAttributes().getGcpAiNotebookInstance().getInstanceId();
-
-    try {
-      this.aiPlatformNotebooksCow =
-          AIPlatformNotebooksCow.create(
-              clientConfig, CloudStorageUtils.getGoogleCredentialsFromToken(accessToken));
-    } catch (GeneralSecurityException | IOException e) {
-      throw new RuntimeException(e);
-    }
+  /** For testing use only, allows use of mock {@link AIPlatformNotebooksCow}. */
+  @VisibleForTesting
+  public GoogleAIPlatformNotebook(
+      String instanceName, AIPlatformNotebooksCow aiPlatformNotebooksCow) {
+    this.instanceName = instanceName;
+    this.aiPlatformNotebooksCow = aiPlatformNotebooksCow;
   }
 
-  private void pollForSuccess(Operation operation, String errorMessage) {
+  public GoogleAIPlatformNotebook(ResourceDescription resource, String accessToken)
+      throws GeneralSecurityException, IOException {
+    this(
+        resource.getResourceAttributes().getGcpAiNotebookInstance().getInstanceId(),
+        AIPlatformNotebooksCow.create(
+            clientConfig, CloudStorageUtils.getGoogleCredentialsFromToken(accessToken)));
+  }
+
+  /** Do not use, made public for test spies. */
+  @VisibleForTesting
+  public void pollForSuccess(Operation operation, String errorMessage) {
     OperationCow<Operation> operationCow =
         aiPlatformNotebooksCow.operations().operationCow(operation);
 
@@ -40,11 +48,11 @@ public class GoogleAIPlatformNotebook extends Notebook {
           OperationUtils.pollUntilComplete(
               operationCow, Duration.ofSeconds(5), Duration.ofMinutes(3));
     } catch (InterruptedException | IOException e) {
-      throw new RuntimeException(e);
+      throw new InternalServerErrorException(errorMessage, e);
     }
 
     if (operationCow.getOperation().getError() != null) {
-      throw new RuntimeException(
+      throw new InternalServerErrorException(
           errorMessage + operationCow.getOperation().getError().getMessage());
     }
   }
@@ -61,7 +69,7 @@ public class GoogleAIPlatformNotebook extends Notebook {
         pollForSuccess(startOperation, getOperationErrorMessage("start"));
       }
     } catch (IOException e) {
-      throw new RuntimeException(getOperationErrorMessage("start"), e);
+      throw new InternalServerErrorException(getOperationErrorMessage("start"), e);
     }
   }
 
@@ -73,7 +81,7 @@ public class GoogleAIPlatformNotebook extends Notebook {
         pollForSuccess(stopOperation, getOperationErrorMessage("stop"));
       }
     } catch (IOException e) {
-      throw new RuntimeException(getOperationErrorMessage("stop"), e);
+      throw new InternalServerErrorException(getOperationErrorMessage("stop"), e);
     }
   }
 
@@ -81,17 +89,21 @@ public class GoogleAIPlatformNotebook extends Notebook {
     try {
       return aiPlatformNotebooksCow.instances().get(instanceName).execute();
     } catch (IOException e) {
-      throw new RuntimeException(getOperationErrorMessage(operation), e);
+      throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
     }
   }
 
   @Override
   public NotebookStatus getStatus() {
-    return NotebookStatus.valueOf(get("get status").getState());
+    try {
+      return NotebookStatus.valueOf(get("get status").getState());
+    } catch (IllegalArgumentException e) {
+      return NotebookStatus.STATE_UNSPECIFIED;
+    }
   }
 
   @Override
-  public String getNotebookProxyUrl() {
+  public String getProxyUrl() {
     return get("get proxy url").getProxyUri();
   }
 }

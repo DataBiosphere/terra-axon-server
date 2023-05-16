@@ -4,6 +4,8 @@ import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 /**
  * Abstract class representing a Cloud-based compute instance used to develop Jupyter notebooks.
@@ -18,7 +20,7 @@ public abstract class Notebook {
    * @param workspaceManagerService workspace manager service
    * @param resource the notebook resource description
    * @param accessToken access token representing user
-   * @return An instance of either {@link AwsSagemakerNotebook} or {@link GoogleAIPlatformNotebook},
+   * @return An instance of either {@link AwsSageMakerNotebook} or {@link GoogleAIPlatformNotebook},
    *     depending on the type of the passed resource description
    * @throws {@link InvalidResourceTypeException} if the passed resource description does not
    *     describe a notebook type resource
@@ -27,14 +29,18 @@ public abstract class Notebook {
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resource,
       String accessToken) {
-    ResourceType resourceType = resource.getMetadata().getResourceType();
-    return switch (resourceType) {
-      case AI_NOTEBOOK -> new GoogleAIPlatformNotebook(resource, accessToken);
-      case AWS_SAGEMAKER_NOTEBOOK -> new AwsSagemakerNotebook(
-          workspaceManagerService, resource, accessToken);
-      default -> throw new InvalidResourceTypeException(
-          String.format("Resource type %s not a notebook type.", resourceType.toString()));
-    };
+    try {
+      ResourceType resourceType = resource.getMetadata().getResourceType();
+      return switch (resourceType) {
+        case AI_NOTEBOOK -> new GoogleAIPlatformNotebook(resource, accessToken);
+        case AWS_SAGEMAKER_NOTEBOOK -> new AwsSageMakerNotebook(
+            workspaceManagerService, resource, accessToken);
+        default -> throw new InvalidResourceTypeException(
+            String.format("Resource type %s not a notebook type.", resourceType.toString()));
+      };
+    } catch (IOException | GeneralSecurityException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -71,5 +77,5 @@ public abstract class Notebook {
    *
    * @return a URL providing access to the Notebook instance UI
    */
-  abstract String getNotebookProxyUrl();
+  abstract String getProxyUrl();
 }
