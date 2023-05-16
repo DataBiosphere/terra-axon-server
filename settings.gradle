@@ -1,4 +1,5 @@
 rootProject.name = 'terra-axon-server'
 include('service', 'client')
 
+gradle.ext.projectGroup = 'bio.terra'
 gradle.ext.releaseVersion = '0.12.0-SNAPSHOT'
