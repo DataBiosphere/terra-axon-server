@@ -16,6 +16,7 @@ import bio.terra.workspace.model.AwsCredential;
 import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
+import com.google.common.annotations.VisibleForTesting;
 import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,6 +50,12 @@ public class AwsResourceController extends ControllerBase implements AwsResource
     this.awsService = awsService;
   }
 
+  private void checkAwsEnabled() {
+    if (!featureService.awsEnabled()) {
+      throw new FeatureNotEnabledException("AWS Feature not enabled.");
+    }
+  }
+
   /**
    * Gets a signed URL providing access to a single AWS resource in the AWS Console. Access matches
    * the user's highest level of access in the Workspace.
@@ -63,11 +70,7 @@ public class AwsResourceController extends ControllerBase implements AwsResource
    */
   @Override
   public ResponseEntity<ApiSignedUrlReport> getSignedConsoleUrl(UUID workspaceId, UUID resourceId) {
-
-    if (!featureService.awsEnabled()) {
-      throw new FeatureNotEnabledException("AWS Feature not enabled.");
-    }
-
+    checkAwsEnabled();
     String accessToken = getAccessToken();
     ResourceDescription resourceDescription =
         wsmService.getResource(workspaceId, resourceId, accessToken);
@@ -91,27 +94,48 @@ public class AwsResourceController extends ControllerBase implements AwsResource
         new ApiSignedUrlReport().signedUrl(signedConsoleUrl.toString()), HttpStatus.OK);
   }
 
-  private AwsSageMakerNotebook getNotebook(UUID workspaceId, UUID resourceId) {
-    if (!featureService.awsEnabled()) {
-      throw new FeatureNotEnabledException("AWS Feature not enabled.");
-    }
+  /** Do not use, public for spy testing */
+  @VisibleForTesting
+  public AwsSageMakerNotebook getNotebook(UUID workspaceId, UUID resourceId) {
+    checkAwsEnabled();
     String accessToken = getAccessToken();
     return AwsSageMakerNotebook.create(
         wsmService, wsmService.getResource(workspaceId, resourceId, accessToken), accessToken);
   }
 
+  /**
+   * Start a notebook instance
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra AWS Resource ID
+   * @param wait wait for operation to complete
+   */
   @Override
   public ResponseEntity<Void> putNotebookStart(UUID workspaceId, UUID resourceId, Boolean wait) {
     getNotebook(workspaceId, resourceId).start(wait);
     return ResponseEntity.ok().build();
   }
 
+  /**
+   * Stop a notebook instance
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra AWS Resource ID
+   * @param wait wait for operation to complete
+   */
   @Override
   public ResponseEntity<Void> putNotebookStop(UUID workspaceId, UUID resourceId, Boolean wait) {
     getNotebook(workspaceId, resourceId).stop(wait);
     return ResponseEntity.ok().build();
   }
 
+  /**
+   * Get notebook status.
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra AWS Resource ID
+   * @return notebook status
+   */
   @Override
   public ResponseEntity<ApiNotebookStatus> getNotebookStatus(UUID workspaceId, UUID resourceId) {
     NotebookStatus notebookStatus = getNotebook(workspaceId, resourceId).getStatus();
@@ -124,6 +148,13 @@ public class AwsResourceController extends ControllerBase implements AwsResource
     return new ResponseEntity<>(new ApiNotebookStatus().notebookStatus(outEnum), HttpStatus.OK);
   }
 
+  /**
+   * Get notebook proxy URL.
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra AWS Resource ID
+   * @return url to access notebook
+   */
   @Override
   public ResponseEntity<ApiSignedUrlReport> getNotebookProxyUrl(UUID workspaceId, UUID resourceId) {
     String proxyUrl = getNotebook(workspaceId, resourceId).getProxyUrl();

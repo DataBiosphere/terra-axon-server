@@ -5,6 +5,9 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
 
 public class ResourceUtils {
+
+  private ResourceUtils() {}
+
   /**
    * Validate that a resource is of an expected type, throwing {@link InvalidResourceTypeException}
    * if it is not.
