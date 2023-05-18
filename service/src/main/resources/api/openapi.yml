@@ -184,7 +184,7 @@ paths:
           default: false
     put:
       summary: Starts an AWS SageMaker Notebook Instance
-      operationId: putNotebookStart
+      operationId: putSageMakerNotebookStart
       tags: [ AwsResource ]
       responses:
         "200":
@@ -212,7 +212,7 @@ paths:
           default: false
     put:
       summary: Stop an AWS SageMaker Notebook Instance
-      operationId: putNotebookStop
+      operationId: putSageMakerNotebookStop
       tags: [ AwsResource ]
       responses:
         "200":
@@ -234,7 +234,7 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get status of an AWS SageMaker Notebook Instance
-      operationId: getNotebookStatus
+      operationId: getSageMakerNotebookStatus
       tags: [ AwsResource ]
       responses:
         "200":
@@ -256,7 +256,7 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get a signed Proxy URL to access an AWS SageMaker Notebook Instance
-      operationId: getNotebookProxyUrl
+      operationId: getSageMakerNotebookProxyUrl
       tags: [ AwsResource ]
       responses:
         "200":
@@ -284,7 +284,7 @@ paths:
           default: false
     put:
       summary: Starts a GCP Vertex AI Notebook Instance
-      operationId: putNotebookStart
+      operationId: putAiNotebookStart
       tags: [ GcpResource ]
       responses:
         "200":
@@ -312,7 +312,7 @@ paths:
           default: false
     put:
       summary: Stop a GCP Vertex AI Notebook Instance
-      operationId: putNotebookStop
+      operationId: putAiNotebookStop
       tags: [ GcpResource ]
       responses:
         "200":
@@ -334,7 +334,7 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get status of a GCP Vertex AI Notebook Instance
-      operationId: getNotebookStatus
+      operationId: getAiNotebookStatus
       tags: [ GcpResource ]
       responses:
         "200":
@@ -356,7 +356,7 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get a signed Proxy URL to access a GCP Vertex AI Notebook Instance
-      operationId: getNotebookProxyUrl
+      operationId: getAiNotebookProxyUrl
       tags: [ GcpResource ]
       responses:
         "200":
