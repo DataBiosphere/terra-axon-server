@@ -38,40 +38,40 @@ public class GcpResourceController extends ControllerBase implements GcpResource
   }
 
   /**
-   * Start a notebook instance
+   * Start an ai notebook instance
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra AWS Resource ID
    * @param wait wait for operation to complete
    */
   @Override
-  public ResponseEntity<Void> putNotebookStart(UUID workspaceId, UUID resourceId, Boolean wait) {
+  public ResponseEntity<Void> putAiNotebookStart(UUID workspaceId, UUID resourceId, Boolean wait) {
     getNotebook(workspaceId, resourceId).start(wait);
     return ResponseEntity.ok().build();
   }
 
   /**
-   * Stop a notebook instance
+   * Stop an ai notebook instance
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra AWS Resource ID
    * @param wait wait for operation to complete
    */
   @Override
-  public ResponseEntity<Void> putNotebookStop(UUID workspaceId, UUID resourceId, Boolean wait) {
+  public ResponseEntity<Void> putAiNotebookStop(UUID workspaceId, UUID resourceId, Boolean wait) {
     getNotebook(workspaceId, resourceId).stop(wait);
     return ResponseEntity.ok().build();
   }
 
   /**
-   * Get notebook status.
+   * Get ai notebook status.
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra AWS Resource ID
    * @return notebook status
    */
   @Override
-  public ResponseEntity<ApiNotebookStatus> getNotebookStatus(UUID workspaceId, UUID resourceId) {
+  public ResponseEntity<ApiNotebookStatus> getAiNotebookStatus(UUID workspaceId, UUID resourceId) {
     NotebookStatus notebookStatus = getNotebook(workspaceId, resourceId).getStatus();
 
     ApiNotebookStatus.NotebookStatusEnum outEnum =
@@ -83,14 +83,15 @@ public class GcpResourceController extends ControllerBase implements GcpResource
   }
 
   /**
-   * Get notebook proxy URL.
+   * Get ai notebook proxy URL.
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra AWS Resource ID
    * @return url to access notebook
    */
   @Override
-  public ResponseEntity<ApiSignedUrlReport> getNotebookProxyUrl(UUID workspaceId, UUID resourceId) {
+  public ResponseEntity<ApiSignedUrlReport> getAiNotebookProxyUrl(
+      UUID workspaceId, UUID resourceId) {
     String proxyUrl = getNotebook(workspaceId, resourceId).getProxyUrl();
     return new ResponseEntity<>(new ApiSignedUrlReport().signedUrl(proxyUrl), HttpStatus.OK);
   }
