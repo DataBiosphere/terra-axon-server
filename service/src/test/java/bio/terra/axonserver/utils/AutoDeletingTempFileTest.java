@@ -9,10 +9,9 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 public class AutoDeletingTempFileTest extends BaseUnitTest {
-  File file;
-
   @Test
   public void testFileDeletion() throws IOException {
+    File file;
     try (AutoDeletingTempFile tempFile = new AutoDeletingTempFile("prefix", "suffix")) {
       file = tempFile.getFile();
       assertTrue(file.exists());

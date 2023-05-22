@@ -209,7 +209,7 @@ public class CromwellWorkflowService {
       }
 
       // Adjoin preset options for the options file.
-      // Place the project ID + compute SA into the options.
+      // Place the project ID + compute SA + docker image into the options.
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
       workflowOptions.put("google_project", projectId);
       workflowOptions.put(

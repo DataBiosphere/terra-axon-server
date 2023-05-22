@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
-import javax.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRange;
@@ -84,8 +83,15 @@ public class FileService {
     return fileStream;
   }
 
+  /**
+   * @param token Bearer token for the requester
+   * @param workspaceId The workspace that the resource is in
+   * @param gcsURI gs:// URI path to a file in a Google Cloud Storage bucket
+   * @param convertTo The format to convert the file to. If null, the file is not converted.
+   * @return
+   */
   public InputStream getFile(
-      BearerToken token, UUID workspaceId, @NotNull String gcsURI, @Nullable String convertTo) {
+      BearerToken token, UUID workspaceId, String gcsURI, @Nullable String convertTo) {
     FileWithName fileWithName = getGcsObjectFromURI(workspaceId, gcsURI, token);
     InputStream fileStream = fileWithName.fileStream;
     if (convertTo != null) {
