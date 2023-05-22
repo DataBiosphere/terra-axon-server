@@ -317,6 +317,7 @@ public class CromwellWorkflowService {
         .toList();
   }
 
+  // TODO(willyn): Refactor once Autoclosable class is in
   private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
     FileAttribute<Set<PosixFilePermission>> attr =
         PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
