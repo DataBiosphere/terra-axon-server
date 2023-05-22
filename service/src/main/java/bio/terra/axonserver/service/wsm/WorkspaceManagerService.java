@@ -79,7 +79,7 @@ public class WorkspaceManagerService {
     try {
       return new ResourceApi(getApiClient(accessToken)).getResource(workspaceId, resourceId);
     } catch (ApiException apiException) {
-      throw new NotFoundException("Unable to access workspace or resource.");
+      throw new NotFoundException("getResource unable to access workspace or resource.");
     }
   }
 
@@ -126,7 +126,24 @@ public class WorkspaceManagerService {
       return new ControlledAwsResourceApi(getApiClient(accessToken))
           .getAwsS3StorageFolderCredential(workspaceId, resourceId, accessScope, duration);
     } catch (ApiException e) {
-      throw new NotFoundException("Unable to access workspace or resource.");
+      throw new NotFoundException(
+          "getAwsS3StorageFolderCredential unable to access workspace or resource.");
+    }
+  }
+
+  @VisibleForTesting
+  public AwsCredential getAwsSageMakerNotebookCredential(
+      UUID workspaceId,
+      UUID resourceId,
+      AwsCredentialAccessScope accessScope,
+      Integer duration,
+      String accessToken) {
+    try {
+      return new ControlledAwsResourceApi(getApiClient(accessToken))
+          .getAwsSageMakerNotebookCredential(workspaceId, resourceId, accessScope, duration);
+    } catch (ApiException e) {
+      throw new NotFoundException(
+          "getAwsSageMakerNotebookCredential unable to access workspace or resource.");
     }
   }
 
@@ -173,6 +190,12 @@ public class WorkspaceManagerService {
     ResourceMetadata resourceMetadata = resourceDescription.getMetadata();
     return switch (resourceMetadata.getResourceType()) {
       case AWS_S3_STORAGE_FOLDER -> getAwsS3StorageFolderCredential(
+          resourceMetadata.getWorkspaceId(),
+          resourceMetadata.getResourceId(),
+          accessScope,
+          duration,
+          accessToken);
+      case AWS_SAGEMAKER_NOTEBOOK -> getAwsSageMakerNotebookCredential(
           resourceMetadata.getWorkspaceId(),
           resourceMetadata.getResourceId(),
           accessScope,

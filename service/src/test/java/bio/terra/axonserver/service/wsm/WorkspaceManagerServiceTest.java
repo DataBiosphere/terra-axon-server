@@ -115,4 +115,48 @@ public class WorkspaceManagerServiceTest extends BaseUnitTest {
     assertEquals(AwsCredentialAccessScope.WRITE_READ, accessScopeArgumentCaptor.getValue());
     assertEquals(duration, durationArgumentCaptor.getValue());
   }
+
+  @Test
+  void getAwsResourceCredential_sageMakerNotebookInstance() {
+    Mockito.when(mockResourceDescription.getMetadata()).thenReturn(mockResourceMetadata);
+    Mockito.when(mockResourceMetadata.getResourceType())
+        .thenReturn(ResourceType.AWS_SAGEMAKER_NOTEBOOK);
+
+    UUID fakeWorkspaceId = UUID.randomUUID();
+    UUID fakeResourceId = UUID.randomUUID();
+    Mockito.when(mockResourceMetadata.getWorkspaceId()).thenReturn(fakeWorkspaceId);
+    Mockito.when(mockResourceMetadata.getResourceId()).thenReturn(fakeResourceId);
+
+    WorkspaceManagerService wsmServiceSpy = spy(workspaceManagerService);
+    AwsCredential mockAwsCredential = mock(AwsCredential.class);
+    doReturn(mockAwsCredential)
+        .when(wsmServiceSpy)
+        .getAwsSageMakerNotebookCredential(any(), any(), any(), any(), any());
+
+    AwsCredential outCredential =
+        wsmServiceSpy.getAwsResourceCredential(
+            mockResourceDescription, accessScope, duration, fakeAccessToken);
+    assertEquals(mockAwsCredential, outCredential);
+
+    ArgumentCaptor<String> tokenArgumentCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<UUID> workspaceArgumentCaptor = ArgumentCaptor.forClass(UUID.class);
+    ArgumentCaptor<UUID> resourceArgumentCaptor = ArgumentCaptor.forClass(UUID.class);
+    ArgumentCaptor<Integer> durationArgumentCaptor = ArgumentCaptor.forClass(Integer.class);
+    ArgumentCaptor<AwsCredentialAccessScope> accessScopeArgumentCaptor =
+        ArgumentCaptor.forClass(AwsCredentialAccessScope.class);
+
+    Mockito.verify(wsmServiceSpy)
+        .getAwsSageMakerNotebookCredential(
+            workspaceArgumentCaptor.capture(),
+            resourceArgumentCaptor.capture(),
+            accessScopeArgumentCaptor.capture(),
+            durationArgumentCaptor.capture(),
+            tokenArgumentCaptor.capture());
+
+    assertEquals(fakeAccessToken, tokenArgumentCaptor.getValue());
+    assertEquals(fakeWorkspaceId, workspaceArgumentCaptor.getValue());
+    assertEquals(fakeResourceId, resourceArgumentCaptor.getValue());
+    assertEquals(AwsCredentialAccessScope.WRITE_READ, accessScopeArgumentCaptor.getValue());
+    assertEquals(duration, durationArgumentCaptor.getValue());
+  }
 }

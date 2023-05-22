@@ -172,6 +172,206 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
 
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/notebook/start:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Wait for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
+    put:
+      summary: Starts an AWS SageMaker Notebook Instance
+      operationId: putSageMakerNotebookStart
+      tags: [ AwsResource ]
+      responses:
+        "200":
+          description: Notebook successfully started.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/notebook/stop:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Wait for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
+    put:
+      summary: Stop an AWS SageMaker Notebook Instance
+      operationId: putSageMakerNotebookStop
+      tags: [ AwsResource ]
+      responses:
+        "200":
+          description: Notebook successfully stopped.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/notebook/status:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get status of an AWS SageMaker Notebook Instance
+      operationId: getSageMakerNotebookStatus
+      tags: [ AwsResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/NotebookStatusResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/aws/notebook/proxyUrl:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a signed Proxy URL to access an AWS SageMaker Notebook Instance
+      operationId: getSageMakerNotebookProxyUrl
+      tags: [ AwsResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/SignedUrlResultResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/start:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Wait for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
+    put:
+      summary: Starts a GCP Vertex AI Notebook Instance
+      operationId: putAiNotebookStart
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          description: Notebook successfully started.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/stop:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Wait for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
+    put:
+      summary: Stop a GCP Vertex AI Notebook Instance
+      operationId: putAiNotebookStop
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          description: Notebook successfully stopped.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/status:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get status of a GCP Vertex AI Notebook Instance
+      operationId: getAiNotebookStatus
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/NotebookStatusResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/proxyUrl:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a signed Proxy URL to access a GCP Vertex AI Notebook Instance
+      operationId: getAiNotebookProxyUrl
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/SignedUrlResultResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
   # Cromwell paths.
   /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/status:
     parameters:
@@ -423,6 +623,30 @@ components:
           items:
             type: string
 
+    NotebookStatus:
+      type: object
+      required: [ notebookStatus ]
+      properties:
+        notebookStatus:
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+            - DELETING
+            - FAILED
+            - INITIALIZING
+            - PENDING
+            - PROVISIONING
+            - REGISTERING
+            - STARTING
+            - STATE_UNSPECIFIED
+            - STOPPED
+            - STOPPING
+            - SUSPENDED
+            - SUSPENDING
+            - UPDATING
+            - UPGRADING
+
     TokenReport:
       type: object
       required: [accessToken, tokenType]
@@ -446,6 +670,13 @@ components:
       required : [signedUrl]
       properties:
         signedUrl:
+          type: string
+
+    Url:
+      type: object
+      required: [ url ]
+      properties:
+        url:
           type: string
 
     VersionProperties:
@@ -677,6 +908,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorReport"
+
+    NotebookStatusResponse:
+      description: Notebook instance status.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/NotebookStatus'
 
     NotFound:
       description: Not found.
