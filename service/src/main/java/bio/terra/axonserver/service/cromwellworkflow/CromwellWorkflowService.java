@@ -29,7 +29,6 @@ import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,18 +37,13 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.apache.commons.lang3.SystemUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -455,18 +449,5 @@ public class CromwellWorkflowService {
                     .message(failure.getMessage())
                     .causedBy(toApiFailureMessages(failure.getCausedBy())))
         .toList();
-  }
-
-  // TODO(willyn): Refactor once Autoclosable class is in
-  private File createSafeTempFile(String filePrefix, String fileSuffix) throws IOException {
-    FileAttribute<Set<PosixFilePermission>> attr =
-        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-    File resultFile = Files.createTempFile(filePrefix, fileSuffix, attr).toFile();
-    if (!SystemUtils.IS_OS_UNIX) {
-      resultFile.setReadable(true, true);
-      resultFile.setWritable(true, true);
-      resultFile.setExecutable(true, true);
-    }
-    return resultFile;
   }
 }
