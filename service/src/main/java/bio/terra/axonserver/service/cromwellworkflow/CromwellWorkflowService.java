@@ -293,7 +293,7 @@ public class CromwellWorkflowService {
   public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
       throws IOException, InvalidWdlException {
     // 1) Get the WDL file and write it to disk
-    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-wdl", "wdl")) {
+    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-", "-terra")) {
       InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
       DefaultPath cromwellPath = DefaultPathBuilder.build(tempWdlFile.getFile().toPath());
       Files.copy(
