@@ -582,6 +582,31 @@ paths:
         "500":
           $ref: "#/components/responses/ServerError"
 
+  /api/workspaces/{workspaceId}/cromwell/parseInputsAndZip/{gcsPath}:
+    parameters:
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/GcsPath"
+    get:
+      summary: |
+        Get parsed inputs for a WDL in a gcsPath
+      operationId: parseInputs
+      tags: [ CromwellWorkflow ]
+      responses:
+        "200":
+          description: An object with the key `inputs` whos value is an object of the parsed inputs.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowParsedInputsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
   /api/workspaces/{workspaceId}/cromwell/workflows:
     parameters:
       - $ref: '#/components/parameters/WorkspaceId'
@@ -940,6 +965,17 @@ components:
           additionalProperties:
             type: string
 
+
+    WorkflowParsedInputsResponse:
+      description: Result for the parsed inputs of a WDL
+      type: object
+      required: [inputs]
+      properties:
+        inputs:
+          type: object
+          additionalProperties:
+            type: string
+
   responses:
     BadRequest:
       description: Bad request
@@ -1043,6 +1079,14 @@ components:
       name: objectPath
       in: path
       description: File path to object
+      required: true
+      schema:
+        type: string
+
+    GcsPath:
+      name: gcsPath
+      in: path
+      description: Full path to an object in GCS. Includes gs://
       required: true
       schema:
         type: string

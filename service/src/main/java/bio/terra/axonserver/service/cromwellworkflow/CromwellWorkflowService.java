@@ -7,6 +7,7 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
+import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
@@ -17,6 +18,10 @@ import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import cromwell.core.path.DefaultPath;
+import cromwell.core.path.DefaultPathBuilder;
 import io.swagger.client.model.CromwellApiCallMetadata;
 import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
@@ -28,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -41,6 +47,10 @@ import javax.annotation.Nullable;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import womtool.WomtoolMain.SuccessfulTermination;
+import womtool.WomtoolMain.Termination;
+import womtool.WomtoolMain.UnsuccessfulTermination;
+import womtool.inputs.Inputs;
 
 /**
  * Wrapper service for calling cromwell. When applicable, the precondition for calling the client
@@ -278,6 +288,33 @@ public class CromwellWorkflowService {
       throws bio.terra.cromwell.client.ApiException {
     return new WorkflowsApi(getApiClient())
         .labels(CROMWELL_CLIENT_API_VERSION, workflowId.toString());
+  }
+
+  public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
+      throws IOException, InvalidWdlException {
+    // 1) Get the WDL file and write it to disk
+    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-", "-terra")) {
+      InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
+      DefaultPath cromwellPath = DefaultPathBuilder.build(tempWdlFile.getFile().toPath());
+      Files.copy(
+          resourceObjectStream,
+          tempWdlFile.getFile().toPath(),
+          StandardCopyOption.REPLACE_EXISTING);
+
+      // 2) Call Womtool's input parsing method
+      Termination termination = Inputs.inputsJson(cromwellPath, true);
+
+      // 3) Return the result as json, or return error
+      if (termination instanceof SuccessfulTermination) {
+        String jsonString = ((SuccessfulTermination) termination).stdout().get();
+        // Use Gson to convert the JSON-like string to a Map<String, String>
+        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+        return new Gson().fromJson(jsonString, mapType);
+      } else {
+        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        throw new InvalidWdlException(errorMessage);
+      }
+    }
   }
 
   /**

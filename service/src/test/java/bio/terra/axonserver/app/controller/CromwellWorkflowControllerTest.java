@@ -6,6 +6,7 @@ import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBody;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
@@ -64,6 +65,8 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
       "/api/workspaces/%s/cromwell/workflows/%s/metadata";
   private final String CROMWELL_WORKFLOW_QUERY_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows/query";
+  private final String CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT =
+      "/api/workspaces/%s/cromwell/parseInputsAndZip/%s";
   private final String CROMWELL_WORKFLOW_SUBMIT_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows";
 
@@ -275,6 +278,28 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
   }
 
   @Test
+  void parseInputs() throws Exception {
+    // Stub the workspace access check. The query is restricted to only buckets within the
+    // corresponding workspace id label.
+    Mockito.doNothing()
+        .when(wsmService)
+        .checkWorkspaceReadAccess(workspaceId, USER_REQUEST.getToken());
+
+    // Stub the client submit response.
+    Map<String, String> fake_parse_results = ImmutableMap.of("input-key", "input-value");
+    Mockito.when(
+            cromwellWorkflowService.parseInputs(
+                Mockito.eq(workspaceId),
+                /*workflowGcsUri=*/ Mockito.anyString(),
+                Mockito.eq(USER_REQUEST)))
+        .thenReturn(fake_parse_results);
+
+    ApiWorkflowParsedInputsResponse result =
+        parseInputs(USER_REQUEST, workspaceId, "gs%3A%2F%2Ffake-bucket%2Fpath%2Fto%2Fobject");
+    Assertions.assertEquals(result.getInputs(), fake_parse_results);
+  }
+
+  @Test
   void submit() throws Exception {
     // Stub the workspace access check. The query is restricted to only workflows containing the
     // corresponding workspace id label.
@@ -337,6 +362,14 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         mockMvcUtils.getSerializedResponseForGet(
             token, CROMWELL_WORKFLOW_QUERY_PATH_FORMAT.formatted(workspaceId));
     return objectMapper.readValue(serializedResponse, ApiWorkflowQueryResponse.class);
+  }
+
+  private ApiWorkflowParsedInputsResponse parseInputs(
+      BearerToken token, UUID workspaceId, String gcsPath) throws Exception {
+    String serializedResponse =
+        mockMvcUtils.getSerializedResponseForGet(
+            token, CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT.formatted(workspaceId, gcsPath));
+    return objectMapper.readValue(serializedResponse, ApiWorkflowParsedInputsResponse.class);
   }
 
   private ApiWorkflowIdAndStatus submitWorkflow(BearerToken token, UUID workspaceId)

@@ -44,6 +44,14 @@ dependencies {
     // Terra Sam Client
     implementation group: 'org.broadinstitute.dsde.workbench', name: 'sam-client_2.13', version: '0.1-ffb0a89-SNAP'
 
+    // Cromwell dependencies
+    implementation('org.broadinstitute:cromwell_2.13:85') {
+        exclude group: 'bio.terra', module: 'workspace-manager-client'
+    }
+    implementation('org.broadinstitute:womtool_2.13:85') {
+        exclude group: 'bio.terra', module: 'workspace-manager-client'
+    }
+
     // Terra Workspace Manager Client
     implementation group: 'bio.terra', name: 'workspace-manager-client', version: '0.254.723-SNAPSHOT'
 

@@ -7,8 +7,11 @@ import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBody;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
+import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
+import bio.terra.axonserver.service.exception.InvalidWdlException;
+import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +37,7 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class CromwellWorkflowController extends ControllerBase implements CromwellWorkflowApi {
   private final CromwellWorkflowService cromwellWorkflowService;
+  private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
   @Autowired
@@ -40,9 +45,11 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
       CromwellWorkflowService cromwellWorkflowService,
+      FileService fileService,
       WorkspaceManagerService wsmService) {
     super(bearerTokenFactory, request);
     this.cromwellWorkflowService = cromwellWorkflowService;
+    this.fileService = fileService;
     this.wsmService = wsmService;
   }
 
@@ -140,6 +147,26 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
     } catch (bio.terra.cromwell.client.ApiException e) {
       throw new ApiException(
           "Error querying workflows. %s: %s".formatted(e.getCode(), e.getResponseBody()));
+    }
+  }
+
+  @Override
+  public ResponseEntity<ApiWorkflowParsedInputsResponse> parseInputs(
+      UUID workspaceId, String gcsPath) {
+    BearerToken token = getToken();
+    // Check if the user has access to the workspace.
+    wsmService.checkWorkspaceReadAccess(workspaceId, token.getToken());
+
+    try {
+      Map<String, String> parsedInputs =
+          cromwellWorkflowService.parseInputs(workspaceId, gcsPath, token);
+      ApiWorkflowParsedInputsResponse result =
+          new ApiWorkflowParsedInputsResponse().inputs(parsedInputs);
+      return new ResponseEntity<>(result, HttpStatus.OK);
+    } catch (IOException e) {
+      throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
+    } catch (InvalidWdlException e) {
+      throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
     }
   }
 
