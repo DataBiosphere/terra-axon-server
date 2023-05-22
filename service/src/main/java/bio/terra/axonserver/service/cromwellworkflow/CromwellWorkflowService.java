@@ -299,24 +299,28 @@ public class CromwellWorkflowService {
   public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
       throws IOException, InvalidWdlException {
     // 1) Get the WDL file and write it to disk
-    InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
-    File targetFile = createSafeTempFile(UUID.randomUUID().toString(), "wdl");
-    DefaultPath cromwellPath = DefaultPathBuilder.build(targetFile.toPath());
-    Files.copy(resourceObjectStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-wdl", "wdl")) {
+      InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
+      DefaultPath cromwellPath = DefaultPathBuilder.build(tempWdlFile.getFile().toPath());
+      Files.copy(
+          resourceObjectStream,
+          tempWdlFile.getFile().toPath(),
+          StandardCopyOption.REPLACE_EXISTING);
 
-    // 2) Call Womtool's input parsing method
-    boolean showOptionals = true;
-    Termination termination = Inputs.inputsJson(cromwellPath, showOptionals);
+      // 2) Call Womtool's input parsing method
+      boolean showOptionals = true;
+      Termination termination = Inputs.inputsJson(cromwellPath, showOptionals);
 
-    // 3) Return the result as json, or return error
-    if (termination instanceof SuccessfulTermination) {
-      String jsonString = ((SuccessfulTermination) termination).stdout().get();
-      // Use Gson to convert the JSON-like string to a Map<String, String>
-      Type mapType = new TypeToken<Map<String, String>>() {}.getType();
-      return new Gson().fromJson(jsonString, mapType);
-    } else {
-      String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
-      throw new InvalidWdlException(errorMessage);
+      // 3) Return the result as json, or return error
+      if (termination instanceof SuccessfulTermination) {
+        String jsonString = ((SuccessfulTermination) termination).stdout().get();
+        // Use Gson to convert the JSON-like string to a Map<String, String>
+        Type mapType = new TypeToken<Map<String, String>>() {}.getType();
+        return new Gson().fromJson(jsonString, mapType);
+      } else {
+        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        throw new InvalidWdlException(errorMessage);
+      }
     }
   }
 
