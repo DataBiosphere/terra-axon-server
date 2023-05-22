@@ -302,8 +302,7 @@ public class CromwellWorkflowService {
           StandardCopyOption.REPLACE_EXISTING);
 
       // 2) Call Womtool's input parsing method
-      boolean showOptionals = true;
-      Termination termination = Inputs.inputsJson(cromwellPath, showOptionals);
+      Termination termination = Inputs.inputsJson(cromwellPath, true);
 
       // 3) Return the result as json, or return error
       if (termination instanceof SuccessfulTermination) {
