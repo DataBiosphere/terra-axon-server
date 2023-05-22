@@ -85,17 +85,28 @@ public class FileService {
   }
 
   /**
-   * Gets a fileStream for a given gcsURI. Optionally converts the file to a desired format.
+   * Gets a fileStream for a given resource. Optionally converts the file to a desired format.
    *
    * @param token Bearer token for the requester
    * @param workspaceId The workspace that the resource is in
-   * @param gcsURI The full path to the GCS object
+   * @param resourceId The id of the resource that the object is in
+   * @param objectPath The path to the object in the bucket. Only used if the resource is a bucket.
    * @param convertTo The format to convert the file to. If null, the file is not converted.
+   * @param byteRange The range of bytes to return. If null, the entire file is returned.
    * @return The file as a byte array
    */
   public InputStream getFile(
-      BearerToken token, UUID workspaceId, @NotNull String gcsURI, @Nullable String convertTo) {
-    FileWithName fileWithName = getGcsObjectFromURI(workspaceId, gcsURI, token);
+      BearerToken token,
+      UUID workspaceId,
+      UUID resourceId,
+      @Nullable String objectPath,
+      @Nullable String convertTo,
+      @Nullable HttpRange byteRange) {
+
+    ResourceDescription resource =
+        wsmService.getResource(workspaceId, resourceId, token.getToken());
+
+    FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
     InputStream fileStream = fileWithName.fileStream;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);

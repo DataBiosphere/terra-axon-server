@@ -3,6 +3,7 @@ package bio.terra.axonserver.app.controller;
 import static bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY;
 
 import bio.terra.axonserver.api.CromwellWorkflowApi;
+import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBody;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
@@ -166,6 +167,52 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
     } catch (InvalidWdlException e) {
       throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
+    }
+  }
+
+  @Override
+  public ResponseEntity<ApiWorkflowIdAndStatus> submitWorkflow(
+      UUID workspaceId, ApiSubmitWorkflowRequestBody body) {
+    BearerToken token = getToken();
+    // Check if the user has write access to the workspace.
+    wsmService.checkWorkspaceWriteAccess(workspaceId, token.getToken());
+    try {
+      String workflowGcsUri = body.getWorkflowGcsUri();
+      String workflowUrl = body.getWorkflowUrl();
+      Boolean workflowOnHold = body.isWorkflowOnHold();
+      String workflowInputs = body.getWorkflowInputs();
+      var workflowOptions = body.getWorkflowOptions();
+      String workflowType =
+          body.getWorkflowType() == null ? null : body.getWorkflowType().toString();
+      String workflowTypeVersion =
+          body.getWorkflowTypeVersion() == null ? null : body.getWorkflowTypeVersion().toString();
+      String labels = body.getLabels();
+      String workflowDependenciesGcsUri = body.getWorkflowDependenciesGcsUri();
+      UUID requestedWorkflowId = body.getRequestedWorkflowId();
+
+      CromwellApiWorkflowIdAndStatus workflowStatus =
+          cromwellWorkflowService.submitWorkflow(
+              workspaceId,
+              workflowGcsUri,
+              workflowUrl,
+              workflowOnHold,
+              workflowInputs,
+              workflowOptions,
+              workflowType,
+              workflowTypeVersion,
+              labels,
+              workflowDependenciesGcsUri,
+              requestedWorkflowId,
+              token);
+      return new ResponseEntity<>(
+          new ApiWorkflowIdAndStatus()
+              .id(UUID.fromString(workflowStatus.getId()))
+              .status(workflowStatus.getStatus()),
+          HttpStatus.OK);
+    } catch (IOException e) {
+      throw new ApiException("Error: %s".formatted(e.getMessage()));
+    } catch (bio.terra.cromwell.client.ApiException e) {
+      throw new ApiException("Error %s: %s".formatted(e.getCode(), e.getResponseBody()));
     }
   }
 }
