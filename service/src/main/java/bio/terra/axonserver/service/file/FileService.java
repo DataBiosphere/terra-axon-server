@@ -84,6 +84,24 @@ public class FileService {
   }
 
   /**
+   * @param token Bearer token for the requester
+   * @param workspaceId The workspace that the resource is in
+   * @param gcsURI gs:// URI path to a file in a Google Cloud Storage bucket
+   * @param convertTo The format to convert the file to. If null, the file is not converted.
+   * @return
+   */
+  public InputStream getFile(
+      BearerToken token, UUID workspaceId, String gcsURI, @Nullable String convertTo) {
+    FileWithName fileWithName = getGcsObjectFromURI(workspaceId, gcsURI, token);
+    InputStream fileStream = fileWithName.fileStream;
+    if (convertTo != null) {
+      String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
+      fileStream = convertService.convertFile(fileStream, fileExtension, convertTo, token);
+    }
+    return fileStream;
+  }
+
+  /**
    * Generate a V4 signed URL using the Google application default credentials and pet service
    * account email.
    *
@@ -139,6 +157,17 @@ public class FileService {
           resource.getMetadata().getResourceType()
               + " is not a type of resource that contains files");
     };
+  }
+
+  private FileWithName getGcsObjectFromURI(UUID workspaceId, String gcsURI, BearerToken token) {
+    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
+
+    BlobId blob = BlobId.fromGsUtilUri(gcsURI);
+
+    InputStream fileStream =
+        CloudStorageUtils.getBucketObject(
+            googleCredentials, blob.getBucket(), blob.getName(), null);
+    return new FileWithName(fileStream, blob.getName());
   }
 
   private FileWithName getGcsObjectFile(
