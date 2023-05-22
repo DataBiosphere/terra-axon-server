@@ -370,6 +370,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
         mockMvcUtils.getSerializedResponseForGet(
             token, CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT.formatted(workspaceId, gcsPath));
     return objectMapper.readValue(serializedResponse, ApiWorkflowParsedInputsResponse.class);
+  }
 
   private ApiWorkflowIdAndStatus submitWorkflow(BearerToken token, UUID workspaceId)
       throws Exception {

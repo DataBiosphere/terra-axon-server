@@ -21,7 +21,6 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
-import javax.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpRange;
@@ -85,28 +84,15 @@ public class FileService {
   }
 
   /**
-   * Gets a fileStream for a given resource. Optionally converts the file to a desired format.
-   *
    * @param token Bearer token for the requester
    * @param workspaceId The workspace that the resource is in
-   * @param resourceId The id of the resource that the object is in
-   * @param objectPath The path to the object in the bucket. Only used if the resource is a bucket.
+   * @param gcsURI gs:// URI path to a file in a Google Cloud Storage bucket
    * @param convertTo The format to convert the file to. If null, the file is not converted.
-   * @param byteRange The range of bytes to return. If null, the entire file is returned.
-   * @return The file as a byte array
+   * @return
    */
   public InputStream getFile(
-      BearerToken token,
-      UUID workspaceId,
-      UUID resourceId,
-      @Nullable String objectPath,
-      @Nullable String convertTo,
-      @Nullable HttpRange byteRange) {
-
-    ResourceDescription resource =
-        wsmService.getResource(workspaceId, resourceId, token.getToken());
-
-    FileWithName fileWithName = getFileHandler(workspaceId, resource, objectPath, byteRange, token);
+      BearerToken token, UUID workspaceId, String gcsURI, @Nullable String convertTo) {
+    FileWithName fileWithName = getGcsObjectFromURI(workspaceId, gcsURI, token);
     InputStream fileStream = fileWithName.fileStream;
     if (convertTo != null) {
       String fileExtension = FilenameUtils.getExtension(fileWithName.fileName);
