@@ -28,6 +28,7 @@ import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.common.exception.NotFoundException;
 import bio.terra.common.flagsmith.FlagsmithService;
 import bio.terra.workspace.model.AwsCredential;
+import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -296,7 +297,9 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     String operationPath = getNotebookOperationPath("status");
 
     AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
-    doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
+    doReturn(notebook)
+        .when(awsResourceController)
+        .getNotebook(workspaceId, resourceId, AwsCredentialAccessScope.READ_ONLY);
     when(notebook.getStatus()).thenReturn(NotebookStatus.ACTIVE);
 
     String serializedGetResponse =
