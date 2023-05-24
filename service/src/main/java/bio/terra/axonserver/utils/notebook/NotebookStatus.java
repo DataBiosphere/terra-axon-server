@@ -7,6 +7,7 @@ package bio.terra.axonserver.utils.notebook;
  */
 public enum NotebookStatus {
   ACTIVE,
+  CREATING,
   DELETED,
   DELETING,
   FAILED,

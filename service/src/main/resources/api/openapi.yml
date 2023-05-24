@@ -657,6 +657,7 @@ components:
           type: string
           enum:
             - ACTIVE
+            - CREATING
             - DELETED
             - DELETING
             - FAILED
