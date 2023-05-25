@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.net.URL;
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -100,7 +101,25 @@ public class AwsResourceController extends ControllerBase implements AwsResource
     checkAwsEnabled();
     String accessToken = getAccessToken();
     return AwsSageMakerNotebook.create(
-        wsmService, wsmService.getResource(workspaceId, resourceId, accessToken), accessToken);
+        wsmService,
+        wsmService.getResource(workspaceId, resourceId, accessToken),
+        /*awsCredentialAccessScope=*/ null,
+        accessToken);
+  }
+
+  /** Do not use, public for spy testing */
+  @VisibleForTesting
+  public AwsSageMakerNotebook getNotebook(
+      UUID workspaceId,
+      UUID resourceId,
+      @Nullable AwsCredentialAccessScope awsCredentialAccessScope) {
+    checkAwsEnabled();
+    String accessToken = getAccessToken();
+    return AwsSageMakerNotebook.create(
+        wsmService,
+        wsmService.getResource(workspaceId, resourceId, accessToken),
+        awsCredentialAccessScope,
+        accessToken);
   }
 
   /**
@@ -141,7 +160,8 @@ public class AwsResourceController extends ControllerBase implements AwsResource
   @Override
   public ResponseEntity<ApiNotebookStatus> getSageMakerNotebookStatus(
       UUID workspaceId, UUID resourceId) {
-    NotebookStatus notebookStatus = getNotebook(workspaceId, resourceId).getStatus();
+    NotebookStatus notebookStatus =
+        getNotebook(workspaceId, resourceId, AwsCredentialAccessScope.READ_ONLY).getStatus();
 
     ApiNotebookStatus.NotebookStatusEnum outEnum =
         Optional.ofNullable(

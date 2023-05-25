@@ -11,6 +11,7 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceMetadata;
 import bio.terra.workspace.model.ResourceType;
 import com.google.common.annotations.VisibleForTesting;
+import javax.annotation.Nullable;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -27,13 +28,16 @@ public class AwsSageMakerNotebook {
   private static AwsCredentialsProvider getCredentialProvider(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resource,
+      @Nullable AwsCredentialAccessScope awsCredentialAccessScope,
       String accessToken) {
     ResourceMetadata resourceMetadata = resource.getMetadata();
 
     AwsCredentialAccessScope accessScope =
-        WorkspaceManagerService.inferAwsCredentialAccessScope(
-            workspaceManagerService.getHighestRole(
-                resourceMetadata.getWorkspaceId(), IamRole.READER, accessToken));
+        (awsCredentialAccessScope != null)
+            ? awsCredentialAccessScope
+            : WorkspaceManagerService.inferAwsCredentialAccessScope(
+                workspaceManagerService.getHighestRole(
+                    resourceMetadata.getWorkspaceId(), IamRole.READER, accessToken));
 
     AwsCredential awsCredential =
         workspaceManagerService.getAwsSageMakerNotebookCredential(
@@ -60,12 +64,14 @@ public class AwsSageMakerNotebook {
   private AwsSageMakerNotebook(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resource,
+      AwsCredentialAccessScope awsCredentialAccessScope,
       String accessToken) {
     this(
         resource.getResourceAttributes().getAwsSageMakerNotebook().getInstanceName(),
         SageMakerNotebookCow.create(
             clientConfig,
-            getCredentialProvider(workspaceManagerService, resource, accessToken),
+            getCredentialProvider(
+                workspaceManagerService, resource, awsCredentialAccessScope, accessToken),
             resource.getMetadata().getControlledResourceMetadata().getRegion()));
   }
 
@@ -73,9 +79,11 @@ public class AwsSageMakerNotebook {
   public static AwsSageMakerNotebook create(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resourceDescription,
+      AwsCredentialAccessScope awsCredentialAccessScope,
       String accessToken) {
     ResourceUtils.validateResourceType(ResourceType.AWS_SAGEMAKER_NOTEBOOK, resourceDescription);
-    return new AwsSageMakerNotebook(workspaceManagerService, resourceDescription, accessToken);
+    return new AwsSageMakerNotebook(
+        workspaceManagerService, resourceDescription, awsCredentialAccessScope, accessToken);
   }
 
   /**
