@@ -187,7 +187,7 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
           body.getWorkflowType() == null ? null : body.getWorkflowType().toString();
       String workflowTypeVersion =
           body.getWorkflowTypeVersion() == null ? null : body.getWorkflowTypeVersion().toString();
-      String labels = body.getLabels();
+      var labels = body.getLabels();
       String workflowDependenciesGcsUri = body.getWorkflowDependenciesGcsUri();
       UUID requestedWorkflowId = body.getRequestedWorkflowId();
 

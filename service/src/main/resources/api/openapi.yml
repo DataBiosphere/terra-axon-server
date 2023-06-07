@@ -854,7 +854,9 @@ components:
           enum: [ "1.0", "draft-2"]
         labels:
           description: JSON object of labels to apply to this workflow.
-          type: string
+          type: object
+          additionalProperties:
+            type: string
         workflowDependenciesGcsUri:
           description: GCS URI to ZIP file containing workflow source files that are used to resolve local imports. This zip bundle will be unpacked in a sandbox accessible to this workflow.
           type: string

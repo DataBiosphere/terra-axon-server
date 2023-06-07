@@ -44,12 +44,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
-import womtool.WomtoolMain.UnsuccessfulTermination;
 import womtool.inputs.Inputs;
 
 /**
@@ -187,10 +185,10 @@ public class CromwellWorkflowService {
       String workflowUrl,
       Boolean workflowOnHold,
       Map<String, String> workflowInputs,
-      Map workflowOptions,
+      Map<String, Object> workflowOptions,
       String workflowType,
       String workflowTypeVersion,
-      String labels,
+      Map<String, String> labels,
       String workflowDependenciesGcsUri,
       UUID requestedWorkflowId,
       BearerToken token)
@@ -214,9 +212,7 @@ public class CromwellWorkflowService {
       // Create inputs file
       if (workflowInputs != null) {
         try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          ObjectMapper objectMapper = new ObjectMapper();
-          String json = objectMapper.writeValueAsString(workflowInputs);
-          out.write(json.getBytes(StandardCharsets.UTF_8));
+          out.write(workflowInputs.toString().getBytes(StandardCharsets.UTF_8));
         }
       }
 
@@ -236,11 +232,9 @@ public class CromwellWorkflowService {
       }
 
       // Adjoin the workspace-id label to the workflow.
-      JSONObject jsonLabels = labels == null ? new JSONObject() : new JSONObject(labels);
-      jsonLabels.put(WORKSPACE_ID_LABEL_KEY, workspaceId);
-      labels = jsonLabels.toString();
+      labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(labels.getBytes(StandardCharsets.UTF_8));
+        out.write(labels.toString().getBytes(StandardCharsets.UTF_8));
       }
       if (workflowGcsUri != null) {
         InputStream inputStream =
@@ -308,12 +302,12 @@ public class CromwellWorkflowService {
 
       // 3) Return the result as json, or return error
       if (termination instanceof SuccessfulTermination) {
-        String jsonString = ((SuccessfulTermination) termination).stdout().get();
+        String jsonString = termination.stdout().get();
         // Use Gson to convert the JSON-like string to a Map<String, String>
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
-        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        String errorMessage = termination.stderr().get();
         throw new InvalidWdlException(errorMessage);
       }
     }

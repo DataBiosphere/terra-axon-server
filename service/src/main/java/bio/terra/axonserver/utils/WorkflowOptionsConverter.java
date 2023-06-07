@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WorkflowOptionsConverter {
-  public static Map<String, String> convertToMap(
+  public static Map<String, Object> convertToMap(
       ApiSubmitWorkflowRequestBodyWorkflowOptions workflowOptions) {
-    Map<String, String> map = new HashMap<>();
+    Map<String, Object> map = new HashMap<>();
     map.put("jes_gcs_root", workflowOptions.getJesGcsRoot());
     map.put("delete_intermediate_output_files", workflowOptions.getDeleteIntermediateOutputFiles());
     map.put("memory_retry_multiplier", workflowOptions.getMemoryRetryMultiplier());
