@@ -820,12 +820,13 @@ components:
           type: boolean
           default: false
         workflowInputs:
-          description: JSON or YAML file containing the inputs as an object. For WDL workflows a skeleton file can be generated from WOMtool using the "inputs" subcommand.
-          type: string
-        workflowOptions:
-          description: JSON file containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
+          description: JSON containing the inputs as an object.
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: string
+        workflowOptions:
+          description: JSON containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
+          type: object
           properties:
             jes_gcs_root:
               type: string

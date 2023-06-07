@@ -186,8 +186,8 @@ public class CromwellWorkflowService {
       String workflowGcsUri,
       String workflowUrl,
       Boolean workflowOnHold,
-      String workflowInputs,
-      Map<String, Object> workflowOptions,
+      Map<String, String> workflowInputs,
+      Map workflowOptions,
       String workflowType,
       String workflowTypeVersion,
       String labels,
@@ -214,7 +214,9 @@ public class CromwellWorkflowService {
       // Create inputs file
       if (workflowInputs != null) {
         try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          out.write(workflowInputs.getBytes(StandardCharsets.UTF_8));
+          ObjectMapper objectMapper = new ObjectMapper();
+          String json = objectMapper.writeValueAsString(workflowInputs);
+          out.write(json.getBytes(StandardCharsets.UTF_8));
         }
       }
 

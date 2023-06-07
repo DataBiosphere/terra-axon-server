@@ -13,6 +13,7 @@ import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.WorkflowOptionsConverter;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
@@ -180,8 +181,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
-      String workflowInputs = body.getWorkflowInputs();
-      var workflowOptions = body.getWorkflowOptions();
+      var workflowInputs = body.getWorkflowInputs();
+      var workflowOptions = WorkflowOptionsConverter.convertToMap(body.getWorkflowOptions());
       String workflowType =
           body.getWorkflowType() == null ? null : body.getWorkflowType().toString();
       String workflowTypeVersion =
