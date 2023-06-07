@@ -8,13 +8,26 @@ public class WorkflowOptionsConverter {
   public static Map<String, Object> convertToMap(
       ApiSubmitWorkflowRequestBodyWorkflowOptions workflowOptions) {
     Map<String, Object> map = new HashMap<>();
-    map.put("jes_gcs_root", workflowOptions.getJesGcsRoot());
-    map.put("delete_intermediate_output_files", workflowOptions.getDeleteIntermediateOutputFiles());
-    map.put("memory_retry_multiplier", workflowOptions.getMemoryRetryMultiplier());
-    map.put("write_to_cache", workflowOptions.getWriteToCache());
-    map.put("read_from_cache", workflowOptions.getReadFromCache());
-    map.put("final_workflow_log_dir", workflowOptions.getFinalWorkflowLogDir());
-    map.put("final_call_logs_dir", workflowOptions.getFinalCallLogsDir());
+
+    if (workflowOptions != null) {
+      addToMapIfNotNull(map, "jes_gcs_root", workflowOptions.getJesGcsRoot());
+      addToMapIfNotNull(
+          map,
+          "delete_intermediate_output_files",
+          workflowOptions.getDeleteIntermediateOutputFiles());
+      addToMapIfNotNull(map, "memory_retry_multiplier", workflowOptions.getMemoryRetryMultiplier());
+      addToMapIfNotNull(map, "write_to_cache", workflowOptions.getWriteToCache());
+      addToMapIfNotNull(map, "read_from_cache", workflowOptions.getReadFromCache());
+      addToMapIfNotNull(map, "final_workflow_log_dir", workflowOptions.getFinalWorkflowLogDir());
+      addToMapIfNotNull(map, "final_call_logs_dir", workflowOptions.getFinalCallLogsDir());
+    }
+
     return map;
+  }
+
+  private static void addToMapIfNotNull(Map<String, Object> map, String key, Object value) {
+    if (value != null) {
+      map.put(key, value);
+    }
   }
 }

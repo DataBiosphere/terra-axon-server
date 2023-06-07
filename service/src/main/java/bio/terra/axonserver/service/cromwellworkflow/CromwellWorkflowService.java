@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
+import womtool.WomtoolMain.UnsuccessfulTermination;
 import womtool.inputs.Inputs;
 
 /**
@@ -198,6 +200,16 @@ public class CromwellWorkflowService {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
 
+    if (workflowInputs == null) {
+      workflowInputs = new HashMap<>();
+    }
+    if (workflowOptions == null) {
+      workflowInputs = new HashMap<>();
+    }
+    if (labels == null) {
+      labels = new HashMap<>();
+    }
+
     try (AutoDeletingTempFile tempInputsFile =
             new AutoDeletingTempFile("workflow-inputs-", "-terra");
         AutoDeletingTempFile tempOptionsFile =
@@ -210,9 +222,10 @@ public class CromwellWorkflowService {
             new AutoDeletingTempFile("workflow-dependencies-", "-terra")) {
 
       // Create inputs file
+      ObjectMapper mapper = new ObjectMapper();
       if (workflowInputs != null) {
         try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          out.write(workflowInputs.toString().getBytes(StandardCharsets.UTF_8));
+          out.write(mapper.writeValueAsString(workflowInputs).getBytes(StandardCharsets.UTF_8));
         }
       }
 
@@ -226,7 +239,6 @@ public class CromwellWorkflowService {
           "default_runtime_attributes",
           new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
 
-      ObjectMapper mapper = new ObjectMapper();
       try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
       }
@@ -234,7 +246,7 @@ public class CromwellWorkflowService {
       // Adjoin the workspace-id label to the workflow.
       labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(labels.toString().getBytes(StandardCharsets.UTF_8));
+        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
       }
       if (workflowGcsUri != null) {
         InputStream inputStream =
@@ -302,12 +314,12 @@ public class CromwellWorkflowService {
 
       // 3) Return the result as json, or return error
       if (termination instanceof SuccessfulTermination) {
-        String jsonString = termination.stdout().get();
+        String jsonString = ((SuccessfulTermination) termination).stdout().get();
         // Use Gson to convert the JSON-like string to a Map<String, String>
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
-        String errorMessage = termination.stderr().get();
+        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
         throw new InvalidWdlException(errorMessage);
       }
     }
