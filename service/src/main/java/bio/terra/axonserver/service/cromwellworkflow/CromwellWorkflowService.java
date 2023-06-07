@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -198,16 +197,6 @@ public class CromwellWorkflowService {
 
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
-    }
-
-    if (workflowInputs == null) {
-      workflowInputs = new HashMap<>();
-    }
-    if (workflowOptions == null) {
-      workflowInputs = new HashMap<>();
-    }
-    if (labels == null) {
-      labels = new HashMap<>();
     }
 
     try (AutoDeletingTempFile tempInputsFile =

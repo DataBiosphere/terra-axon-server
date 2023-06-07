@@ -24,6 +24,7 @@ import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -181,10 +182,17 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
+      var workflowOptions = WorkflowOptionsConverter.convertToMap(body.getWorkflowOptions());
 
       var workflowInputs = body.getWorkflowInputs();
-      var workflowOptions = WorkflowOptionsConverter.convertToMap(body.getWorkflowOptions());
+      if (workflowInputs == null) {
+        workflowInputs = new HashMap<>();
+      }
+
       var labels = body.getLabels();
+      if (labels == null) {
+        labels = new HashMap<>();
+      }
 
       String workflowType =
           body.getWorkflowType() == null ? null : body.getWorkflowType().toString();
