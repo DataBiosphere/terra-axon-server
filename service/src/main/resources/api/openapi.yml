@@ -820,12 +820,13 @@ components:
           type: boolean
           default: false
         workflowInputs:
-          description: JSON or YAML file containing the inputs as an object. For WDL workflows a skeleton file can be generated from WOMtool using the "inputs" subcommand.
-          type: string
-        workflowOptions:
-          description: JSON file containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
+          description: JSON containing the inputs as an object.
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: string
+        workflowOptions:
+          description: JSON containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
+          type: object
           properties:
             jes_gcs_root:
               type: string
@@ -853,7 +854,9 @@ components:
           enum: [ "1.0", "draft-2"]
         labels:
           description: JSON object of labels to apply to this workflow.
-          type: string
+          type: object
+          additionalProperties:
+            type: string
         workflowDependenciesGcsUri:
           description: GCS URI to ZIP file containing workflow source files that are used to resolve local imports. This zip bundle will be unpacked in a sandbox accessible to this workflow.
           type: string
@@ -906,6 +909,17 @@ components:
         backendLogs:
           type: object
           description: Paths to backend specific logs for this call
+        callCaching:
+          type: object
+          properties:
+            allowResultReuse:
+              type: boolean
+            effectiveCallCachingMode:
+              type: string
+            hit:
+              type: boolean
+            result:
+              type: string
 
     FailureMessages:
       description: Failure messages

@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import womtool.WomtoolMain.SuccessfulTermination;
@@ -186,11 +185,11 @@ public class CromwellWorkflowService {
       String workflowGcsUri,
       String workflowUrl,
       Boolean workflowOnHold,
-      String workflowInputs,
+      Map<String, String> workflowInputs,
       Map<String, Object> workflowOptions,
       String workflowType,
       String workflowTypeVersion,
-      String labels,
+      Map<String, String> labels,
       String workflowDependenciesGcsUri,
       UUID requestedWorkflowId,
       BearerToken token)
@@ -198,6 +197,9 @@ public class CromwellWorkflowService {
 
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
+    }
+    if (workflowOptions == null || workflowOptions.get("jes_gcs_root") == null) {
+      throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
 
     try (AutoDeletingTempFile tempInputsFile =
@@ -212,9 +214,10 @@ public class CromwellWorkflowService {
             new AutoDeletingTempFile("workflow-dependencies-", "-terra")) {
 
       // Create inputs file
+      ObjectMapper mapper = new ObjectMapper();
       if (workflowInputs != null) {
         try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          out.write(workflowInputs.getBytes(StandardCharsets.UTF_8));
+          out.write(mapper.writeValueAsString(workflowInputs).getBytes(StandardCharsets.UTF_8));
         }
       }
 
@@ -228,17 +231,14 @@ public class CromwellWorkflowService {
           "default_runtime_attributes",
           new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
 
-      ObjectMapper mapper = new ObjectMapper();
       try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
       }
 
       // Adjoin the workspace-id label to the workflow.
-      JSONObject jsonLabels = labels == null ? new JSONObject() : new JSONObject(labels);
-      jsonLabels.put(WORKSPACE_ID_LABEL_KEY, workspaceId);
-      labels = jsonLabels.toString();
+      labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(labels.getBytes(StandardCharsets.UTF_8));
+        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
       }
       if (workflowGcsUri != null) {
         InputStream inputStream =

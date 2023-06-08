@@ -16,6 +16,8 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
@@ -23,6 +25,7 @@ import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -40,17 +43,21 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
+  private ObjectMapper objectMapper;
+
   @Autowired
   public CromwellWorkflowController(
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
       CromwellWorkflowService cromwellWorkflowService,
       FileService fileService,
-      WorkspaceManagerService wsmService) {
+      WorkspaceManagerService wsmService,
+      ObjectMapper objectMapper) {
     super(bearerTokenFactory, request);
     this.cromwellWorkflowService = cromwellWorkflowService;
     this.fileService = fileService;
     this.wsmService = wsmService;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -180,13 +187,28 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
-      String workflowInputs = body.getWorkflowInputs();
-      var workflowOptions = body.getWorkflowOptions();
+
+      var requestOptions = body.getWorkflowOptions();
+      Map<String, Object> workflowOptions = new HashMap<>();
+      if (requestOptions != null) {
+        workflowOptions = objectMapper.convertValue(requestOptions, new TypeReference<>() {});
+      }
+
+      var workflowInputs = body.getWorkflowInputs();
+      if (workflowInputs == null) {
+        workflowInputs = new HashMap<>();
+      }
+
+      var labels = body.getLabels();
+      if (labels == null) {
+        labels = new HashMap<>();
+      }
+
       String workflowType =
           body.getWorkflowType() == null ? null : body.getWorkflowType().toString();
       String workflowTypeVersion =
           body.getWorkflowTypeVersion() == null ? null : body.getWorkflowTypeVersion().toString();
-      String labels = body.getLabels();
+
       String workflowDependenciesGcsUri = body.getWorkflowDependenciesGcsUri();
       UUID requestedWorkflowId = body.getRequestedWorkflowId();
 

@@ -3,6 +3,7 @@ package bio.terra.axonserver.app.controller;
 import static bio.terra.axonserver.testutils.MockMvcUtils.USER_REQUEST;
 
 import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBody;
+import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBodyWorkflowOptions;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
 import bio.terra.axonserver.model.ApiWorkflowIdAndStatus;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
@@ -314,11 +315,11 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 /*workflowGcsUri=*/ Mockito.anyString(),
                 Mockito.eq(null),
                 /*workflowOnHold=*/ Mockito.eq(false),
+                /*workflowInputs*/ Mockito.anyMap(),
+                /*workflowOptions*/ Mockito.anyMap(),
                 Mockito.eq(null),
                 Mockito.eq(null),
-                Mockito.eq(null),
-                Mockito.eq(null),
-                Mockito.eq(null),
+                /*labels*/ Mockito.anyMap(),
                 Mockito.eq(null),
                 Mockito.eq(workflowId),
                 Mockito.eq(USER_REQUEST)))
@@ -377,6 +378,8 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
     ApiSubmitWorkflowRequestBody request =
         new ApiSubmitWorkflowRequestBody()
             .workflowGcsUri("gs://fake-bucket/path/to/object")
+            .workflowOptions(
+                new ApiSubmitWorkflowRequestBodyWorkflowOptions().jesGcsRoot("gs://fake-bucket/"))
             .requestedWorkflowId(workflowId);
 
     String serializedResponse =
