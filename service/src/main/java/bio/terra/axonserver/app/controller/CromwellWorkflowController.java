@@ -13,10 +13,12 @@ import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
-import bio.terra.axonserver.utils.WorkflowOptionsConverter;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
@@ -182,8 +184,10 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
-      var workflowOptions = WorkflowOptionsConverter.convertToMap(body.getWorkflowOptions());
-
+      ObjectMapper objectMapper = new ObjectMapper();
+      objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+      Map<String, Object> workflowOptions =
+          objectMapper.convertValue(body.getWorkflowOptions(), new TypeReference<>() {});
       var workflowInputs = body.getWorkflowInputs();
       if (workflowInputs == null) {
         workflowInputs = new HashMap<>();
