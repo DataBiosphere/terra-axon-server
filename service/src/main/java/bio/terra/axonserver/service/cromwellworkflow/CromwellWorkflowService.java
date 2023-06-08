@@ -198,6 +198,9 @@ public class CromwellWorkflowService {
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
+    if (workflowOptions == null || workflowOptions.get("jes_gcs_root") == null) {
+      throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
+    }
 
     try (AutoDeletingTempFile tempInputsFile =
             new AutoDeletingTempFile("workflow-inputs-", "-terra");
