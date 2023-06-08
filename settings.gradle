@@ -1,4 +1,4 @@
 rootProject.name = 'terra-axon-server'
 include('service', 'client')
 
-gradle.ext.releaseVersion = '0.34.0-SNAPSHOT'
+gradle.ext.releaseVersion = '0.35.0-SNAPSHOT'
