@@ -184,10 +184,15 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowGcsUri = body.getWorkflowGcsUri();
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
-      ObjectMapper objectMapper = new ObjectMapper();
-      objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-      Map<String, Object> workflowOptions =
-          objectMapper.convertValue(body.getWorkflowOptions(), new TypeReference<>() {});
+
+      var requestOptions = body.getWorkflowOptions();
+      Map<String, Object> workflowOptions = new HashMap<>();
+      if (requestOptions != null) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        workflowOptions = objectMapper.convertValue(requestOptions, new TypeReference<>() {});
+      }
+
       var workflowInputs = body.getWorkflowInputs();
       if (workflowInputs == null) {
         workflowInputs = new HashMap<>();
