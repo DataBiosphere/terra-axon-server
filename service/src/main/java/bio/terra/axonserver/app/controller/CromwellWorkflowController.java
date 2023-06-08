@@ -16,7 +16,6 @@ import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.client.model.CromwellApiLabelsResponse;
@@ -44,17 +43,21 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
   private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
+  private ObjectMapper objectMapper;
+
   @Autowired
   public CromwellWorkflowController(
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
       CromwellWorkflowService cromwellWorkflowService,
       FileService fileService,
-      WorkspaceManagerService wsmService) {
+      WorkspaceManagerService wsmService,
+      ObjectMapper objectMapper) {
     super(bearerTokenFactory, request);
     this.cromwellWorkflowService = cromwellWorkflowService;
     this.fileService = fileService;
     this.wsmService = wsmService;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -188,8 +191,6 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       var requestOptions = body.getWorkflowOptions();
       Map<String, Object> workflowOptions = new HashMap<>();
       if (requestOptions != null) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         workflowOptions = objectMapper.convertValue(requestOptions, new TypeReference<>() {});
       }
 
