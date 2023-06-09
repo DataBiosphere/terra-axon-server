@@ -828,22 +828,22 @@ components:
           description: JSON containing configuration options for the execution of this workflow. jes_gcs_root is required; the rest are optional.
           type: object
           properties:
-            jes_gcs_root:
+            jesGcsRoot:
               type: string
-            delete_intermediate_output_files:
+            deleteIntermediateOutputFiles:
               type: string
-            memory_retry_multiplier:
+            memoryRetryMultiplier:
               type: string
-            write_to_cache:
+            writeToCache:
               type: string
-            read_from_cache:
+            readFromCache:
               type: string
-            final_workflow_log_dir:
+            finalWorkflowLogDir:
               type: string
-            final_call_logs_dir:
+            finalCallLogsDir:
               type: string
           required:
-            - jes_gcs_root
+            - jesGcsRoot
         workflowType:
           description: The workflow language for the file you submitted. Cromwell currently supports WDL.
           type: string

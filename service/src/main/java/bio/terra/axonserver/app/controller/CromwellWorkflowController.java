@@ -13,6 +13,7 @@ import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.StringUtils;
 import bio.terra.common.exception.ApiException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.iam.BearerTokenFactory;
@@ -188,10 +189,16 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowUrl = body.getWorkflowUrl();
       Boolean workflowOnHold = body.isWorkflowOnHold();
 
+      // Convert workflowOptions to a snake_case map, this is what cromwell expects
       var requestOptions = body.getWorkflowOptions();
       Map<String, Object> workflowOptions = new HashMap<>();
       if (requestOptions != null) {
-        workflowOptions = objectMapper.convertValue(requestOptions, new TypeReference<>() {});
+        Map<String, Object> workflowOptionsMap =
+            objectMapper.convertValue(requestOptions, new TypeReference<>() {});
+
+        for (Map.Entry<String, Object> entry : workflowOptionsMap.entrySet()) {
+          workflowOptions.put(StringUtils.camelToSnake(entry.getKey()), entry.getValue());
+        }
       }
 
       var workflowInputs = body.getWorkflowInputs();
