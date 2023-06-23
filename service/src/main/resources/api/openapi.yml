@@ -831,13 +831,13 @@ components:
             jesGcsRoot:
               type: string
             deleteIntermediateOutputFiles:
-              type: string
+              type: boolean
             memoryRetryMultiplier:
-              type: string
+              type: number
             writeToCache:
-              type: string
+              type: boolean
             readFromCache:
-              type: string
+              type: boolean
             finalWorkflowLogDir:
               type: string
             finalCallLogsDir:
