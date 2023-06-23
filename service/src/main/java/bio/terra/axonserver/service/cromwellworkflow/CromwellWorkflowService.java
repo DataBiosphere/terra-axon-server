@@ -2,6 +2,7 @@ package bio.terra.axonserver.service.cromwellworkflow;
 
 import bio.terra.axonserver.app.configuration.CromwellConfiguration;
 import bio.terra.axonserver.model.ApiCallMetadata;
+import bio.terra.axonserver.model.ApiCallMetadataCallCaching;
 import bio.terra.axonserver.model.ApiFailureMessages;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
@@ -391,21 +392,37 @@ public class CromwellWorkflowService {
                         entry ->
                             entry.getValue().stream()
                                 .map(
-                                    m ->
-                                        new ApiCallMetadata()
-                                            .inputs(m.getInputs())
-                                            .executionStatus(m.getExecutionStatus())
-                                            .backend(m.getBackend())
-                                            .backendStatus(m.getBackendStatus())
-                                            .start(m.getStart())
-                                            .end(m.getEnd())
-                                            .jobId(m.getJobId())
-                                            .failures(toApiFailureMessages(m.getFailures()))
-                                            .returnCode(m.getReturnCode())
-                                            .callRoot(m.getCallRoot())
-                                            .stdout(m.getStdout())
-                                            .stderr(m.getStderr())
-                                            .backendLogs(m.getBackendLogs()))
+                                    m -> {
+                                      ApiCallMetadata apiCallMetadata =
+                                          new ApiCallMetadata()
+                                              .inputs(m.getInputs())
+                                              .executionStatus(m.getExecutionStatus())
+                                              .backend(m.getBackend())
+                                              .backendStatus(m.getBackendStatus())
+                                              .start(m.getStart())
+                                              .end(m.getEnd())
+                                              .jobId(m.getJobId())
+                                              .failures(toApiFailureMessages(m.getFailures()))
+                                              .returnCode(m.getReturnCode())
+                                              .callRoot(m.getCallRoot())
+                                              .stdout(m.getStdout())
+                                              .stderr(m.getStderr())
+                                              .backendLogs(m.getBackendLogs());
+
+                                      if (m.getCallCaching() != null) {
+                                        apiCallMetadata.callCaching(
+                                            new ApiCallMetadataCallCaching()
+                                                .allowResultReuse(
+                                                    m.getCallCaching().isAllowResultReuse())
+                                                .effectiveCallCachingMode(
+                                                    m.getCallCaching()
+                                                        .getEffectiveCallCachingMode())
+                                                .hit(m.getCallCaching().isHit())
+                                                .result(m.getCallCaching().getResult()));
+                                      }
+
+                                      return apiCallMetadata;
+                                    })
                                 .toList()));
 
     CromwellApiWorkflowMetadataResponseSubmittedFiles cromwellSubmittedFiles =
