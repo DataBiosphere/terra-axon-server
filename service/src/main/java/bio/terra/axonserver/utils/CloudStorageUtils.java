@@ -12,9 +12,7 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLDecoder;
 import java.nio.channels.Channels;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpRange;
@@ -59,14 +57,6 @@ public class CloudStorageUtils {
       String bucketName,
       String objectName,
       @Nullable HttpRange byteRange) {
-
-    // decode encoded slashes in object path
-    try {
-      objectName = URLDecoder.decode(objectName, StandardCharsets.UTF_8.toString());
-    } catch (Exception e) {
-      throw new BadRequestException("Bad object path: " + objectName);
-    }
-
     try {
       // Get the ReadChannel for the object
       Storage gcs =
