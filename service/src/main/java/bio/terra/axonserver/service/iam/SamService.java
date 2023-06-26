@@ -7,6 +7,8 @@ import bio.terra.common.sam.exception.SamExceptionFactory;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
+import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
+import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +45,20 @@ public class SamService {
           .getPetServiceAccountToken(projectId, CloudStorageUtils.getPetScopes());
     } catch (ApiException apiException) {
       throw SamExceptionFactory.create("Error getting user's pet SA access token", apiException);
+    }
+  }
+
+  /**
+   * Get registration info for a user (email, enabled status)
+   *
+   * @param userRequest user access token
+   * @return
+   */
+  public UserStatusInfo getUserStatusInfo(BearerToken userRequest) {
+    try {
+      return new UsersApi(getApiClient(userRequest.getToken())).getUserStatusInfo();
+    } catch (ApiException apiException) {
+      throw SamExceptionFactory.create("Error getting user's info", apiException);
     }
   }
 
