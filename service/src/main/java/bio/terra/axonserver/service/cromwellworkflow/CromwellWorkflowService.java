@@ -69,6 +69,9 @@ public class CromwellWorkflowService {
   private final SamService samService;
 
   public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
+  public static final String USER_EMAIL_LABEL_KEY = "terra-user-email";
+
+  public static final String GCS_SOURCE_LABEL_KEY = "terra-gcs-source-uri";
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
 
   @Autowired
@@ -235,18 +238,19 @@ public class CromwellWorkflowService {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
       }
 
-      // Adjoin the workspace-id label to the workflow.
       labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
-      try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
-      }
+      labels.put(USER_EMAIL_LABEL_KEY, samService.getUserStatusInfo(token).getUserEmail());
       if (workflowGcsUri != null) {
+        labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
         Files.copy(
             inputStream,
             tempWorkflowSourceFile.getFile().toPath(),
             StandardCopyOption.REPLACE_EXISTING);
+      }
+      try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
+        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
       }
 
       // Get dependencies from GCS and create temp file
