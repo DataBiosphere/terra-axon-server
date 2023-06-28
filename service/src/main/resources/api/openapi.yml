@@ -831,13 +831,13 @@ components:
             jesGcsRoot:
               type: string
             deleteIntermediateOutputFiles:
-              type: string
+              type: boolean
             memoryRetryMultiplier:
-              type: string
+              type: number
             writeToCache:
-              type: string
+              type: boolean
             readFromCache:
-              type: string
+              type: boolean
             finalWorkflowLogDir:
               type: string
             finalCallLogsDir:
@@ -914,12 +914,16 @@ components:
           properties:
             allowResultReuse:
               type: boolean
+              example: true
             effectiveCallCachingMode:
               type: string
+              example: 'ReadAndWriteCache'
             hit:
               type: boolean
+              example: true
             result:
               type: string
+              example: 'Cache Hit: 7861a17a-1069-415c-b1d1-ac28b44fdc8d:hello_world.hello:-1'
 
     FailureMessages:
       description: Failure messages

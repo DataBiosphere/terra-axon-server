@@ -2,6 +2,7 @@ package bio.terra.axonserver.app.configuration;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
@@ -17,6 +18,7 @@ public class BeanConfig {
         .registerModule(new ParameterNamesModule())
         .registerModule(new Jdk8Module())
         .registerModule(new JavaTimeModule())
+        .setDateFormat(new ISO8601DateFormat())
         .setDefaultPropertyInclusion(JsonInclude.Include.NON_ABSENT);
   }
 }
