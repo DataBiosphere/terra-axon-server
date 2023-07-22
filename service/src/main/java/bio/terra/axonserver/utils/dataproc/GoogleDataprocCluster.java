@@ -1,62 +1,61 @@
-package bio.terra.axonserver.utils.notebook;
+package bio.terra.axonserver.utils.dataproc;
 
 import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.axonserver.utils.ResourceUtils;
 import bio.terra.cloudres.common.ClientConfig;
 import bio.terra.cloudres.google.api.services.common.OperationCow;
 import bio.terra.cloudres.google.api.services.common.OperationUtils;
-import bio.terra.cloudres.google.notebooks.AIPlatformNotebooksCow;
-import bio.terra.cloudres.google.notebooks.InstanceName;
-import bio.terra.workspace.model.GcpAiNotebookInstanceAttributes;
+import bio.terra.cloudres.google.dataproc.ClusterName;
+import bio.terra.cloudres.google.dataproc.DataprocCow;
+import bio.terra.workspace.model.GcpDataprocClusterAttributes;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
-import com.google.api.services.notebooks.v1.model.Instance;
-import com.google.api.services.notebooks.v1.model.Operation;
+import com.google.api.services.dataproc.model.Cluster;
+import com.google.api.services.dataproc.model.Operation;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.Duration;
 import javax.ws.rs.InternalServerErrorException;
 
-/** Utility class for running common notebook operations on a Google Vertex AI Notebook instance. */
-public class GoogleAIPlatformNotebook {
+/** Utility class for running common dataproc cluster operations on a Google Dataproc cluster. */
+public class GoogleDataprocCluster {
 
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
-  private final InstanceName instanceName;
-  private final AIPlatformNotebooksCow aiPlatformNotebooksCow;
+  private final ClusterName clusterName;
+  private final DataprocCow dataprocCow;
 
-  /** For testing use only, allows use of mock {@link AIPlatformNotebooksCow}. */
+  /** For testing use only, allows use of mock {@link DataprocCow}. */
   @VisibleForTesting
-  public GoogleAIPlatformNotebook(
-      InstanceName instanceName, AIPlatformNotebooksCow aiPlatformNotebooksCow) {
-    this.instanceName = instanceName;
-    this.aiPlatformNotebooksCow = aiPlatformNotebooksCow;
+  public GoogleDataprocCluster(ClusterName clusterName, DataprocCow dataprocCow) {
+    this.clusterName = clusterName;
+    this.dataprocCow = dataprocCow;
   }
 
-  private static InstanceName buildInstanceName(GcpAiNotebookInstanceAttributes attributes) {
-    return InstanceName.builder()
+  private static ClusterName buildClusterName(GcpDataprocClusterAttributes attributes) {
+    return ClusterName.builder()
         .projectId(attributes.getProjectId())
-        .location(attributes.getLocation())
-        .instanceId(attributes.getInstanceId())
+        .region(attributes.getRegion())
+        .name(attributes.getClusterId())
         .build();
   }
 
-  private GoogleAIPlatformNotebook(ResourceDescription resource, String accessToken)
+  private GoogleDataprocCluster(ResourceDescription resource, String accessToken)
       throws GeneralSecurityException, IOException {
     this(
-        buildInstanceName(resource.getResourceAttributes().getGcpAiNotebookInstance()),
-        AIPlatformNotebooksCow.create(
+        buildClusterName(resource.getResourceAttributes().getGcpDataprocCluster()),
+        DataprocCow.create(
             clientConfig, CloudStorageUtils.getGoogleCredentialsFromToken(accessToken)));
   }
 
-  /** Factory method to create an instance of class {@link GoogleAIPlatformNotebook}. */
-  public static GoogleAIPlatformNotebook create(
+  /** Factory method to create an instance of class {@link GoogleDataprocCluster}. */
+  public static GoogleDataprocCluster create(
       ResourceDescription resourceDescription, String accessToken) {
-    ResourceUtils.validateResourceType(ResourceType.AI_NOTEBOOK, resourceDescription);
+    ResourceUtils.validateResourceType(ResourceType.DATAPROC_CLUSTER, resourceDescription);
 
     try {
-      return new GoogleAIPlatformNotebook(resourceDescription, accessToken);
+      return new GoogleDataprocCluster(resourceDescription, accessToken);
     } catch (GeneralSecurityException | IOException e) {
       throw new InternalServerErrorException(e);
     }
@@ -65,8 +64,7 @@ public class GoogleAIPlatformNotebook {
   /** Do not use, made public for test spies. */
   @VisibleForTesting
   public void pollForSuccess(Operation operation, String errorMessage) {
-    OperationCow<Operation> operationCow =
-        aiPlatformNotebooksCow.operations().operationCow(operation);
+    OperationCow<Operation> operationCow = dataprocCow.regionOperations().operationCow(operation);
 
     try {
       operationCow =
@@ -83,21 +81,21 @@ public class GoogleAIPlatformNotebook {
   }
 
   private static String getOperationErrorMessage(String operation) {
-    return String.format("Notebook operation '%s' failed.", operation);
+    return String.format("Cluster operation '%s' failed.", operation);
   }
 
   /**
-   * Start the notebook instance.
+   * Start the cluster.
    *
-   * <p>If wait is true, the call blocks until the notebook has reached status {@link
-   * NotebookStatus#ACTIVE}. Otherwise. the call returns immediately, and caller may subsequently
+   * <p>If wait is true, the call blocks until the cluster has reached status {@link
+   * ClusterStatus#RUNNING}. Otherwise. the call returns immediately, and caller may subsequently
    * check status by calling {@link #getStatus()}.
    *
    * @param wait if true, wait for operation to complete, otherwise return immediately.
    */
   public void start(boolean wait) {
     try {
-      Operation startOperation = aiPlatformNotebooksCow.instances().start(instanceName).execute();
+      Operation startOperation = dataprocCow.clusters().start(clusterName).execute();
       if (wait) {
         pollForSuccess(startOperation, getOperationErrorMessage("start"));
       }
@@ -107,17 +105,17 @@ public class GoogleAIPlatformNotebook {
   }
 
   /**
-   * Stop the notebook instance.
+   * Stop the cluster.
    *
-   * <p>If wait is true, the call blocks until the notebook has reached status {@link
-   * NotebookStatus#STOPPED}. Otherwise. the call returns immediately, and caller may subsequently
+   * <p>If wait is true, the call blocks until the cluster has reached status {@link
+   * ClusterStatus#STOPPED}. Otherwise. the call returns immediately, and caller may subsequently
    * check status by calling {@link #getStatus()}.
    *
    * @param wait if true, wait for operation to complete, otherwise return immediately.
    */
   public void stop(boolean wait) {
     try {
-      Operation stopOperation = aiPlatformNotebooksCow.instances().stop(instanceName).execute();
+      Operation stopOperation = dataprocCow.clusters().stop(clusterName).execute();
       if (wait) {
         pollForSuccess(stopOperation, getOperationErrorMessage("stop"));
       }
@@ -126,33 +124,33 @@ public class GoogleAIPlatformNotebook {
     }
   }
 
-  private Instance get(String operation) {
+  private Cluster get(String operation) {
     try {
-      return aiPlatformNotebooksCow.instances().get(instanceName).execute();
+      return dataprocCow.clusters().get(clusterName).execute();
     } catch (IOException e) {
       throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
     }
   }
 
   /**
-   * Gets current status of the Notebook instance.
+   * Gets current status of the Dataproc cluster.
    *
    * @return current status
    */
-  public NotebookStatus getStatus() {
+  public ClusterStatus getStatus() {
     try {
-      return NotebookStatus.valueOf(get("get status").getState());
+      return ClusterStatus.valueOf(get("get status").getStatus().getState());
     } catch (IllegalArgumentException e) {
-      return NotebookStatus.STATE_UNSPECIFIED;
+      return ClusterStatus.STATE_UNSPECIFIED;
     }
   }
 
   /**
-   * Gets a link by which an authorized user can access the notebook instance.
+   * Gets the proxy url for the cluster's Jupyter component.
    *
-   * @return a URL providing access to the Notebook instance UI
+   * @return a URL providing access to the dataproc cluster jupyter lab on the manager node
    */
   public String getProxyUrl() {
-    return get("get proxy url").getProxyUri();
+    return get("get proxy url").getConfig().getEndpointConfig().getHttpPorts().get("JUPYTER");
   }
 }
