@@ -2,6 +2,7 @@ package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GcpResourceApi;
 import bio.terra.axonserver.model.ApiClusterStatus;
+import bio.terra.axonserver.model.ApiComponentUrlRequestBody;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
@@ -15,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -90,7 +92,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    * Get ai notebook proxy URL.
    *
    * @param workspaceId Terra Workspace ID
-   * @param resourceId Terra AWS Resource ID
+   * @param resourceId Terra Resource ID
    * @return url to access notebook
    */
   @Override
@@ -126,7 +128,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    * Stop a dataproc cluster
    *
    * @param workspaceId Terra Workspace ID
-   * @param resourceId Terra AWS Resource ID
+   * @param resourceId Terra Resource ID
    * @param wait wait for operation to complete
    */
   @Override
@@ -140,7 +142,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    * Get Dataproc cluster status.
    *
    * @param workspaceId Terra Workspace ID
-   * @param resourceId Terra AWS Resource ID
+   * @param resourceId Terra Resource ID
    * @return notebook status
    */
   @Override
@@ -156,15 +158,17 @@ public class GcpResourceController extends ControllerBase implements GcpResource
   }
 
   /**
-   * Get Dataproc cluster jupyter notebook component proxy url
+   * Get a Dataproc cluster component web UI URL.
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra Resource ID
-   * @return url to access notebook
+   * @return url to access component web UI
    */
   @Override
-  public ResponseEntity<ApiUrl> getDataprocClusterProxyUrl(UUID workspaceId, UUID resourceId) {
-    String proxyUrl = getCluster(workspaceId, resourceId).getProxyUrl();
-    return new ResponseEntity<>(new ApiUrl().url(proxyUrl), HttpStatus.OK);
+  public ResponseEntity<ApiUrl> getDataprocClusterComponentUrl(
+      UUID workspaceId, UUID resourceId, @Valid ApiComponentUrlRequestBody body) {
+    String componentUrl =
+        getCluster(workspaceId, resourceId).getComponentUrl(body.getComponentKey());
+    return new ResponseEntity<>(new ApiUrl().url(componentUrl), HttpStatus.OK);
   }
 }

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.withSettings;
 
+import bio.terra.axonserver.service.exception.ComponentNotFoundException;
 import bio.terra.cloudres.google.dataproc.ClusterName;
 import bio.terra.cloudres.google.dataproc.DataprocCow;
 import com.google.api.services.dataproc.model.Cluster;
@@ -17,6 +18,7 @@ import com.google.api.services.dataproc.model.ClusterConfig;
 import com.google.api.services.dataproc.model.EndpointConfig;
 import com.google.api.services.dataproc.model.Operation;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import javax.ws.rs.InternalServerErrorException;
 import org.junit.jupiter.api.AfterEach;
@@ -221,36 +223,36 @@ public class GoogleDataprocClusterTest {
   }
 
   @Test
-  public void getProxyUrl() throws IOException {
+  public void getComponentUrl() throws IOException {
     // Create the Start Request Mock
     var mockGet = mock(DataprocCow.Clusters.Get.class, finalMockSettings);
     Mockito.when(mockClusters.get(clusterName)).thenReturn(mockGet);
 
     // Wire the request mock to return a fake URI
-
     String fakeUrl = "http://example.com";
     Cluster mockCluster = mock(Cluster.class, finalMockSettings);
     ClusterConfig mockClusterConfig = mock(ClusterConfig.class, finalMockSettings);
     EndpointConfig mockEndpointConfig = mock(EndpointConfig.class, finalMockSettings);
-    Map<String, String> mockHttpPorts = mock(Map.class, finalMockSettings);
+    Map<String, String> mockHttpPorts = mock(HashMap.class, finalMockSettings);
 
     Mockito.when(mockCluster.getConfig()).thenReturn(mockClusterConfig);
     Mockito.when(mockClusterConfig.getEndpointConfig()).thenReturn(mockEndpointConfig);
     Mockito.when(mockEndpointConfig.getHttpPorts()).thenReturn(mockHttpPorts);
-    Mockito.when(mockHttpPorts.get("JUPYTER")).thenReturn(fakeUrl);
+    Mockito.when(mockHttpPorts.get("JupyterLab")).thenReturn(fakeUrl);
 
     Mockito.when(mockGet.execute()).thenReturn(mockCluster);
-    assertEquals(fakeUrl, cluster.getProxyUrl());
+    assertEquals(fakeUrl, cluster.getComponentUrl("JupyterLab"));
   }
 
   @Test
-  public void getProxyUrl_throw() throws IOException {
-    Mockito.when(mockClusters.get(clusterName)).thenThrow(new IOException());
+  public void getComponentUrl_invalidComponent() throws IOException {
+    Mockito.when(mockClusters.get(clusterName))
+        .thenThrow(new ComponentNotFoundException("component not found"));
     try {
-      cluster.getProxyUrl();
-      fail("Expected InternalServerErrorException");
-    } catch (InternalServerErrorException e) {
-      assertTrue(e.getMessage().contains("get proxy url"));
+      cluster.getComponentUrl("badComponent");
+      fail("Expected ComponentNotFoundException");
+    } catch (ComponentNotFoundException e) {
+      assertTrue(e.getMessage().contains("component not found"));
     }
   }
 }

@@ -1,5 +1,6 @@
 package bio.terra.axonserver.utils.dataproc;
 
+import bio.terra.axonserver.service.exception.ComponentNotFoundException;
 import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.axonserver.utils.ResourceUtils;
 import bio.terra.cloudres.common.ClientConfig;
@@ -150,7 +151,15 @@ public class GoogleDataprocCluster {
    *
    * @return a URL providing access to the dataproc cluster jupyter lab on the manager node
    */
-  public String getProxyUrl() {
-    return get("get proxy url").getConfig().getEndpointConfig().getHttpPorts().get("JUPYTER");
+  public String getComponentUrl(String componentKey) {
+    String componentUrl =
+        get("get component url").getConfig().getEndpointConfig().getHttpPorts().get(componentKey);
+    if (componentUrl == null) {
+      throw new ComponentNotFoundException(
+          String.format(
+              "Unable to get web UI url for component %s, ensure that the component is enabled in the cluster configuration",
+              componentKey));
+    }
+    return componentUrl;
   }
 }

@@ -451,17 +451,23 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
 
-  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/proxyUrl:
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/componentUrl:
     parameters:
     - $ref: "#/components/parameters/WorkspaceId"
     - $ref: "#/components/parameters/ResourceId"
     get:
-      summary: Get a signed Proxy URL to access a GCP Dataproc Cluster
-      operationId: getDataprocClusterProxyUrl
+      summary: Get a proxy url for an dataproc web UI component
+      operationId: getDataprocClusterComponentUrl
       tags: [ GcpResource ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentUrlRequestBody'
       responses:
         "200":
-          $ref: '#/components/responses/ProxyUrlResultResponse'
+          $ref: '#/components/responses/ComponentUrlResponse'
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -755,6 +761,16 @@ components:
             - STOPPING
             - UNKNOWN
             - UPDATING
+
+    ComponentKey:
+      type: string
+      required: true
+
+    ComponentUrlRequestBody:
+      description: Request body for a dataproc cluster web UI component URL request.
+      properties:
+        componentKey:
+          $ref: "#/components/schemas/ComponentKey"
 
     ErrorReport:
       type: object
@@ -1130,6 +1146,13 @@ components:
           schema:
             $ref: '#/components/schemas/ClusterStatus'
 
+    ComponentUrlResponse:
+      description: Result of a dataproc cluster web UI component URL request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Url"
+
     Conflict:
       description: Request conflicts with current state
       content:
@@ -1186,13 +1209,6 @@ components:
           schema:
             $ref: "#/components/schemas/TokenReport"
 
-    ProxyUrlResultResponse:
-      description: Result of a proxy URL request.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Url"
-
     WorkflowStatusResponse:
       description: Status of workflow run.
       content:
@@ -1202,6 +1218,14 @@ components:
 
 
   parameters:
+    ComponentKey:
+      name: componentKey
+      in: path
+      description: A key used to identify a component for a dataproc cluster.
+      required: true
+      schema:
+        type: string
+
     ResourceId:
       name: resourceId
       in: path
