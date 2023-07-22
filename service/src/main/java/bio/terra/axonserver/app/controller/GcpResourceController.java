@@ -162,6 +162,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra Resource ID
+   * @param body containing the componentKey to get the URL for
    * @return url to access component web UI
    */
   @Override
