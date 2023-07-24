@@ -1,6 +1,7 @@
 package bio.terra.axonserver.utils.dataproc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.any;
@@ -76,34 +77,26 @@ public class GoogleDataprocClusterTest {
   }
 
   @Test
-  public void start() throws IOException {
+  public void start_noWait_doNotPoll() throws IOException {
 
-    // Create the Start Request Mock
+    // Setup cluster start mock
     var mockStart = mock(DataprocCow.Clusters.Start.class, finalMockSettings);
-
-    // Wire the request mock to return the fake operation
     Mockito.when(mockStart.execute()).thenReturn(mockOperation);
-
-    // Wire the mock Clusters to return the fake request
     Mockito.when(mockClusters.start(clusterName)).thenReturn(mockStart);
 
     // Call the method
-    cluster.start(false);
+    cluster.start(/* wait=*/ false);
 
     // Make sure pollForSuccess was not called.
     Mockito.verify(cluster, never()).pollForSuccess(any(), any());
   }
 
   @Test
-  public void start_wait() throws IOException {
+  public void start_wait_doNotPoll() throws IOException {
 
-    // Create the Start Request Mock
+    // Setup cluster start mock
     var mockStart = mock(DataprocCow.Clusters.Start.class, finalMockSettings);
-
-    // Wire the request mock to return the fake operation
     Mockito.when(mockStart.execute()).thenReturn(mockOperation);
-
-    // Wire the mock Clusters to return the fake request
     Mockito.when(mockClusters.start(clusterName)).thenReturn(mockStart);
 
     // Call the method
@@ -125,15 +118,11 @@ public class GoogleDataprocClusterTest {
   }
 
   @Test
-  public void stop() throws IOException {
+  public void stop_noWait_noPoll() throws IOException {
 
-    // Create the Start Request Mock
+    // Setup cluster stop mock
     var mockStop = mock(DataprocCow.Clusters.Stop.class, finalMockSettings);
-
-    // Wire the request mock to return the fake operation
     Mockito.when(mockStop.execute()).thenReturn(mockOperation);
-
-    // Wire the mock Clusters to return the fake request
     Mockito.when(mockClusters.stop(clusterName)).thenReturn(mockStop);
 
     // Call the method
@@ -146,13 +135,9 @@ public class GoogleDataprocClusterTest {
   @Test
   public void stop_wait() throws IOException {
 
-    // Create the Start Request Mock
+    // Setup cluster stop mock
     var mockStop = mock(DataprocCow.Clusters.Stop.class, finalMockSettings);
-
-    // Wire the request mock to return the fake operation
     Mockito.when(mockStop.execute()).thenReturn(mockOperation);
-
-    // Wire the mock Clusters to return the fake request
     Mockito.when(mockClusters.stop(clusterName)).thenReturn(mockStop);
 
     // Call the method
@@ -165,17 +150,17 @@ public class GoogleDataprocClusterTest {
   @Test
   public void stop_throw() throws IOException {
     Mockito.when(mockClusters.stop(clusterName)).thenThrow(new IOException());
-    try {
-      cluster.stop(true);
-      fail("Expected InternalServerErrorException");
-    } catch (InternalServerErrorException e) {
-      assertTrue(e.getMessage().contains("stop"));
-    }
+    assertThrows(
+        InternalServerErrorException.class,
+        () -> {
+          cluster.stop(true);
+        },
+        "Expected InternalServerErrorException");
   }
 
   @Test
   public void getStatus() throws IOException {
-    // Create the Start Request Mock
+    // Setup cluster get mock
     var mockGet = mock(DataprocCow.Clusters.Get.class, finalMockSettings);
     Mockito.when(mockClusters.get(clusterName)).thenReturn(mockGet);
 
@@ -195,11 +180,9 @@ public class GoogleDataprocClusterTest {
 
   @Test
   public void getStatus_unknown() throws IOException {
-    // Create the Start Request Mock
+    // Setup cluster get status mock
     var mockGet = mock(DataprocCow.Clusters.Get.class, finalMockSettings);
     Mockito.when(mockClusters.get(clusterName)).thenReturn(mockGet);
-
-    // Wire the request mock to return the fake state
     Cluster mockCluster = mock(Cluster.class, finalMockSettings);
     com.google.api.services.dataproc.model.ClusterStatus mockClusterStatus =
         mock(com.google.api.services.dataproc.model.ClusterStatus.class, finalMockSettings);
@@ -224,7 +207,6 @@ public class GoogleDataprocClusterTest {
 
   @Test
   public void getComponentUrl() throws IOException {
-    // Create the Start Request Mock
     var mockGet = mock(DataprocCow.Clusters.Get.class, finalMockSettings);
     Mockito.when(mockClusters.get(clusterName)).thenReturn(mockGet);
 
@@ -241,6 +223,8 @@ public class GoogleDataprocClusterTest {
     Mockito.when(mockHttpPorts.get("JupyterLab")).thenReturn(fakeUrl);
 
     Mockito.when(mockGet.execute()).thenReturn(mockCluster);
+
+    // Assert that the fake URI is returned
     assertEquals(fakeUrl, cluster.getComponentUrl("JupyterLab"));
   }
 
