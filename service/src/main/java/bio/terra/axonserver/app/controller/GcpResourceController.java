@@ -6,7 +6,7 @@ import bio.terra.axonserver.model.ApiComponentUrlRequestBody;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
-import bio.terra.axonserver.service.cloud.aws.GcpService;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
 import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;

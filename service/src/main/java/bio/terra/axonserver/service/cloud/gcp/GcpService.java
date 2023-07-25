@@ -1,4 +1,4 @@
-package bio.terra.axonserver.service.cloud.aws;
+package bio.terra.axonserver.service.cloud.gcp;
 
 import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;

@@ -1,7 +1,7 @@
 package bio.terra.axonserver.service.file;
 
 import bio.terra.axonserver.app.configuration.FileConfiguration;
-import bio.terra.axonserver.service.cloud.aws.GcpService;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.convert.ConvertService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.axonserver.service.iam.SamService;
