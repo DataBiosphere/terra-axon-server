@@ -154,7 +154,7 @@ paths:
       - $ref: "#/components/parameters/ResourceId"
     get:
       summary: |
-        Gets a signed URL providing a view of a single resource in the AWS console with access 
+        Gets a signed URL providing a view of a single resource in the AWS console with access
         limited to the user's workspace-level permissions.
       operationId: getSignedConsoleUrl
       tags: [AwsResource]
@@ -185,7 +185,7 @@ paths:
     put:
       summary: Starts an AWS SageMaker Notebook Instance
       operationId: putSageMakerNotebookStart
-      tags: [ AwsResource ]
+      tags: [AwsResource]
       responses:
         "200":
           description: Notebook successfully started.
@@ -213,7 +213,7 @@ paths:
     put:
       summary: Stop an AWS SageMaker Notebook Instance
       operationId: putSageMakerNotebookStop
-      tags: [ AwsResource ]
+      tags: [AwsResource]
       responses:
         "200":
           description: Notebook successfully stopped.
@@ -235,10 +235,10 @@ paths:
     get:
       summary: Get status of an AWS SageMaker Notebook Instance
       operationId: getSageMakerNotebookStatus
-      tags: [ AwsResource ]
+      tags: [AwsResource]
       responses:
         "200":
-          $ref: '#/components/responses/NotebookStatusResponse'
+          $ref: "#/components/responses/NotebookStatusResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -257,10 +257,10 @@ paths:
     get:
       summary: Get a signed Proxy URL to access an AWS SageMaker Notebook Instance
       operationId: getSageMakerNotebookProxyUrl
-      tags: [ AwsResource ]
+      tags: [AwsResource]
       responses:
         "200":
-          $ref: '#/components/responses/SignedUrlResultResponse'
+          $ref: "#/components/responses/SignedUrlResultResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -272,7 +272,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
 
-# Gcp resource paths
+  # Gcp resource paths
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/start:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
@@ -286,7 +286,7 @@ paths:
     put:
       summary: Starts a GCP Vertex AI Notebook Instance
       operationId: putAiNotebookStart
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
           description: Notebook successfully started.
@@ -314,7 +314,7 @@ paths:
     put:
       summary: Stop a GCP Vertex AI Notebook Instance
       operationId: putAiNotebookStop
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
           description: Notebook successfully stopped.
@@ -336,10 +336,10 @@ paths:
     get:
       summary: Get status of a GCP Vertex AI Notebook Instance
       operationId: getAiNotebookStatus
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
-          $ref: '#/components/responses/NotebookStatusResponse'
+          $ref: "#/components/responses/NotebookStatusResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -358,10 +358,10 @@ paths:
     get:
       summary: Get a signed Proxy URL to access a GCP Vertex AI Notebook Instance
       operationId: getAiNotebookProxyUrl
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
-          $ref: '#/components/responses/SignedUrlResultResponse'
+          $ref: "#/components/responses/SignedUrlResultResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -375,18 +375,18 @@ paths:
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/start:
     parameters:
-    - $ref: "#/components/parameters/WorkspaceId"
-    - $ref: "#/components/parameters/ResourceId"
-    - name: wait
-      description: Waits for operation to complete.
-      in: query
-      schema:
-        type: boolean
-        default: false
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Waits for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
     put:
       summary: Starts a GCP Dataproc cluster
       operationId: putDataprocClusterStart
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
           description: Cluster successfully started.
@@ -403,18 +403,18 @@ paths:
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/stop:
     parameters:
-    - $ref: "#/components/parameters/WorkspaceId"
-    - $ref: "#/components/parameters/ResourceId"
-    - name: wait
-      description: Wait for operation to complete.
-      in: query
-      schema:
-        type: boolean
-        default: false
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
+      - name: wait
+        description: Wait for operation to complete.
+        in: query
+        schema:
+          type: boolean
+          default: false
     put:
       summary: Stop a GCP Dataproc cluster
       operationId: putDataprocClusterStop
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
           description: Cluster successfully stopped.
@@ -431,15 +431,15 @@ paths:
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/status:
     parameters:
-    - $ref: "#/components/parameters/WorkspaceId"
-    - $ref: "#/components/parameters/ResourceId"
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get status of a GCP Dataproc cluster
       operationId: getDataprocClusterStatus
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       responses:
         "200":
-          $ref: '#/components/responses/ClusterStatusResponse'
+          $ref: "#/components/responses/ClusterStatusResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -453,21 +453,21 @@ paths:
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/componentUrl:
     parameters:
-    - $ref: "#/components/parameters/WorkspaceId"
-    - $ref: "#/components/parameters/ResourceId"
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/ResourceId"
     get:
       summary: Get a proxy url for an dataproc web UI component
       operationId: getDataprocClusterComponentUrl
-      tags: [ GcpResource ]
+      tags: [GcpResource]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ComponentUrlRequestBody'
+              $ref: "#/components/schemas/ComponentUrlRequestBody"
       responses:
         "200":
-          $ref: '#/components/responses/ComponentUrlResponse'
+          $ref: "#/components/responses/ComponentUrlResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -482,13 +482,13 @@ paths:
   # Cromwell paths.
   /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/status:
     parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
-      - $ref: '#/components/parameters/WorkflowId'
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/WorkflowId"
     get:
       summary: |
         Retrieves the current state for a workflow
       operationId: getWorkflowStatus
-      tags: [ CromwellWorkflow ]
+      tags: [CromwellWorkflow]
       responses:
         "200":
           $ref: "#/components/responses/WorkflowStatusResponse"
@@ -503,13 +503,13 @@ paths:
 
   /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/labels:
     parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
-      - $ref: '#/components/parameters/WorkflowId'
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/WorkflowId"
     get:
       summary: |
         Retrieves the current state for a workflow
       operationId: getWorkflowLabels
-      tags: [ CromwellWorkflow ]
+      tags: [CromwellWorkflow]
       responses:
         "200":
           description: Workflow labels.
@@ -528,8 +528,8 @@ paths:
 
   /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/metadata:
     parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
-      - $ref: '#/components/parameters/WorkflowId'
+      - $ref: "#/components/parameters/WorkspaceId"
+      - $ref: "#/components/parameters/WorkflowId"
       - name: includeKey
         description: >
           When specified, filters metadata to only return fields with names which begins with this value.
@@ -564,14 +564,14 @@ paths:
       summary: |
         Get workflow and call-level metadata for a specified workflow.
       operationId: getWorkflowMetadata
-      tags: [ CromwellWorkflow ]
+      tags: [CromwellWorkflow]
       responses:
         "200":
           description: Status of workflow run.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowMetadataResponse'
+                $ref: "#/components/schemas/WorkflowMetadataResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -583,7 +583,7 @@ paths:
 
   /api/workspaces/{workspaceId}/cromwell/workflows/query:
     parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: "#/components/parameters/WorkspaceId"
       - name: submission
         required: false
         schema:
@@ -681,7 +681,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowQueryResponse'
+                $ref: "#/components/schemas/WorkflowQueryResponse"
         "403":
           $ref: "#/components/responses/PermissionDenied"
         "404":
@@ -697,7 +697,7 @@ paths:
       summary: |
         Get parsed inputs for a WDL in a gcsPath
       operationId: parseInputs
-      tags: [ CromwellWorkflow ]
+      tags: [CromwellWorkflow]
       responses:
         "200":
           description: An object with the key `inputs` whos value is an object of the parsed inputs.
@@ -716,7 +716,7 @@ paths:
 
   /api/workspaces/{workspaceId}/cromwell/workflows:
     parameters:
-      - $ref: '#/components/parameters/WorkspaceId'
+      - $ref: "#/components/parameters/WorkspaceId"
     post:
       operationId: submitWorkflow
       summary: Submit a workflow for execution
@@ -727,25 +727,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubmitWorkflowRequestBody'
+              $ref: "#/components/schemas/SubmitWorkflowRequestBody"
       responses:
-        '201':
+        "201":
           description: Successful Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WorkflowIdAndStatus'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/ServerError'
-          
+                $ref: "#/components/schemas/WorkflowIdAndStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+
 components:
   schemas:
     # Please keep alphabetized
     ClusterStatus:
       type: object
-      required: [ status ]
+      required: [status]
       properties:
         status:
           type: string
@@ -762,15 +762,12 @@ components:
             - UNKNOWN
             - UPDATING
 
-    ComponentKey:
-      type: string
-      required: true
-
     ComponentUrlRequestBody:
       description: Request body for a dataproc cluster web UI component URL request.
+      required: [componentKey]
       properties:
         componentKey:
-          $ref: "#/components/schemas/ComponentKey"
+          type: string
 
     ErrorReport:
       type: object
@@ -787,7 +784,7 @@ components:
 
     NotebookStatus:
       type: object
-      required: [ notebookStatus ]
+      required: [notebookStatus]
       properties:
         notebookStatus:
           type: string
@@ -830,14 +827,14 @@ components:
 
     SignedUrlReport:
       type: object
-      required : [signedUrl]
+      required: [signedUrl]
       properties:
         signedUrl:
           type: string
 
     Url:
       type: object
-      required: [ url ]
+      required: [url]
       properties:
         url:
           type: string
@@ -864,9 +861,9 @@ components:
       required: [id, status]
       properties:
         id:
-          $ref: '#/components/schemas/WorkflowId'
+          $ref: "#/components/schemas/WorkflowId"
         status:
-          $ref: '#/components/schemas/WorkflowStatus'
+          $ref: "#/components/schemas/WorkflowStatus"
 
     WorkflowStatus:
       type: string
@@ -882,7 +879,7 @@ components:
       required: [id, labels]
       properties:
         id:
-          $ref: '#/components/schemas/WorkflowId'
+          $ref: "#/components/schemas/WorkflowId"
         labels:
           type: object
           additionalProperties:
@@ -893,9 +890,9 @@ components:
       required: [id, status, submission]
       properties:
         id:
-          $ref: '#/components/schemas/WorkflowId'
+          $ref: "#/components/schemas/WorkflowId"
         status:
-          $ref: '#/components/schemas/WorkflowStatus'
+          $ref: "#/components/schemas/WorkflowStatus"
         submission:
           type: string
           format: date-time
@@ -940,7 +937,7 @@ components:
         failures:
           type: array
           items:
-            $ref: '#/components/schemas/FailureMessages'
+            $ref: "#/components/schemas/FailureMessages"
 
     SubmitWorkflowRequestBody:
       type: object
@@ -983,11 +980,11 @@ components:
         workflowType:
           description: The workflow language for the file you submitted. Cromwell currently supports WDL.
           type: string
-          enum: [ WDL ]
+          enum: [WDL]
         workflowTypeVersion:
           description: The specification version for the workflow language being used. For WDL, Cromwell currently supports draft-2 and 1.0.
           type: string
-          enum: [ "1.0", "draft-2"]
+          enum: ["1.0", "draft-2"]
         labels:
           description: JSON object of labels to apply to this workflow.
           type: object
@@ -1030,7 +1027,7 @@ components:
         failures:
           type: array
           items:
-            $ref: '#/components/schemas/FailureMessages'
+            $ref: "#/components/schemas/FailureMessages"
         returnCode:
           type: integer
           description: Call execution return code
@@ -1053,13 +1050,13 @@ components:
               example: true
             effectiveCallCachingMode:
               type: string
-              example: 'ReadAndWriteCache'
+              example: "ReadAndWriteCache"
             hit:
               type: boolean
               example: true
             result:
               type: string
-              example: 'Cache Hit: 7861a17a-1069-415c-b1d1-ac28b44fdc8d:hello_world.hello:-1'
+              example: "Cache Hit: 7861a17a-1069-415c-b1d1-ac28b44fdc8d:hello_world.hello:-1"
 
     FailureMessages:
       description: Failure messages
@@ -1080,7 +1077,7 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/WorkflowQueryResult'
+            $ref: "#/components/schemas/WorkflowQueryResult"
         totalResultsCount:
           type: integer
 
@@ -1120,7 +1117,6 @@ components:
           additionalProperties:
             type: string
 
-
     WorkflowParsedInputsResponse:
       description: Result for the parsed inputs of a WDL
       type: object
@@ -1144,7 +1140,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ClusterStatus'
+            $ref: "#/components/schemas/ClusterStatus"
 
     ComponentUrlResponse:
       description: Result of a dataproc cluster web UI component URL request.
@@ -1165,7 +1161,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/NotebookStatus'
+            $ref: "#/components/schemas/NotebookStatus"
 
     NotFound:
       description: Not found.
@@ -1214,8 +1210,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/WorkflowIdAndStatus'
-
+            $ref: "#/components/schemas/WorkflowIdAndStatus"
 
   parameters:
     ComponentKey:
@@ -1250,7 +1245,7 @@ components:
       description: A UUID used to identify the workflow submission ID.
       required: true
       schema:
-        $ref: '#/components/schemas/WorkflowId'
+        $ref: "#/components/schemas/WorkflowId"
 
     ObjectPath:
       name: objectPath

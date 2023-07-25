@@ -13,6 +13,9 @@ import org.springframework.stereotype.Component;
 /** Service for interacting with GCP API surface. */
 @Component
 public class GcpService {
+  private final WorkspaceManagerService wsmService;
+  private final SamService samService;
+
   // Google pet service account scopes for accessing Google Cloud APIs.
   private static final List<String> PET_SA_SCOPES =
       ImmutableList.of(
@@ -22,29 +25,27 @@ public class GcpService {
     return PET_SA_SCOPES;
   }
 
-  private final WorkspaceManagerService wsmService;
-  private final SamService samService;
-
   public GcpService(WorkspaceManagerService wsmService, SamService samService) {
     this.wsmService = wsmService;
     this.samService = samService;
   }
 
   /**
-   * Get GoogleCredentials from an access token
+   * Get pet SA GoogleCredentials from an given bearer token
    *
-   * @param token token to use for the credentials
+   * @param workspaceId WSM workspaceId
+   * @param token Bearer token for the requester
    * @return GoogleCredentials
    */
-  private static GoogleCredentials getGoogleCredentialsFromToken(String token) {
-    // The expirationTime argument is only used for refresh tokens, not access tokens.
-    AccessToken accessToken = new AccessToken(token, null);
-    return GoogleCredentials.create(accessToken);
-  }
-
   public GoogleCredentials getPetSACredentials(UUID workspaceId, BearerToken token) {
     String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
     String petAccessToken = samService.getPetAccessToken(projectId, token);
     return getGoogleCredentialsFromToken(petAccessToken);
+  }
+
+  private static GoogleCredentials getGoogleCredentialsFromToken(String token) {
+    // The expirationTime argument is only used for refresh tokens, not access tokens.
+    AccessToken accessToken = new AccessToken(token, null);
+    return GoogleCredentials.create(accessToken);
   }
 }
