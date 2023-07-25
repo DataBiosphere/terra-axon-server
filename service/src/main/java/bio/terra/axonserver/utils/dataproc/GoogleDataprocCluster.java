@@ -1,7 +1,6 @@
 package bio.terra.axonserver.utils.dataproc;
 
 import bio.terra.axonserver.service.exception.ComponentNotFoundException;
-import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.axonserver.utils.ResourceUtils;
 import bio.terra.cloudres.common.ClientConfig;
 import bio.terra.cloudres.google.api.services.common.OperationCow;
@@ -13,6 +12,7 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
 import com.google.api.services.dataproc.model.Cluster;
 import com.google.api.services.dataproc.model.Operation;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -42,21 +42,20 @@ public class GoogleDataprocCluster {
         .build();
   }
 
-  private GoogleDataprocCluster(ResourceDescription resource, String accessToken)
+  private GoogleDataprocCluster(ResourceDescription resource, GoogleCredentials credentials)
       throws GeneralSecurityException, IOException {
     this(
         buildClusterName(resource.getResourceAttributes().getGcpDataprocCluster()),
-        DataprocCow.create(
-            clientConfig, CloudStorageUtils.getGoogleCredentialsFromToken(accessToken)));
+        DataprocCow.create(clientConfig, credentials));
   }
 
   /** Factory method to create an instance of class {@link GoogleDataprocCluster}. */
   public static GoogleDataprocCluster create(
-      ResourceDescription resourceDescription, String accessToken) {
+      ResourceDescription resourceDescription, GoogleCredentials credentials) {
     ResourceUtils.validateResourceType(ResourceType.DATAPROC_CLUSTER, resourceDescription);
 
     try {
-      return new GoogleDataprocCluster(resourceDescription, accessToken);
+      return new GoogleDataprocCluster(resourceDescription, credentials);
     } catch (GeneralSecurityException | IOException e) {
       throw new InternalServerErrorException(e);
     }

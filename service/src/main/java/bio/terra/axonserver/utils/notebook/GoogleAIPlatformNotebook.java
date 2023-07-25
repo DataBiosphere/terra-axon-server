@@ -1,6 +1,5 @@
 package bio.terra.axonserver.utils.notebook;
 
-import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.axonserver.utils.ResourceUtils;
 import bio.terra.cloudres.common.ClientConfig;
 import bio.terra.cloudres.google.api.services.common.OperationCow;
@@ -12,6 +11,7 @@ import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
 import com.google.api.services.notebooks.v1.model.Instance;
 import com.google.api.services.notebooks.v1.model.Operation;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -42,21 +42,20 @@ public class GoogleAIPlatformNotebook {
         .build();
   }
 
-  private GoogleAIPlatformNotebook(ResourceDescription resource, String accessToken)
+  private GoogleAIPlatformNotebook(ResourceDescription resource, GoogleCredentials credentials)
       throws GeneralSecurityException, IOException {
     this(
         buildInstanceName(resource.getResourceAttributes().getGcpAiNotebookInstance()),
-        AIPlatformNotebooksCow.create(
-            clientConfig, CloudStorageUtils.getGoogleCredentialsFromToken(accessToken)));
+        AIPlatformNotebooksCow.create(clientConfig, credentials));
   }
 
   /** Factory method to create an instance of class {@link GoogleAIPlatformNotebook}. */
   public static GoogleAIPlatformNotebook create(
-      ResourceDescription resourceDescription, String accessToken) {
+      ResourceDescription resourceDescription, GoogleCredentials credentials) {
     ResourceUtils.validateResourceType(ResourceType.AI_NOTEBOOK, resourceDescription);
 
     try {
-      return new GoogleAIPlatformNotebook(resourceDescription, accessToken);
+      return new GoogleAIPlatformNotebook(resourceDescription, credentials);
     } catch (GeneralSecurityException | IOException e) {
       throw new InternalServerErrorException(e);
     }

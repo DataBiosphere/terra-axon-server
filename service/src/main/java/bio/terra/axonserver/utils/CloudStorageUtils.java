@@ -2,47 +2,20 @@ package bio.terra.axonserver.utils;
 
 import bio.terra.axonserver.service.exception.CloudObjectReadException;
 import bio.terra.common.exception.BadRequestException;
-import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
-import com.google.common.collect.ImmutableList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
-import java.util.List;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpRange;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageUtils {
-
-  // Google pet service account scopes for accessing Google Cloud APIs.
-  private static final List<String> PET_SA_SCOPES =
-      ImmutableList.of(
-          "openid", "email", "profile", "https://www.googleapis.com/auth/cloud-platform");
-
-  public CloudStorageUtils() {}
-
-  public static List<String> getPetScopes() {
-    return PET_SA_SCOPES;
-  }
-
-  /**
-   * Get GoogleCredentials from an access token
-   *
-   * @param token token to use for the credentials
-   * @return GoogleCredentials
-   */
-  public static GoogleCredentials getGoogleCredentialsFromToken(String token) {
-    // The expirationTime argument is only used for refresh tokens, not access tokens.
-    AccessToken accessToken = new AccessToken(token, null);
-    return GoogleCredentials.create(accessToken);
-  }
-
   /**
    * Get the contents of a GCS bucket object
    *
