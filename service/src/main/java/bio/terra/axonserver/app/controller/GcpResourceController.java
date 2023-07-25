@@ -6,12 +6,14 @@ import bio.terra.axonserver.model.ApiComponentUrlRequestBody;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
 import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
 import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,22 +27,25 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class GcpResourceController extends ControllerBase implements GcpResourceApi {
   private final WorkspaceManagerService wsmService;
+  private final GcpService gcpService;
 
   @Autowired
   public GcpResourceController(
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
-      WorkspaceManagerService wsmService) {
+      WorkspaceManagerService wsmService,
+      GcpService gcpService) {
     super(bearerTokenFactory, request);
     this.wsmService = wsmService;
+    this.gcpService = gcpService;
   }
 
   /** Do not use, public for spy testing */
   @VisibleForTesting
   public GoogleAIPlatformNotebook getNotebook(UUID workspaceId, UUID resourceId) {
-    String accessToken = getAccessToken();
+    GoogleCredentials credentials = gcpService.getPetSACredentials(workspaceId, getToken());
     return GoogleAIPlatformNotebook.create(
-        wsmService.getResource(workspaceId, resourceId, accessToken), accessToken);
+        wsmService.getResource(workspaceId, resourceId, getAccessToken()), credentials);
   }
 
   /**
@@ -105,9 +110,9 @@ public class GcpResourceController extends ControllerBase implements GcpResource
   /** Do not use, public for spy testing */
   @VisibleForTesting
   public GoogleDataprocCluster getCluster(UUID workspaceId, UUID resourceId) {
-    String accessToken = getAccessToken();
+    GoogleCredentials credentials = gcpService.getPetSACredentials(workspaceId, getToken());
     return GoogleDataprocCluster.create(
-        wsmService.getResource(workspaceId, resourceId, accessToken), accessToken);
+        wsmService.getResource(workspaceId, resourceId, getAccessToken()), credentials);
   }
 
   /**

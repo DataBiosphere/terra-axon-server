@@ -1,6 +1,7 @@
 package bio.terra.axonserver.service.file;
 
 import bio.terra.axonserver.app.configuration.FileConfiguration;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.convert.ConvertService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.axonserver.service.iam.SamService;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Component;
 public class FileService {
 
   private final FileConfiguration fileConfig;
+  private final GcpService gcpService;
   private final SamService samService;
   private final WorkspaceManagerService wsmService;
   private final ConvertService convertService;
@@ -43,10 +45,12 @@ public class FileService {
   @Autowired
   public FileService(
       FileConfiguration fileConfig,
+      GcpService gcpService,
       SamService samService,
       WorkspaceManagerService wsmService,
       ConvertService convertService) {
     this.fileConfig = fileConfig;
+    this.gcpService = gcpService;
     this.samService = samService;
     this.wsmService = wsmService;
     this.convertService = convertService;
@@ -125,7 +129,7 @@ public class FileService {
             GoogleCredentials.getApplicationDefault(),
             petSaEmail,
             null,
-            CloudStorageUtils.getPetScopes(),
+            GcpService.getPetScopes(),
             300);
 
     Storage storage =
@@ -160,7 +164,7 @@ public class FileService {
   }
 
   private FileWithName getGcsObjectFromURI(UUID workspaceId, String gcsURI, BearerToken token) {
-    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
+    GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
 
     BlobId blob = BlobId.fromGsUtilUri(gcsURI);
 
@@ -176,7 +180,7 @@ public class FileService {
       @Nullable String objectPath,
       @Nullable HttpRange byteRange,
       BearerToken token) {
-    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
+    GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsObject().getBucketName();
     // If objectPath is not provided, assume provided gcsObject is a prefix and retrieve the full
@@ -197,17 +201,11 @@ public class FileService {
       String objectPath,
       @Nullable HttpRange byteRange,
       BearerToken token) {
-    GoogleCredentials googleCredentials = getGoogleCredentials(workspaceId, token);
+    GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
 
     String bucketName = resource.getResourceAttributes().getGcpGcsBucket().getBucketName();
     InputStream fileStream =
         CloudStorageUtils.getBucketObject(googleCredentials, bucketName, objectPath, byteRange);
     return new FileWithName(fileStream, objectPath);
-  }
-
-  private GoogleCredentials getGoogleCredentials(UUID workspaceId, BearerToken token) {
-    String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
-    String petAccessToken = samService.getPetAccessToken(projectId, token);
-    return CloudStorageUtils.getGoogleCredentialsFromToken(petAccessToken);
   }
 }

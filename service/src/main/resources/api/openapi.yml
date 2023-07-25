@@ -762,15 +762,12 @@ components:
             - UNKNOWN
             - UPDATING
 
-    ComponentKey:
-      type: string
-      required: true
-
     ComponentUrlRequestBody:
       description: Request body for a dataproc cluster web UI component URL request.
+      required: [ componentKey ]
       properties:
         componentKey:
-          $ref: "#/components/schemas/ComponentKey"
+          type: string
 
     ErrorReport:
       type: object
