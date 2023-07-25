@@ -18,7 +18,7 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import javax.ws.rs.InternalServerErrorException;
 
-/** Utility class for running common notebook operations on a Google Vertex IA Notebook instance. */
+/** Utility class for running common notebook operations on a Google Vertex AI Notebook instance. */
 public class GoogleAIPlatformNotebook {
 
   private static final ClientConfig clientConfig =

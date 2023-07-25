@@ -272,6 +272,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
 
+# Gcp resource paths
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/notebook/start:
     parameters:
       - $ref: "#/components/parameters/WorkspaceId"
@@ -361,6 +362,112 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/SignedUrlResultResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/start:
+    parameters:
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    - name: wait
+      description: Waits for operation to complete.
+      in: query
+      schema:
+        type: boolean
+        default: false
+    put:
+      summary: Starts a GCP Dataproc cluster
+      operationId: putDataprocClusterStart
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          description: Cluster successfully started.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/stop:
+    parameters:
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    - name: wait
+      description: Wait for operation to complete.
+      in: query
+      schema:
+        type: boolean
+        default: false
+    put:
+      summary: Stop a GCP Dataproc cluster
+      operationId: putDataprocClusterStop
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          description: Cluster successfully stopped.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/status:
+    parameters:
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get status of a GCP Dataproc cluster
+      operationId: getDataprocClusterStatus
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/ClusterStatusResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/componentUrl:
+    parameters:
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get a proxy url for an dataproc web UI component
+      operationId: getDataprocClusterComponentUrl
+      tags: [ GcpResource ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentUrlRequestBody'
+      responses:
+        "200":
+          $ref: '#/components/responses/ComponentUrlResponse'
         "400":
           $ref: "#/components/responses/BadRequest"
         "403":
@@ -636,6 +743,35 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
+    ClusterStatus:
+      type: object
+      required: [ status ]
+      properties:
+        status:
+          type: string
+          enum:
+            - CREATING
+            - DELETING
+            - ERROR
+            - ERROR_DUE_TO_UPDATE
+            - RUNNING
+            - STARTING
+            - STATE_UNSPECIFIED
+            - STOPPED
+            - STOPPING
+            - UNKNOWN
+            - UPDATING
+
+    ComponentKey:
+      type: string
+      required: true
+
+    ComponentUrlRequestBody:
+      description: Request body for a dataproc cluster web UI component URL request.
+      properties:
+        componentKey:
+          $ref: "#/components/schemas/ComponentKey"
+
     ErrorReport:
       type: object
       required: [message, statusCode, causes]
@@ -1003,6 +1139,20 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorReport"
 
+    ClusterStatusResponse:
+      description: Dataproc cluster status.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ClusterStatus'
+
+    ComponentUrlResponse:
+      description: Result of a dataproc cluster web UI component URL request.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Url"
+
     Conflict:
       description: Request conflicts with current state
       content:
@@ -1046,7 +1196,7 @@ components:
             $ref: "#/components/schemas/ErrorReport"
 
     SignedUrlResultResponse:
-      description: Result of a signed URl request.
+      description: Result of a signed URL request.
       content:
         application/json:
           schema:
@@ -1068,6 +1218,14 @@ components:
 
 
   parameters:
+    ComponentKey:
+      name: componentKey
+      in: path
+      description: A key used to identify a component for a dataproc cluster.
+      required: true
+      schema:
+        type: string
+
     ResourceId:
       name: resourceId
       in: path
