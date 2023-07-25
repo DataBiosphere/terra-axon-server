@@ -398,8 +398,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
-        "501":
-          $ref: "#/components/responses/NotImplemented"
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/stop:
     parameters:
@@ -426,8 +424,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
-        "501":
-          $ref: "#/components/responses/NotImplemented"
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/status:
     parameters:
@@ -448,8 +444,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
-        "501":
-          $ref: "#/components/responses/NotImplemented"
 
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/componentUrl:
     parameters:
@@ -476,8 +470,26 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
-        "501":
-          $ref: "#/components/responses/NotImplemented"
+
+  /api/workspaces/v1/{workspaceId}/resources/{resourceId}/gcp/dataproccluster/metadata:
+    parameters:
+    - $ref: "#/components/parameters/WorkspaceId"
+    - $ref: "#/components/parameters/ResourceId"
+    get:
+      summary: Get cluster metadata of a GCP Dataproc cluster
+      operationId: getDataprocClusterMetadata
+      tags: [ GcpResource ]
+      responses:
+        "200":
+          $ref: '#/components/responses/ClusterMetadataResponse'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/PermissionDenied"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 
   # Cromwell paths.
   /api/workspaces/{workspaceId}/cromwell/workflows/{workflowId}/status:
@@ -743,6 +755,29 @@ paths:
 components:
   schemas:
     # Please keep alphabetized
+    ClusterMetadata:
+      type: object
+      properties:
+        stagingBucket:
+          type: string
+        tempBucket:
+            type: string
+        autoscalingPolicyUri:
+          type: string
+        initializationActions:
+          type: array
+          items:
+            type: string
+        managerNodeConfig:
+          $ref: '#/components/schemas/NodeGroupConfig'
+        primaryWorkerConfig:
+          $ref: '#/components/schemas/NodeGroupConfig'
+        secondaryWorkerConfig:
+          $ref: '#/components/schemas/NodeGroupConfig'
+        idleDeleteTtl:
+          description: Time in seconds to wait before deleting a cluster that has become idle. E.g. 1800s
+          type: string
+
     ClusterStatus:
       type: object
       required: [ status ]
@@ -762,15 +797,13 @@ components:
             - UNKNOWN
             - UPDATING
 
-    ComponentKey:
-      type: string
-      required: true
-
     ComponentUrlRequestBody:
       description: Request body for a dataproc cluster web UI component URL request.
+      required: [ componentKey ]
       properties:
         componentKey:
-          $ref: "#/components/schemas/ComponentKey"
+          type: string
+          required: true
 
     ErrorReport:
       type: object
@@ -784,6 +817,18 @@ components:
           type: array
           items:
             type: string
+
+    NodeGroupConfig:
+      description: Configuration for a group of dataproc cluster nodes.
+      type: object
+      properties:
+        machineType:
+          type: string
+        numInstances:
+          type: integer
+        preemptibility:
+          type: string
+          enum: [ "NON_PREEMPTIBLE", "PREEMPTIBLE", "SPOT" ]
 
     NotebookStatus:
       type: object
@@ -1138,6 +1183,13 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorReport"
+
+    ClusterMetadataResponse:
+      description: Dataproc cluster metadata.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ClusterMetadata'
 
     ClusterStatusResponse:
       description: Dataproc cluster status.

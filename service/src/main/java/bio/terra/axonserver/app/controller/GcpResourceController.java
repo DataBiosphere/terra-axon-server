@@ -1,8 +1,11 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GcpResourceApi;
+import bio.terra.axonserver.model.ApiClusterMetadata;
 import bio.terra.axonserver.model.ApiClusterStatus;
 import bio.terra.axonserver.model.ApiComponentUrlRequestBody;
+import bio.terra.axonserver.model.ApiNodeGroupConfig;
+import bio.terra.axonserver.model.ApiNodeGroupConfig.PreemptibilityEnum;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
@@ -12,6 +15,9 @@ import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
 import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.google.api.services.dataproc.model.ClusterConfig;
+import com.google.api.services.dataproc.model.InstanceGroupConfig;
+import com.google.api.services.dataproc.model.NodeInitializationAction;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +30,7 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 public class GcpResourceController extends ControllerBase implements GcpResourceApi {
+
   private final WorkspaceManagerService wsmService;
 
   @Autowired
@@ -171,5 +178,60 @@ public class GcpResourceController extends ControllerBase implements GcpResource
     String componentUrl =
         getCluster(workspaceId, resourceId).getComponentUrl(body.getComponentKey());
     return new ResponseEntity<>(new ApiUrl().url(componentUrl), HttpStatus.OK);
+  }
+
+  /**
+   * Get a Dataproc cluster's metadata.
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra Resource ID
+   * @return cluster metadata
+   */
+  @Override
+  public ResponseEntity<ApiClusterMetadata> getDataprocClusterMetadata(
+      UUID workspaceId, UUID resourceId) {
+    ClusterConfig clusterConfig = getCluster(workspaceId, resourceId).getCluster().getConfig();
+
+    // Build metadata response body
+    ApiClusterMetadata metadata =
+        new ApiClusterMetadata()
+            .stagingBucket(clusterConfig.getConfigBucket())
+            .tempBucket(clusterConfig.getTempBucket())
+            .managerNodeConfig(buildNodeGroupConfig(clusterConfig.getMasterConfig()))
+            .primaryWorkerConfig(buildNodeGroupConfig(clusterConfig.getWorkerConfig()))
+            .secondaryWorkerConfig(buildNodeGroupConfig(clusterConfig.getSecondaryWorkerConfig()));
+
+    Optional.ofNullable(clusterConfig.getAutoscalingConfig())
+        .ifPresent(config -> metadata.setAutoscalingPolicyUri(config.getPolicyUri()));
+
+    Optional.ofNullable(clusterConfig.getInitializationActions())
+        .ifPresent(
+            actions ->
+                metadata.setInitializationActions(
+                    actions.stream().map(NodeInitializationAction::getExecutableFile).toList()));
+
+    Optional.ofNullable(clusterConfig.getLifecycleConfig())
+        .ifPresent(config -> metadata.setIdleDeleteTtl(config.getIdleDeleteTtl()));
+
+    return new ResponseEntity<>(metadata, HttpStatus.OK);
+  }
+
+  /** Utility method to build an api node group config from a cluster instance group config */
+  private ApiNodeGroupConfig buildNodeGroupConfig(InstanceGroupConfig instanceGroupConfig) {
+    return Optional.ofNullable(instanceGroupConfig)
+        .map(
+            config -> {
+              ApiNodeGroupConfig nodeGroupConfig =
+                  new ApiNodeGroupConfig()
+                      .numInstances(config.getNumInstances())
+                      .machineType(config.getMachineTypeUri());
+
+              Optional.ofNullable(config.getPreemptibility())
+                  .map(PreemptibilityEnum::valueOf)
+                  .ifPresent(nodeGroupConfig::preemptibility);
+
+              return nodeGroupConfig;
+            })
+        .orElse(null);
   }
 }

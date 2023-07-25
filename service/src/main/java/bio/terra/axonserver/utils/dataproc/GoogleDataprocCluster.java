@@ -125,14 +125,6 @@ public class GoogleDataprocCluster {
     }
   }
 
-  private Cluster get(String operation) {
-    try {
-      return dataprocCow.clusters().get(clusterName).execute();
-    } catch (IOException e) {
-      throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
-    }
-  }
-
   /**
    * Gets current status of the Dataproc cluster.
    *
@@ -161,5 +153,22 @@ public class GoogleDataprocCluster {
               componentKey));
     }
     return componentUrl;
+  }
+
+  /**
+   * Gets the cluster and all of its config properties.
+   *
+   * @return the cluster
+   */
+  public Cluster getCluster() {
+    return get("get cluster");
+  }
+
+  private Cluster get(String operation) {
+    try {
+      return dataprocCow.clusters().get(clusterName).execute();
+    } catch (IOException e) {
+      throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
+    }
   }
 }
