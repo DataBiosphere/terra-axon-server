@@ -2,7 +2,6 @@ package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GcpResourceApi;
 import bio.terra.axonserver.model.ApiClusterStatus;
-import bio.terra.axonserver.model.ApiComponentUrlRequestBody;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
@@ -18,7 +17,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -167,14 +165,13 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra Resource ID
-   * @param body containing the componentKey to get the URL for
+   * @param componentKey Dataproc optional component key
    * @return url to access component web UI
    */
   @Override
   public ResponseEntity<ApiUrl> getDataprocClusterComponentUrl(
-      UUID workspaceId, UUID resourceId, @Valid ApiComponentUrlRequestBody body) {
-    String componentUrl =
-        getCluster(workspaceId, resourceId).getComponentUrl(body.getComponentKey());
+      UUID workspaceId, UUID resourceId, String componentKey) {
+    String componentUrl = getCluster(workspaceId, resourceId).getComponentUrl(componentKey);
     return new ResponseEntity<>(new ApiUrl().url(componentUrl), HttpStatus.OK);
   }
 }
