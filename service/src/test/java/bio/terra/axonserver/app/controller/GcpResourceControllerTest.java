@@ -272,13 +272,12 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     when(cluster.getComponentUrl("fakekey")).thenReturn(fakeUrl);
 
-    String requestBody = "{\"componentKey\": \"fakekey\"}";
     String serializedGetResponse =
         mockMvc
             .perform(
                 get(operationPath)
                     .contentType("application/json")
-                    .content(requestBody)
+                    .param("componentKey", "fakekey")
                     .header("Authorization", String.format("bearer %s", fakeToken)))
             .andExpect(status().isOk())
             .andReturn()

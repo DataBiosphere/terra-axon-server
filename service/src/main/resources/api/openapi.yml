@@ -455,16 +455,15 @@ paths:
     parameters:
     - $ref: "#/components/parameters/WorkspaceId"
     - $ref: "#/components/parameters/ResourceId"
+    - in: query
+      name: componentKey
+      description: The component key to get a component proxy url.
+      schema:
+        type: string
     get:
       summary: Get a proxy url for an dataproc web UI component
       operationId: getDataprocClusterComponentUrl
       tags: [ GcpResource ]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ComponentUrlRequestBody'
       responses:
         "200":
           $ref: '#/components/responses/ComponentUrlResponse'
@@ -739,7 +738,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/ServerError'
-          
+
 components:
   schemas:
     # Please keep alphabetized
@@ -761,13 +760,6 @@ components:
             - STOPPING
             - UNKNOWN
             - UPDATING
-
-    ComponentUrlRequestBody:
-      description: Request body for a dataproc cluster web UI component URL request.
-      required: [ componentKey ]
-      properties:
-        componentKey:
-          type: string
 
     ErrorReport:
       type: object
