@@ -1,6 +1,7 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.GcpResourceApi;
+import bio.terra.axonserver.model.ApiClusterMetadata;
 import bio.terra.axonserver.model.ApiClusterStatus;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
@@ -8,10 +9,13 @@ import bio.terra.axonserver.model.ApiUrl;
 import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
+import bio.terra.axonserver.utils.dataproc.DataprocMetadataBuilderUtils;
 import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
 import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.iam.BearerTokenFactory;
+import com.google.api.services.dataproc.model.ClusterConfig;
+import com.google.api.services.dataproc.model.NodeInitializationAction;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Optional;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 public class GcpResourceController extends ControllerBase implements GcpResourceApi {
+
   private final WorkspaceManagerService wsmService;
   private final GcpService gcpService;
 
@@ -173,5 +178,48 @@ public class GcpResourceController extends ControllerBase implements GcpResource
       UUID workspaceId, UUID resourceId, String componentKey) {
     String componentUrl = getCluster(workspaceId, resourceId).getComponentUrl(componentKey);
     return new ResponseEntity<>(new ApiUrl().url(componentUrl), HttpStatus.OK);
+  }
+
+  /**
+   * Get a Dataproc cluster's metadata.
+   *
+   * @param workspaceId Terra Workspace ID
+   * @param resourceId Terra Resource ID
+   * @return cluster metadata
+   */
+  @Override
+  public ResponseEntity<ApiClusterMetadata> getDataprocClusterMetadata(
+      UUID workspaceId, UUID resourceId) {
+    ClusterConfig clusterConfig = getCluster(workspaceId, resourceId).getClusterConfig();
+
+    // Build metadata response body
+    ApiClusterMetadata metadata =
+        new ApiClusterMetadata()
+            .configBucket(clusterConfig.getConfigBucket())
+            .tempBucket(clusterConfig.getTempBucket())
+            .metadata(clusterConfig.getGceClusterConfig().getMetadata())
+            .managerNodeConfig(
+                DataprocMetadataBuilderUtils.buildInstanceGroupConfig(
+                    clusterConfig.getMasterConfig()))
+            .primaryWorkerConfig(
+                DataprocMetadataBuilderUtils.buildInstanceGroupConfig(
+                    clusterConfig.getWorkerConfig()))
+            .secondaryWorkerConfig(
+                DataprocMetadataBuilderUtils.buildInstanceGroupConfig(
+                    clusterConfig.getSecondaryWorkerConfig()))
+            .lifecycleConfig(
+                DataprocMetadataBuilderUtils.buildLifecycleConfig(
+                    clusterConfig.getLifecycleConfig()));
+
+    Optional.ofNullable(clusterConfig.getAutoscalingConfig())
+        .ifPresent(config -> metadata.setAutoscalingPolicy(config.getPolicyUri()));
+
+    Optional.ofNullable(clusterConfig.getInitializationActions())
+        .ifPresent(
+            actions ->
+                metadata.setInitializationActions(
+                    actions.stream().map(NodeInitializationAction::getExecutableFile).toList()));
+
+    return new ResponseEntity<>(metadata, HttpStatus.OK);
   }
 }

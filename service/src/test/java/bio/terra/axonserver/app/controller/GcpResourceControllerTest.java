@@ -6,10 +6,12 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import bio.terra.axonserver.model.ApiClusterMetadata;
 import bio.terra.axonserver.model.ApiClusterStatus;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
@@ -20,15 +22,26 @@ import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
 import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.services.dataproc.model.Cluster;
+import com.google.api.services.dataproc.model.ClusterConfig;
+import com.google.api.services.dataproc.model.GceClusterConfig;
+import com.google.api.services.dataproc.model.InstanceGroupConfig;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockMakers;
+import org.mockito.MockSettings;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 public class GcpResourceControllerTest extends BaseUnitTest {
+  /**
+   * Settings required to mock final classes/methods, required for several GCP SDK objects. Requires
+   * Mockito >= 4.8.0.
+   */
+  private final MockSettings finalMockSettings = withSettings().mockMaker(MockMakers.INLINE);
 
   @SpyBean private GcpResourceController gcpResourceController;
 
@@ -288,5 +301,47 @@ public class GcpResourceControllerTest extends BaseUnitTest {
 
     assertEquals(fakeUrl, url.getUrl());
     Mockito.verify(cluster).getComponentUrl("fakekey");
+  }
+
+  @Test
+  void clusterMetadata_get() throws Exception {
+    String operationPath = getClusterOperationPath("metadata");
+
+    GoogleDataprocCluster mockGoogleDataprocCluster = mock(GoogleDataprocCluster.class);
+    Cluster mockCluster = mock(Cluster.class, finalMockSettings);
+    ClusterConfig mockClusterConfig = mock(ClusterConfig.class, finalMockSettings);
+    GceClusterConfig mockGceClusterConfig = mock(GceClusterConfig.class, finalMockSettings);
+    InstanceGroupConfig mockMasterConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+    InstanceGroupConfig mockWorkerConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+
+    doReturn(mockGoogleDataprocCluster)
+        .when(gcpResourceController)
+        .getCluster(workspaceId, resourceId);
+    when(mockGoogleDataprocCluster.getClusterConfig()).thenReturn(mockClusterConfig);
+    when(mockCluster.getConfig()).thenReturn(mockClusterConfig);
+    when(mockClusterConfig.getGceClusterConfig()).thenReturn(mockGceClusterConfig);
+    when(mockClusterConfig.getMasterConfig()).thenReturn(mockMasterConfig);
+    when(mockClusterConfig.getWorkerConfig()).thenReturn(mockWorkerConfig);
+    when(mockClusterConfig.getSecondaryWorkerConfig()).thenReturn(mockWorkerConfig);
+    when(mockMasterConfig.getNumInstances()).thenReturn(1);
+    when(mockWorkerConfig.getNumInstances()).thenReturn(2);
+
+    String serializedGetResponse =
+        mockMvc
+            .perform(
+                get(operationPath)
+                    .contentType("application/json")
+                    .header("Authorization", String.format("bearer %s", fakeToken)))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+    ApiClusterMetadata metadata =
+        objectMapper.readValue(serializedGetResponse, ApiClusterMetadata.class);
+    assertEquals(1, metadata.getManagerNodeConfig().getNumInstances());
+    assertEquals(2, metadata.getPrimaryWorkerConfig().getNumInstances());
+    assertEquals(2, metadata.getSecondaryWorkerConfig().getNumInstances());
+    Mockito.verify(mockGoogleDataprocCluster).getClusterConfig();
   }
 }

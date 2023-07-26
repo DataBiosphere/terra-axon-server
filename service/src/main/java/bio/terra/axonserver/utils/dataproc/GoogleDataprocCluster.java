@@ -11,6 +11,7 @@ import bio.terra.workspace.model.GcpDataprocClusterAttributes;
 import bio.terra.workspace.model.ResourceDescription;
 import bio.terra.workspace.model.ResourceType;
 import com.google.api.services.dataproc.model.Cluster;
+import com.google.api.services.dataproc.model.ClusterConfig;
 import com.google.api.services.dataproc.model.Operation;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
@@ -124,14 +125,6 @@ public class GoogleDataprocCluster {
     }
   }
 
-  private Cluster get(String operation) {
-    try {
-      return dataprocCow.clusters().get(clusterName).execute();
-    } catch (IOException e) {
-      throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
-    }
-  }
-
   /**
    * Gets current status of the Dataproc cluster.
    *
@@ -160,5 +153,22 @@ public class GoogleDataprocCluster {
               componentKey));
     }
     return componentUrl;
+  }
+
+  /**
+   * Gets cluster config properties.
+   *
+   * @return the cluster
+   */
+  public ClusterConfig getClusterConfig() {
+    return get("get cluster metadata").getConfig();
+  }
+
+  private Cluster get(String operation) {
+    try {
+      return dataprocCow.clusters().get(clusterName).execute();
+    } catch (IOException e) {
+      throw new InternalServerErrorException(getOperationErrorMessage(operation), e);
+    }
   }
 }
