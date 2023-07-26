@@ -165,7 +165,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
    *
    * @param workspaceId Terra Workspace ID
    * @param resourceId Terra Resource ID
-   * @parm componentKey Dataproc optional component key
+   * @param componentKey Dataproc optional component key
    * @return url to access component web UI
    */
   @Override
