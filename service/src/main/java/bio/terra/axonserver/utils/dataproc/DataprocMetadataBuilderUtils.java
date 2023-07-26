@@ -10,7 +10,7 @@ import java.util.Optional;
 
 /** Utility class to build dataproc cluster metadata objects */
 public class DataprocMetadataBuilderUtils {
-   // Build an api cluster instance group config from a dataproc cluster instance group config
+  // Build an api cluster instance group config from a dataproc cluster instance group config
   public static ApiClusterInstanceGroupConfig buildInstanceGroupConfig(
       InstanceGroupConfig instanceGroupConfig) {
     return Optional.ofNullable(instanceGroupConfig)
