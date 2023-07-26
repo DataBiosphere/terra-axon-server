@@ -10,10 +10,7 @@ import java.util.Optional;
 
 /** Utility class to build dataproc cluster metadata objects */
 public class DataprocMetadataBuilderUtils {
-  /**
-   * Utility method to build an api cluster instance group config from a dataproc cluster instance
-   * group config
-   */
+   // Build an api cluster instance group config from a dataproc cluster instance group config
   public static ApiClusterInstanceGroupConfig buildInstanceGroupConfig(
       InstanceGroupConfig instanceGroupConfig) {
     return Optional.ofNullable(instanceGroupConfig)
@@ -33,7 +30,7 @@ public class DataprocMetadataBuilderUtils {
         .orElse(null);
   }
 
-  // Utility method to build an api cluster lifecycle config from a dataproc cluster lifecycle
+  // Build an api cluster lifecycle config from a dataproc cluster lifecycle config
   public static ApiClusterLifecycleConfig buildLifecycleConfig(LifecycleConfig lifecycleConfig) {
     return Optional.ofNullable(lifecycleConfig)
         .map(

@@ -28,7 +28,6 @@ import org.springframework.stereotype.Controller;
 
 @Controller
 public class GcpResourceController extends ControllerBase implements GcpResourceApi {
-
   private final WorkspaceManagerService wsmService;
   private final GcpService gcpService;
 

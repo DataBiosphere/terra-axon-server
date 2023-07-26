@@ -158,7 +158,7 @@ public class GoogleDataprocCluster {
   /**
    * Gets cluster config properties.
    *
-   * @return the cluster
+   * @return the cluster config
    */
   public ClusterConfig getClusterConfig() {
     return get("get cluster metadata").getConfig();

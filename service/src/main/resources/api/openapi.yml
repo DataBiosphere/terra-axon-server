@@ -873,18 +873,6 @@ components:
           items:
             type: string
 
-    NodeGroupConfig:
-      description: Configuration for a group of dataproc cluster nodes.
-      type: object
-      properties:
-        machineType:
-          type: string
-        numInstances:
-          type: integer
-        preemptibility:
-          type: string
-          enum: [ "NON_PREEMPTIBLE", "PREEMPTIBLE", "SPOT" ]
-
     NotebookStatus:
       type: object
       required: [ notebookStatus ]
