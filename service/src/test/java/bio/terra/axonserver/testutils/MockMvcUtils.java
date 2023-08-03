@@ -30,7 +30,7 @@ public class MockMvcUtils {
   public String getSerializedResponseForGet(BearerToken userRequest, String formattedPath)
       throws Exception {
     return mockMvc
-        .perform(addAuth(get(formattedPath), userRequest))
+        .perform(addJsonContentType(addAuth(get(formattedPath), userRequest)))
         .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
         .andReturn()
         .getResponse()
@@ -41,13 +41,14 @@ public class MockMvcUtils {
       BearerToken userRequest, String formattedPath, String request) throws Exception {
     return mockMvc
         .perform(
-            addAuth(
-                post(formattedPath)
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(request),
-                userRequest))
+            addJsonContentType(
+                addAuth(
+                    post(formattedPath)
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .characterEncoding("UTF-8")
+                        .content(request),
+                    userRequest)))
         .andExpect(MockMvcResultMatchers.status().is2xxSuccessful())
         .andReturn()
         .getResponse()

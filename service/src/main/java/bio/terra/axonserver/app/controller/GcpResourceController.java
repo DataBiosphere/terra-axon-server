@@ -210,14 +210,14 @@ public class GcpResourceController extends ControllerBase implements GcpResource
                 DataprocMetadataBuilderUtils.buildLifecycleConfig(
                     clusterConfig.getLifecycleConfig()));
 
-    Optional.ofNullable(clusterConfig.getAutoscalingConfig())
-        .ifPresent(config -> metadata.setAutoscalingPolicy(config.getPolicyUri()));
-
     Optional.ofNullable(clusterConfig.getInitializationActions())
         .ifPresent(
             actions ->
                 metadata.setInitializationActions(
                     actions.stream().map(NodeInitializationAction::getExecutableFile).toList()));
+
+    Optional.ofNullable(clusterConfig.getAutoscalingConfig())
+        .ifPresent(config -> metadata.setAutoscalingPolicy(config.getPolicyUri()));
 
     return new ResponseEntity<>(metadata, HttpStatus.OK);
   }
