@@ -1,35 +1,53 @@
 package bio.terra.axonserver.app.controller;
 
+import static bio.terra.axonserver.testutils.MockMvcUtils.USER_REQUEST;
+import static bio.terra.axonserver.testutils.MockMvcUtils.addAuth;
+import static bio.terra.axonserver.testutils.MockMvcUtils.addJsonContentType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import bio.terra.axonserver.model.ApiClusterMetadata;
 import bio.terra.axonserver.model.ApiClusterStatus;
 import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.model.ApiUrl;
 import bio.terra.axonserver.testutils.BaseUnitTest;
+import bio.terra.axonserver.testutils.MockMvcUtils;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
-import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
-import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
+import bio.terra.axonserver.utils.dataproc.GoogleDataprocClusterUtil;
+import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.services.dataproc.model.Cluster;
+import com.google.api.services.dataproc.model.ClusterConfig;
+import com.google.api.services.dataproc.model.GceClusterConfig;
+import com.google.api.services.dataproc.model.InstanceGroupConfig;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockMakers;
+import org.mockito.MockSettings;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 public class GcpResourceControllerTest extends BaseUnitTest {
+  /**
+   * Settings required to mock final classes/methods, required for several GCP SDK objects. Requires
+   * Mockito >= 4.8.0.
+   */
+  private final MockSettings finalMockSettings = withSettings().mockMaker(MockMakers.INLINE);
 
+  @Autowired private MockMvcUtils mockMvcUtils;
   @SpyBean private GcpResourceController gcpResourceController;
 
   @Autowired private MockMvc mockMvc;
@@ -55,7 +73,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStart() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -71,7 +89,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStart_wait() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -90,7 +108,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStop() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
@@ -106,14 +124,11 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStop_wait() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
-        .perform(
-            put(operationPath)
-                .header("Authorization", String.format("bearer %s", fakeToken))
-                .queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -125,14 +140,13 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStatus() throws Exception {
     String operationPath = getNotebookOperationPath("status");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     when(notebook.getStatus()).thenReturn(NotebookStatus.ACTIVE);
 
     String serializedGetResponse =
         mockMvc
-            .perform(
-                get(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
+            .perform(addAuth(get(operationPath), USER_REQUEST))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -150,18 +164,12 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     String operationPath = getNotebookOperationPath("proxyUrl");
 
     String fakeUrl = "https://example.com";
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     when(notebook.getProxyUrl()).thenReturn(fakeUrl);
 
     String serializedGetResponse =
-        mockMvc
-            .perform(
-                get(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+        mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);
 
     ApiSignedUrlReport url =
         objectMapper.readValue(serializedGetResponse, ApiSignedUrlReport.class);
@@ -174,12 +182,10 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStart() throws Exception {
     String operationPath = getClusterOperationPath("start");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
-    mockMvc
-        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
-        .andExpect(status().isOk());
+    mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
     Mockito.verify(cluster).start(waitCaptor.capture());
@@ -190,14 +196,11 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStart_wait() throws Exception {
     String operationPath = getClusterOperationPath("start");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
     mockMvc
-        .perform(
-            put(operationPath)
-                .header("Authorization", String.format("bearer %s", fakeToken))
-                .queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -209,12 +212,10 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStop() throws Exception {
     String operationPath = getClusterOperationPath("stop");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
-    mockMvc
-        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
-        .andExpect(status().isOk());
+    mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
     Mockito.verify(cluster).stop(waitCaptor.capture());
@@ -225,14 +226,11 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStop_wait() throws Exception {
     String operationPath = getClusterOperationPath("stop");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
     mockMvc
-        .perform(
-            put(operationPath)
-                .header("Authorization", String.format("bearer %s", fakeToken))
-                .queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -244,18 +242,12 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStatus() throws Exception {
     String operationPath = getClusterOperationPath("status");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     when(cluster.getStatus()).thenReturn(ClusterStatus.RUNNING);
 
     String serializedGetResponse =
-        mockMvc
-            .perform(
-                get(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
-            .andExpect(status().isOk())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
+        mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);
 
     ApiClusterStatus status = objectMapper.readValue(serializedGetResponse, ApiClusterStatus.class);
 
@@ -268,17 +260,15 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     String operationPath = getClusterOperationPath("componentUrl");
 
     String fakeUrl = "https://example.com";
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     when(cluster.getComponentUrl("fakekey")).thenReturn(fakeUrl);
 
     String serializedGetResponse =
         mockMvc
             .perform(
-                get(operationPath)
-                    .contentType("application/json")
-                    .param("componentKey", "fakekey")
-                    .header("Authorization", String.format("bearer %s", fakeToken)))
+                addJsonContentType(addAuth(get(operationPath), USER_REQUEST))
+                    .param("componentKey", "fakekey"))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -288,5 +278,42 @@ public class GcpResourceControllerTest extends BaseUnitTest {
 
     assertEquals(fakeUrl, url.getUrl());
     Mockito.verify(cluster).getComponentUrl("fakekey");
+  }
+
+  @Test
+  void clusterMetadata_get() throws Exception {
+    String operationPath = getClusterOperationPath("metadata");
+
+    GoogleDataprocClusterUtil mockGoogleDataprocCluster = mock(GoogleDataprocClusterUtil.class);
+    Cluster mockCluster = mock(Cluster.class, finalMockSettings);
+    ClusterConfig mockClusterConfig = mock(ClusterConfig.class, finalMockSettings);
+    GceClusterConfig mockGceClusterConfig = mock(GceClusterConfig.class, finalMockSettings);
+    InstanceGroupConfig mockMasterConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+    InstanceGroupConfig mockWorkerConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+
+    int numManagerNodes = 1;
+    int numWorkerNodes = 2;
+
+    doReturn(mockGoogleDataprocCluster)
+        .when(gcpResourceController)
+        .getCluster(workspaceId, resourceId);
+    when(mockGoogleDataprocCluster.getClusterConfig()).thenReturn(mockClusterConfig);
+    when(mockCluster.getConfig()).thenReturn(mockClusterConfig);
+    when(mockClusterConfig.getGceClusterConfig()).thenReturn(mockGceClusterConfig);
+    when(mockClusterConfig.getMasterConfig()).thenReturn(mockMasterConfig);
+    when(mockClusterConfig.getWorkerConfig()).thenReturn(mockWorkerConfig);
+    when(mockClusterConfig.getSecondaryWorkerConfig()).thenReturn(mockWorkerConfig);
+    when(mockMasterConfig.getNumInstances()).thenReturn(numManagerNodes);
+    when(mockWorkerConfig.getNumInstances()).thenReturn(numWorkerNodes);
+
+    String serializedGetResponse =
+        mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);
+
+    ApiClusterMetadata metadata =
+        objectMapper.readValue(serializedGetResponse, ApiClusterMetadata.class);
+    assertEquals(numManagerNodes, metadata.getManagerNodeConfig().getNumInstances());
+    assertEquals(numWorkerNodes, metadata.getPrimaryWorkerConfig().getNumInstances());
+    assertEquals(numWorkerNodes, metadata.getSecondaryWorkerConfig().getNumInstances());
+    Mockito.verify(mockGoogleDataprocCluster).getClusterConfig();
   }
 }

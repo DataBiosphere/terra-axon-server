@@ -16,8 +16,8 @@ public class AwsSageMakerNotebookTest {
   private final String instanceName = "fakeinstancename";
   private final SageMakerNotebookCow sageMakerNotebookCow = mock(SageMakerNotebookCow.class);
 
-  private final AwsSageMakerNotebook notebook =
-      new AwsSageMakerNotebook(instanceName, sageMakerNotebookCow);
+  private final AwsSageMakerNotebookUtil notebook =
+      new AwsSageMakerNotebookUtil(instanceName, sageMakerNotebookCow);
 
   @AfterEach
   public void tearDown() {

@@ -42,10 +42,10 @@ public class GoogleAIPlatformNotebookTest {
 
   /**
    * Test notebook instance is wrapped in a Mockito spy so that we can stub/verify calls to {@link
-   * GoogleAIPlatformNotebook#pollForSuccess}.
+   * GoogleAIPlatformNotebookUtil#pollForSuccess}.
    */
-  private final GoogleAIPlatformNotebook notebook =
-      spy(new GoogleAIPlatformNotebook(instanceName, aiPlatformNotebooksCow));
+  private final GoogleAIPlatformNotebookUtil notebook =
+      spy(new GoogleAIPlatformNotebookUtil(instanceName, aiPlatformNotebooksCow));
 
   private final AIPlatformNotebooksCow.Instances mockInstances =
       mock(AIPlatformNotebooksCow.Instances.class);

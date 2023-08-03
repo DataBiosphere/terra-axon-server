@@ -22,7 +22,7 @@ import bio.terra.axonserver.service.cloud.aws.AwsService;
 import bio.terra.axonserver.service.exception.InvalidResourceTypeException;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
-import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebook;
+import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.common.exception.NotFoundException;
@@ -226,7 +226,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   void notebookStart() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -242,7 +242,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   void notebookStart_wait() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -261,7 +261,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   void notebookStop() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
@@ -277,7 +277,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   void notebookStop_wait() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
@@ -296,7 +296,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   void notebookStatus() throws Exception {
     String operationPath = getNotebookOperationPath("status");
 
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook)
         .when(awsResourceController)
         .getNotebook(workspaceId, resourceId, AwsCredentialAccessScope.READ_ONLY);
@@ -323,7 +323,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     String operationPath = getNotebookOperationPath("proxyUrl");
 
     String fakeUrl = "https://example.com";
-    AwsSageMakerNotebook notebook = mock(AwsSageMakerNotebook.class);
+    AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     when(notebook.getProxyUrl()).thenReturn(fakeUrl);
 

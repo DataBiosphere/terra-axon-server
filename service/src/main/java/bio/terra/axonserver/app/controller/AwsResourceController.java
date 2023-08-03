@@ -7,7 +7,7 @@ import bio.terra.axonserver.service.cloud.aws.AwsService;
 import bio.terra.axonserver.service.exception.FeatureNotEnabledException;
 import bio.terra.axonserver.service.features.FeatureService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
-import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebook;
+import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.exception.ForbiddenException;
 import bio.terra.common.exception.NotFoundException;
@@ -97,10 +97,10 @@ public class AwsResourceController extends ControllerBase implements AwsResource
 
   /** Do not use, public for spy testing */
   @VisibleForTesting
-  public AwsSageMakerNotebook getNotebook(UUID workspaceId, UUID resourceId) {
+  public AwsSageMakerNotebookUtil getNotebook(UUID workspaceId, UUID resourceId) {
     checkAwsEnabled();
     String accessToken = getAccessToken();
-    return AwsSageMakerNotebook.create(
+    return AwsSageMakerNotebookUtil.create(
         wsmService,
         wsmService.getResource(workspaceId, resourceId, accessToken),
         /*awsCredentialAccessScope=*/ null,
@@ -109,13 +109,13 @@ public class AwsResourceController extends ControllerBase implements AwsResource
 
   /** Do not use, public for spy testing */
   @VisibleForTesting
-  public AwsSageMakerNotebook getNotebook(
+  public AwsSageMakerNotebookUtil getNotebook(
       UUID workspaceId,
       UUID resourceId,
       @Nullable AwsCredentialAccessScope awsCredentialAccessScope) {
     checkAwsEnabled();
     String accessToken = getAccessToken();
-    return AwsSageMakerNotebook.create(
+    return AwsSageMakerNotebookUtil.create(
         wsmService,
         wsmService.getResource(workspaceId, resourceId, accessToken),
         awsCredentialAccessScope,
