@@ -22,8 +22,8 @@ import bio.terra.axonserver.model.ApiUrl;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import bio.terra.axonserver.testutils.MockMvcUtils;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
-import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
-import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
+import bio.terra.axonserver.utils.dataproc.GoogleDataprocClusterUtil;
+import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.dataproc.model.Cluster;
@@ -73,7 +73,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStart() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -89,7 +89,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStart_wait() throws Exception {
     String operationPath = getNotebookOperationPath("start");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
@@ -108,7 +108,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStop() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
@@ -124,7 +124,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStop_wait() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
@@ -140,7 +140,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void notebookStatus() throws Exception {
     String operationPath = getNotebookOperationPath("status");
 
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     when(notebook.getStatus()).thenReturn(NotebookStatus.ACTIVE);
 
@@ -164,7 +164,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     String operationPath = getNotebookOperationPath("proxyUrl");
 
     String fakeUrl = "https://example.com";
-    GoogleAIPlatformNotebook notebook = mock(GoogleAIPlatformNotebook.class);
+    GoogleAIPlatformNotebookUtil notebook = mock(GoogleAIPlatformNotebookUtil.class);
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     when(notebook.getProxyUrl()).thenReturn(fakeUrl);
 
@@ -182,7 +182,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStart() throws Exception {
     String operationPath = getClusterOperationPath("start");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
     mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
@@ -196,7 +196,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStart_wait() throws Exception {
     String operationPath = getClusterOperationPath("start");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
     mockMvc
@@ -212,7 +212,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStop() throws Exception {
     String operationPath = getClusterOperationPath("stop");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
     mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
@@ -226,7 +226,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStop_wait() throws Exception {
     String operationPath = getClusterOperationPath("stop");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
     mockMvc
@@ -242,7 +242,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterStatus() throws Exception {
     String operationPath = getClusterOperationPath("status");
 
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     when(cluster.getStatus()).thenReturn(ClusterStatus.RUNNING);
 
@@ -260,7 +260,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     String operationPath = getClusterOperationPath("componentUrl");
 
     String fakeUrl = "https://example.com";
-    GoogleDataprocCluster cluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     when(cluster.getComponentUrl("fakekey")).thenReturn(fakeUrl);
 
@@ -284,12 +284,15 @@ public class GcpResourceControllerTest extends BaseUnitTest {
   void clusterMetadata_get() throws Exception {
     String operationPath = getClusterOperationPath("metadata");
 
-    GoogleDataprocCluster mockGoogleDataprocCluster = mock(GoogleDataprocCluster.class);
+    GoogleDataprocClusterUtil mockGoogleDataprocCluster = mock(GoogleDataprocClusterUtil.class);
     Cluster mockCluster = mock(Cluster.class, finalMockSettings);
     ClusterConfig mockClusterConfig = mock(ClusterConfig.class, finalMockSettings);
     GceClusterConfig mockGceClusterConfig = mock(GceClusterConfig.class, finalMockSettings);
     InstanceGroupConfig mockMasterConfig = mock(InstanceGroupConfig.class, finalMockSettings);
     InstanceGroupConfig mockWorkerConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+
+    int numManagerNodes = 1;
+    int numWorkerNodes = 2;
 
     doReturn(mockGoogleDataprocCluster)
         .when(gcpResourceController)
@@ -300,17 +303,17 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     when(mockClusterConfig.getMasterConfig()).thenReturn(mockMasterConfig);
     when(mockClusterConfig.getWorkerConfig()).thenReturn(mockWorkerConfig);
     when(mockClusterConfig.getSecondaryWorkerConfig()).thenReturn(mockWorkerConfig);
-    when(mockMasterConfig.getNumInstances()).thenReturn(1);
-    when(mockWorkerConfig.getNumInstances()).thenReturn(2);
+    when(mockMasterConfig.getNumInstances()).thenReturn(numManagerNodes);
+    when(mockWorkerConfig.getNumInstances()).thenReturn(numWorkerNodes);
 
     String serializedGetResponse =
         mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);
 
     ApiClusterMetadata metadata =
         objectMapper.readValue(serializedGetResponse, ApiClusterMetadata.class);
-    assertEquals(1, metadata.getManagerNodeConfig().getNumInstances());
-    assertEquals(2, metadata.getPrimaryWorkerConfig().getNumInstances());
-    assertEquals(2, metadata.getSecondaryWorkerConfig().getNumInstances());
+    assertEquals(numManagerNodes, metadata.getManagerNodeConfig().getNumInstances());
+    assertEquals(numWorkerNodes, metadata.getPrimaryWorkerConfig().getNumInstances());
+    assertEquals(numWorkerNodes, metadata.getSecondaryWorkerConfig().getNumInstances());
     Mockito.verify(mockGoogleDataprocCluster).getClusterConfig();
   }
 }

@@ -21,7 +21,7 @@ import java.time.Duration;
 import javax.ws.rs.InternalServerErrorException;
 
 /** Utility class for running common dataproc cluster operations on a Google Dataproc cluster. */
-public class GoogleDataprocCluster {
+public class GoogleDataprocClusterUtil {
 
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
@@ -30,7 +30,7 @@ public class GoogleDataprocCluster {
 
   /** For testing use only, allows use of mock {@link DataprocCow}. */
   @VisibleForTesting
-  public GoogleDataprocCluster(ClusterName clusterName, DataprocCow dataprocCow) {
+  public GoogleDataprocClusterUtil(ClusterName clusterName, DataprocCow dataprocCow) {
     this.clusterName = clusterName;
     this.dataprocCow = dataprocCow;
   }
@@ -43,20 +43,20 @@ public class GoogleDataprocCluster {
         .build();
   }
 
-  private GoogleDataprocCluster(ResourceDescription resource, GoogleCredentials credentials)
+  private GoogleDataprocClusterUtil(ResourceDescription resource, GoogleCredentials credentials)
       throws GeneralSecurityException, IOException {
     this(
         buildClusterName(resource.getResourceAttributes().getGcpDataprocCluster()),
         DataprocCow.create(clientConfig, credentials));
   }
 
-  /** Factory method to create an instance of class {@link GoogleDataprocCluster}. */
-  public static GoogleDataprocCluster create(
+  /** Factory method to create an instance of class {@link GoogleDataprocClusterUtil}. */
+  public static GoogleDataprocClusterUtil create(
       ResourceDescription resourceDescription, GoogleCredentials credentials) {
     ResourceUtils.validateResourceType(ResourceType.DATAPROC_CLUSTER, resourceDescription);
 
     try {
-      return new GoogleDataprocCluster(resourceDescription, credentials);
+      return new GoogleDataprocClusterUtil(resourceDescription, credentials);
     } catch (GeneralSecurityException | IOException e) {
       throw new InternalServerErrorException(e);
     }

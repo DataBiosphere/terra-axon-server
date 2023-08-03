@@ -10,8 +10,8 @@ import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.dataproc.ClusterStatus;
 import bio.terra.axonserver.utils.dataproc.DataprocMetadataBuilderUtils;
-import bio.terra.axonserver.utils.dataproc.GoogleDataprocCluster;
-import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebook;
+import bio.terra.axonserver.utils.dataproc.GoogleDataprocClusterUtil;
+import bio.terra.axonserver.utils.notebook.GoogleAIPlatformNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.iam.BearerTokenFactory;
 import com.google.api.services.dataproc.model.ClusterConfig;
@@ -44,9 +44,9 @@ public class GcpResourceController extends ControllerBase implements GcpResource
 
   /** Do not use, public for spy testing */
   @VisibleForTesting
-  public GoogleAIPlatformNotebook getNotebook(UUID workspaceId, UUID resourceId) {
+  public GoogleAIPlatformNotebookUtil getNotebook(UUID workspaceId, UUID resourceId) {
     GoogleCredentials credentials = gcpService.getPetSACredentials(workspaceId, getToken());
-    return GoogleAIPlatformNotebook.create(
+    return GoogleAIPlatformNotebookUtil.create(
         wsmService.getResource(workspaceId, resourceId, getAccessToken()), credentials);
   }
 
@@ -111,9 +111,9 @@ public class GcpResourceController extends ControllerBase implements GcpResource
 
   /** Do not use, public for spy testing */
   @VisibleForTesting
-  public GoogleDataprocCluster getCluster(UUID workspaceId, UUID resourceId) {
+  public GoogleDataprocClusterUtil getCluster(UUID workspaceId, UUID resourceId) {
     GoogleCredentials credentials = gcpService.getPetSACredentials(workspaceId, getToken());
-    return GoogleDataprocCluster.create(
+    return GoogleDataprocClusterUtil.create(
         wsmService.getResource(workspaceId, resourceId, getAccessToken()), credentials);
   }
 

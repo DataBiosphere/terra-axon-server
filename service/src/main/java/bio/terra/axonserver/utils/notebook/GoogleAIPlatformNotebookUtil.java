@@ -19,7 +19,7 @@ import java.time.Duration;
 import javax.ws.rs.InternalServerErrorException;
 
 /** Utility class for running common notebook operations on a Google Vertex AI Notebook instance. */
-public class GoogleAIPlatformNotebook {
+public class GoogleAIPlatformNotebookUtil {
 
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
@@ -28,7 +28,7 @@ public class GoogleAIPlatformNotebook {
 
   /** For testing use only, allows use of mock {@link AIPlatformNotebooksCow}. */
   @VisibleForTesting
-  public GoogleAIPlatformNotebook(
+  public GoogleAIPlatformNotebookUtil(
       InstanceName instanceName, AIPlatformNotebooksCow aiPlatformNotebooksCow) {
     this.instanceName = instanceName;
     this.aiPlatformNotebooksCow = aiPlatformNotebooksCow;
@@ -42,20 +42,20 @@ public class GoogleAIPlatformNotebook {
         .build();
   }
 
-  private GoogleAIPlatformNotebook(ResourceDescription resource, GoogleCredentials credentials)
+  private GoogleAIPlatformNotebookUtil(ResourceDescription resource, GoogleCredentials credentials)
       throws GeneralSecurityException, IOException {
     this(
         buildInstanceName(resource.getResourceAttributes().getGcpAiNotebookInstance()),
         AIPlatformNotebooksCow.create(clientConfig, credentials));
   }
 
-  /** Factory method to create an instance of class {@link GoogleAIPlatformNotebook}. */
-  public static GoogleAIPlatformNotebook create(
+  /** Factory method to create an instance of class {@link GoogleAIPlatformNotebookUtil}. */
+  public static GoogleAIPlatformNotebookUtil create(
       ResourceDescription resourceDescription, GoogleCredentials credentials) {
     ResourceUtils.validateResourceType(ResourceType.AI_NOTEBOOK, resourceDescription);
 
     try {
-      return new GoogleAIPlatformNotebook(resourceDescription, credentials);
+      return new GoogleAIPlatformNotebookUtil(resourceDescription, credentials);
     } catch (GeneralSecurityException | IOException e) {
       throw new InternalServerErrorException(e);
     }

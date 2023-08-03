@@ -18,7 +18,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.sagemaker.model.NotebookInstanceStatus;
 
 /** Utility class for running common notebook operations on an AWS SageMaker Notebook instance. */
-public class AwsSageMakerNotebook {
+public class AwsSageMakerNotebookUtil {
   private static final ClientConfig clientConfig =
       ClientConfig.Builder.newBuilder().setClient("terra-axon-server").build();
 
@@ -56,12 +56,12 @@ public class AwsSageMakerNotebook {
 
   /** For testing use only, allows use of mock {@link SageMakerNotebookCow}. */
   @VisibleForTesting
-  public AwsSageMakerNotebook(String instanceName, SageMakerNotebookCow sageMakerNotebookCow) {
+  public AwsSageMakerNotebookUtil(String instanceName, SageMakerNotebookCow sageMakerNotebookCow) {
     this.instanceName = instanceName;
     this.sageMakerNotebookCow = sageMakerNotebookCow;
   }
 
-  private AwsSageMakerNotebook(
+  private AwsSageMakerNotebookUtil(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resource,
       AwsCredentialAccessScope awsCredentialAccessScope,
@@ -75,14 +75,14 @@ public class AwsSageMakerNotebook {
             resource.getMetadata().getControlledResourceMetadata().getRegion()));
   }
 
-  /** Factory method to create an instance of class {@link AwsSageMakerNotebook}. */
-  public static AwsSageMakerNotebook create(
+  /** Factory method to create an instance of class {@link AwsSageMakerNotebookUtil}. */
+  public static AwsSageMakerNotebookUtil create(
       WorkspaceManagerService workspaceManagerService,
       ResourceDescription resourceDescription,
       AwsCredentialAccessScope awsCredentialAccessScope,
       String accessToken) {
     ResourceUtils.validateResourceType(ResourceType.AWS_SAGEMAKER_NOTEBOOK, resourceDescription);
-    return new AwsSageMakerNotebook(
+    return new AwsSageMakerNotebookUtil(
         workspaceManagerService, resourceDescription, awsCredentialAccessScope, accessToken);
   }
 

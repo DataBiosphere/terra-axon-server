@@ -48,10 +48,10 @@ public class GoogleDataprocClusterTest {
 
   /**
    * Test cluster is wrapped in a Mockito spy so that we can stub/verify calls to {@link
-   * GoogleDataprocCluster#pollForSuccess}.
+   * GoogleDataprocClusterUtil#pollForSuccess}.
    */
-  private final GoogleDataprocCluster cluster =
-      spy(new GoogleDataprocCluster(clusterName, dataprocCow));
+  private final GoogleDataprocClusterUtil cluster =
+      spy(new GoogleDataprocClusterUtil(clusterName, dataprocCow));
 
   private final DataprocCow.Clusters mockClusters = mock(DataprocCow.Clusters.class);
   private final Operation mockOperation = mock(Operation.class, finalMockSettings);

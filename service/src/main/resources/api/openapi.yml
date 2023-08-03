@@ -834,11 +834,11 @@ components:
         autoDeleteTime:
           type: string
           format: date-time
-          description: Date of cluster deletion in UTC "Zulu" format. Must not be specified if autoDeleteTtl is specified.
+          description: Date of cluster deletion in UTC "Zulu" format.
           example: 2014-10-02T15:01:23.045123456Z
         autoDeleteTtl:
           type: string
-          description: Duration of cluster life in seconds. Must not be specified if autoDeleteTime is specified.
+          description: Duration of cluster life in seconds.
           example: 3.5s
 
     ClusterStatus:
