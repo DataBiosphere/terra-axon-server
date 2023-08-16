@@ -781,6 +781,9 @@ components:
           description: Metadata key-value pairs.
           additionalProperties:
             type: string
+        zoneUri:
+          type: string
+          description: URI of the zone where the cluster's gce instance nodes are located.
         managerNodeConfig:
           $ref: '#/components/schemas/ClusterInstanceGroupConfig'
         primaryWorkerConfig:

@@ -197,6 +197,7 @@ public class GcpResourceController extends ControllerBase implements GcpResource
             .configBucket(clusterConfig.getConfigBucket())
             .tempBucket(clusterConfig.getTempBucket())
             .metadata(clusterConfig.getGceClusterConfig().getMetadata())
+            .zoneUri(clusterConfig.getGceClusterConfig().getZoneUri())
             .managerNodeConfig(
                 DataprocMetadataBuilderUtils.buildInstanceGroupConfig(
                     clusterConfig.getMasterConfig()))
