@@ -383,7 +383,7 @@ paths:
       schema:
         type: boolean
         default: false
-    put:
+    post:
       summary: Starts a GCP Dataproc cluster
       operationId: putDataprocClusterStart
       tags: [ GcpResource ]
@@ -409,7 +409,7 @@ paths:
       schema:
         type: boolean
         default: false
-    put:
+    post:
       summary: Stop a GCP Dataproc cluster
       operationId: putDataprocClusterStop
       tags: [ GcpResource ]
