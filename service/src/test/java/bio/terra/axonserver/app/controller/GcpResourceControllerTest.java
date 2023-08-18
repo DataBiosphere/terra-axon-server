@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import bio.terra.axonserver.model.ApiClusterMetadata;
@@ -77,7 +77,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
-        .perform(post(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
+        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -94,7 +94,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
         .perform(
-            post(operationPath)
+            put(operationPath)
                 .header("Authorization", String.format("bearer %s", fakeToken))
                 .queryParam("wait", "true"))
         .andExpect(status().isOk());
@@ -112,7 +112,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
-        .perform(post(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
+        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -128,7 +128,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(notebook).when(gcpResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
-        .perform(addAuth(post(operationPath), USER_REQUEST).queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -185,7 +185,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
-    mockMvc.perform(addAuth(post(operationPath), USER_REQUEST)).andExpect(status().isOk());
+    mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
     Mockito.verify(cluster).start(waitCaptor.capture());
@@ -200,7 +200,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).start(anyBoolean());
     mockMvc
-        .perform(addAuth(post(operationPath), USER_REQUEST).queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -215,7 +215,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     GoogleDataprocClusterUtil cluster = mock(GoogleDataprocClusterUtil.class);
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
-    mockMvc.perform(addAuth(post(operationPath), USER_REQUEST)).andExpect(status().isOk());
+    mockMvc.perform(addAuth(put(operationPath), USER_REQUEST)).andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
     Mockito.verify(cluster).stop(waitCaptor.capture());
@@ -230,7 +230,7 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     doReturn(cluster).when(gcpResourceController).getCluster(workspaceId, resourceId);
     doNothing().when(cluster).stop(anyBoolean());
     mockMvc
-        .perform(addAuth(post(operationPath), USER_REQUEST).queryParam("wait", "true"))
+        .perform(addAuth(put(operationPath), USER_REQUEST).queryParam("wait", "true"))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);

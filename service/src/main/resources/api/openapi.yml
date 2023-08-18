@@ -182,9 +182,7 @@ paths:
         schema:
           type: boolean
           default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Starts an AWS SageMaker Notebook Instance
       operationId: putSageMakerNotebookStart
       tags: [ AwsResource ]
@@ -212,9 +210,7 @@ paths:
         schema:
           type: boolean
           default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Stop an AWS SageMaker Notebook Instance
       operationId: putSageMakerNotebookStop
       tags: [ AwsResource ]
@@ -287,9 +283,7 @@ paths:
         schema:
           type: boolean
           default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Starts a GCP Vertex AI Notebook Instance
       operationId: putAiNotebookStart
       tags: [ GcpResource ]
@@ -317,9 +311,7 @@ paths:
         schema:
           type: boolean
           default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Stop a GCP Vertex AI Notebook Instance
       operationId: putAiNotebookStop
       tags: [ GcpResource ]
@@ -391,9 +383,7 @@ paths:
       schema:
         type: boolean
         default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Starts a GCP Dataproc cluster
       operationId: putDataprocClusterStart
       tags: [ GcpResource ]
@@ -419,9 +409,7 @@ paths:
       schema:
         type: boolean
         default: false
-    # Using POST instead of PUT since jersey2 doesn't support PUT without body
-    # TODO: PF-2593 - Change to PUT if we override with moustache templating
-    post:
+    put:
       summary: Stop a GCP Dataproc cluster
       operationId: putDataprocClusterStop
       tags: [ GcpResource ]
