@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import bio.terra.axonserver.model.ApiNotebookStatus;
@@ -230,7 +230,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
-        .perform(post(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
+        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -247,7 +247,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     doNothing().when(notebook).start(anyBoolean());
     mockMvc
         .perform(
-            post(operationPath)
+            put(operationPath)
                 .header("Authorization", String.format("bearer %s", fakeToken))
                 .queryParam("wait", "true"))
         .andExpect(status().isOk());
@@ -265,7 +265,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
-        .perform(post(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
+        .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
 
     ArgumentCaptor<Boolean> waitCaptor = ArgumentCaptor.forClass(Boolean.class);
@@ -282,7 +282,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
     doNothing().when(notebook).stop(anyBoolean());
     mockMvc
         .perform(
-            post(operationPath)
+            put(operationPath)
                 .header("Authorization", String.format("bearer %s", fakeToken))
                 .queryParam("wait", "true"))
         .andExpect(status().isOk());
