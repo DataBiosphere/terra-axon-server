@@ -28,6 +28,7 @@ import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.dataproc.model.Cluster;
 import com.google.api.services.dataproc.model.ClusterConfig;
+import com.google.api.services.dataproc.model.DiskConfig;
 import com.google.api.services.dataproc.model.GceClusterConfig;
 import com.google.api.services.dataproc.model.InstanceGroupConfig;
 import java.util.UUID;
@@ -290,9 +291,14 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     GceClusterConfig mockGceClusterConfig = mock(GceClusterConfig.class, finalMockSettings);
     InstanceGroupConfig mockMasterConfig = mock(InstanceGroupConfig.class, finalMockSettings);
     InstanceGroupConfig mockWorkerConfig = mock(InstanceGroupConfig.class, finalMockSettings);
+    DiskConfig mockMasterDiskConfig = mock(DiskConfig.class, finalMockSettings);
+    DiskConfig mockWorkerDiskConfig = mock(DiskConfig.class, finalMockSettings);
 
     int numManagerNodes = 1;
     int numWorkerNodes = 2;
+
+    int managerDiskSizeGb = 1234;
+    int workerDiskSizeGb = 2345;
 
     doReturn(mockGoogleDataprocCluster)
         .when(gcpResourceController)
@@ -305,6 +311,10 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     when(mockClusterConfig.getSecondaryWorkerConfig()).thenReturn(mockWorkerConfig);
     when(mockMasterConfig.getNumInstances()).thenReturn(numManagerNodes);
     when(mockWorkerConfig.getNumInstances()).thenReturn(numWorkerNodes);
+    when(mockMasterConfig.getDiskConfig()).thenReturn(mockMasterDiskConfig);
+    when(mockWorkerConfig.getDiskConfig()).thenReturn(mockWorkerDiskConfig);
+    when(mockMasterDiskConfig.getBootDiskSizeGb()).thenReturn(managerDiskSizeGb);
+    when(mockWorkerDiskConfig.getBootDiskSizeGb()).thenReturn(workerDiskSizeGb);
 
     String serializedGetResponse =
         mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);
@@ -314,6 +324,9 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     assertEquals(numManagerNodes, metadata.getManagerNodeConfig().getNumInstances());
     assertEquals(numWorkerNodes, metadata.getPrimaryWorkerConfig().getNumInstances());
     assertEquals(numWorkerNodes, metadata.getSecondaryWorkerConfig().getNumInstances());
+    assertEquals(managerDiskSizeGb, metadata.getManagerNodeConfig().getBootDiskSizeGb());
+    assertEquals(workerDiskSizeGb, metadata.getPrimaryWorkerConfig().getBootDiskSizeGb());
+    assertEquals(workerDiskSizeGb, metadata.getSecondaryWorkerConfig().getBootDiskSizeGb());
     Mockito.verify(mockGoogleDataprocCluster).getClusterConfig();
   }
 }
