@@ -19,7 +19,8 @@ public class DataprocMetadataBuilderUtils {
               ApiClusterInstanceGroupConfig nodeGroupConfig =
                   new ApiClusterInstanceGroupConfig()
                       .numInstances(config.getNumInstances())
-                      .machineType(config.getMachineTypeUri());
+                      .machineType(config.getMachineTypeUri())
+                      .bootDiskSizeGb(config.getDiskConfig().getBootDiskSizeGb());
 
               Optional.ofNullable(config.getPreemptibility())
                   .map(ApiClusterInstanceGroupConfig.PreemptibilityEnum::fromValue)
