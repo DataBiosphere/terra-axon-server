@@ -209,7 +209,10 @@ public class GcpResourceController extends ControllerBase implements GcpResource
                     clusterConfig.getSecondaryWorkerConfig()))
             .lifecycleConfig(
                 DataprocMetadataBuilderUtils.buildLifecycleConfig(
-                    clusterConfig.getLifecycleConfig()));
+                    clusterConfig.getLifecycleConfig()))
+            .softwareConfig(
+                DataprocMetadataBuilderUtils.buildSoftwareConfig(
+                    clusterConfig.getSoftwareConfig()));
 
     Optional.ofNullable(clusterConfig.getInitializationActions())
         .ifPresent(

@@ -31,6 +31,8 @@ import com.google.api.services.dataproc.model.ClusterConfig;
 import com.google.api.services.dataproc.model.DiskConfig;
 import com.google.api.services.dataproc.model.GceClusterConfig;
 import com.google.api.services.dataproc.model.InstanceGroupConfig;
+import com.google.api.services.dataproc.model.SoftwareConfig;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -293,12 +295,17 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     InstanceGroupConfig mockWorkerConfig = mock(InstanceGroupConfig.class, finalMockSettings);
     DiskConfig mockMasterDiskConfig = mock(DiskConfig.class, finalMockSettings);
     DiskConfig mockWorkerDiskConfig = mock(DiskConfig.class, finalMockSettings);
+    SoftwareConfig mockSoftwareConfig = mock(SoftwareConfig.class, finalMockSettings);
 
     int numManagerNodes = 1;
     int numWorkerNodes = 2;
 
     int managerDiskSizeGb = 1234;
     int workerDiskSizeGb = 2345;
+
+    String softwareVersion = "test-version-string";
+
+    List<String> softwareComponents = List.of("component", "component2");
 
     doReturn(mockGoogleDataprocCluster)
         .when(gcpResourceController)
@@ -315,6 +322,9 @@ public class GcpResourceControllerTest extends BaseUnitTest {
     when(mockWorkerConfig.getDiskConfig()).thenReturn(mockWorkerDiskConfig);
     when(mockMasterDiskConfig.getBootDiskSizeGb()).thenReturn(managerDiskSizeGb);
     when(mockWorkerDiskConfig.getBootDiskSizeGb()).thenReturn(workerDiskSizeGb);
+    when(mockClusterConfig.getSoftwareConfig()).thenReturn(mockSoftwareConfig);
+    when(mockSoftwareConfig.getImageVersion()).thenReturn(softwareVersion);
+    when(mockSoftwareConfig.getOptionalComponents()).thenReturn(softwareComponents);
 
     String serializedGetResponse =
         mockMvcUtils.getSerializedResponseForGet(USER_REQUEST, operationPath);

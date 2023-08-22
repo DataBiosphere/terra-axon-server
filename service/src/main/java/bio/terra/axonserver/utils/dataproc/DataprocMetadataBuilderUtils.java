@@ -2,8 +2,10 @@ package bio.terra.axonserver.utils.dataproc;
 
 import bio.terra.axonserver.model.ApiClusterInstanceGroupConfig;
 import bio.terra.axonserver.model.ApiClusterLifecycleConfig;
+import bio.terra.axonserver.model.ApiClusterSoftwareConfig;
 import com.google.api.services.dataproc.model.InstanceGroupConfig;
 import com.google.api.services.dataproc.model.LifecycleConfig;
+import com.google.api.services.dataproc.model.SoftwareConfig;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -49,6 +51,17 @@ public class DataprocMetadataBuilderUtils {
                             .map(Instant::parse)
                             .map(Date::from)
                             .orElse(null)))
+        .orElse(null);
+  }
+
+  // Build an api cluster software config from a dataproc cluster software config
+  public static ApiClusterSoftwareConfig buildSoftwareConfig(SoftwareConfig softwareConfig) {
+    return Optional.ofNullable(softwareConfig)
+        .map(
+            config ->
+                new ApiClusterSoftwareConfig()
+                    .imageVersion(config.getImageVersion())
+                    .optionalComponents(config.getOptionalComponents()))
         .orElse(null);
   }
 }
