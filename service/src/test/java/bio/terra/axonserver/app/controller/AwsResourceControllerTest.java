@@ -26,14 +26,12 @@ import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
 import bio.terra.common.exception.InternalServerErrorException;
 import bio.terra.common.exception.NotFoundException;
-import bio.terra.common.flagsmith.FlagsmithService;
 import bio.terra.workspace.model.AwsCredential;
 import bio.terra.workspace.model.AwsCredentialAccessScope;
 import bio.terra.workspace.model.IamRole;
 import bio.terra.workspace.model.ResourceDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URL;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -44,31 +42,22 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 public class AwsResourceControllerTest extends BaseUnitTest {
-  @MockBean private FlagsmithService flagsmithService;
   @MockBean private WorkspaceManagerService wsmService;
   @MockBean private AwsService awsService;
 
   @SpyBean private AwsResourceController awsResourceController;
 
   @Autowired private MockMvc mockMvc;
-
   @Autowired private ObjectMapper objectMapper;
-
-  private final String featureFlag = "terra__aws_enabled";
 
   private final UUID workspaceId = UUID.randomUUID();
   private final UUID resourceId = UUID.randomUUID();
   private final String fakeToken = "faketoken";
   private final String path =
-      String.format(
-          "/api/workspaces/v1/%s/resources/%s/aws/consoleUrl",
-          workspaceId.toString(), resourceId.toString());
+      String.format("/api/workspaces/v1/%s/resources/%s/aws/consoleUrl", workspaceId, resourceId);
 
   @Test
   void getSignedConsoleUrl_awsOn() throws Exception {
-
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
-
     ResourceDescription mockResourceDescription = mock(ResourceDescription.class);
 
     // Expect the provided fake token will be passed to getResource, and return our mocked resource.
@@ -106,7 +95,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
                 eq(mockResourceDescription), eq(mockCredential), any()))
         .thenReturn(fakeUrl);
 
-    // Verify that the response was OK and we got our fake URL back.
+    // Verify that the response was OK, and we got our fake URL back.
 
     String serializedGetResponse =
         mockMvc
@@ -149,15 +138,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   }
 
   @Test
-  void getSignedConsoleUrl_awsOff() throws Exception {
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(false));
-    mockMvc.perform(get(path)).andExpect(status().isNotImplemented());
-    Mockito.verifyNoInteractions(wsmService, awsService);
-  }
-
-  @Test
   void getSignedConsoleUrl_resourceNotFound() throws Exception {
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
     Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenThrow(new NotFoundException("not found"));
     mockMvc
@@ -167,7 +148,6 @@ public class AwsResourceControllerTest extends BaseUnitTest {
 
   @Test
   void getSignedConsoleUrl_internalError() throws Exception {
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
     Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenThrow(new InternalServerErrorException("internal error"));
     mockMvc
@@ -177,10 +157,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
 
   @Test
   void getSignedConsoleUrl_badResourceType() throws Exception {
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
-
     ResourceDescription mockResourceDescription = mock(ResourceDescription.class);
-
     IamRole highestRole = IamRole.WRITER;
     Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenReturn(mockResourceDescription);
@@ -201,10 +178,7 @@ public class AwsResourceControllerTest extends BaseUnitTest {
 
   @Test
   void getSignedConsoleUrl_unauthorized() throws Exception {
-    Mockito.when(flagsmithService.isFeatureEnabled(featureFlag)).thenReturn(Optional.of(true));
-
     ResourceDescription mockResourceDescription = mock(ResourceDescription.class);
-
     IamRole highestRole = IamRole.DISCOVERER;
     Mockito.when(wsmService.getResource(workspaceId, resourceId, fakeToken))
         .thenReturn(mockResourceDescription);
@@ -218,17 +192,16 @@ public class AwsResourceControllerTest extends BaseUnitTest {
 
   private String getNotebookOperationPath(String operation) {
     return String.format(
-        "/api/workspaces/v1/%s/resources/%s/aws/notebook/%s",
-        workspaceId.toString(), resourceId.toString(), operation);
+        "/api/workspaces/v1/%s/resources/%s/aws/notebook/%s", workspaceId, resourceId, operation);
   }
 
   @Test
   void notebookStart() throws Exception {
     String operationPath = getNotebookOperationPath("start");
-
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
+
     mockMvc
         .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
@@ -241,10 +214,10 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void notebookStart_wait() throws Exception {
     String operationPath = getNotebookOperationPath("start");
-
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).start(anyBoolean());
+
     mockMvc
         .perform(
             put(operationPath)
@@ -260,10 +233,10 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void notebookStop() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
-
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
+
     mockMvc
         .perform(put(operationPath).header("Authorization", String.format("bearer %s", fakeToken)))
         .andExpect(status().isOk());
@@ -276,10 +249,10 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void notebookStop_wait() throws Exception {
     String operationPath = getNotebookOperationPath("stop");
-
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
     doNothing().when(notebook).stop(anyBoolean());
+
     mockMvc
         .perform(
             put(operationPath)
@@ -295,7 +268,6 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void notebookStatus() throws Exception {
     String operationPath = getNotebookOperationPath("status");
-
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook)
         .when(awsResourceController)
@@ -321,7 +293,6 @@ public class AwsResourceControllerTest extends BaseUnitTest {
   @Test
   void notebookProxyUrl() throws Exception {
     String operationPath = getNotebookOperationPath("proxyUrl");
-
     String fakeUrl = "https://example.com";
     AwsSageMakerNotebookUtil notebook = mock(AwsSageMakerNotebookUtil.class);
     doReturn(notebook).when(awsResourceController).getNotebook(workspaceId, resourceId);
