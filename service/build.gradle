@@ -34,7 +34,7 @@ dependencies {
     implementation 'software.amazon.awssdk:sts'
 
     // Terra Common Library
-    implementation('bio.terra:terra-common-lib:0.0.86-SNAPSHOT') {
+    implementation('bio.terra:terra-common-lib:0.0.94-SNAPSHOT') {
         exclude group: 'org.broadinstitute.dsde.workbench', module: 'sam-client_2.12'
     }
 
