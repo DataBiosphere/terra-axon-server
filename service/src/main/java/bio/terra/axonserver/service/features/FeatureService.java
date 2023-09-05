@@ -1,5 +1,6 @@
 package bio.terra.axonserver.service.features;
 
+import bio.terra.axonserver.service.exception.FeatureNotEnabledException;
 import bio.terra.common.flagsmith.FlagsmithService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,13 @@ public class FeatureService {
     this.flagsmithService = flagsmithService;
   }
 
-  public boolean awsEnabled() {
-    return flagsmithService.isFeatureEnabled("terra__aws_enabled").orElse(false);
+  public boolean isFeatureEnabled(String featureName) {
+    return flagsmithService.isFeatureEnabled(featureName).orElse(false);
+  }
+
+  public void featureEnabledCheck(String featureName) {
+    if (!isFeatureEnabled(featureName)) {
+      throw new FeatureNotEnabledException(String.format("Feature %s not supported", featureName));
+    }
   }
 }

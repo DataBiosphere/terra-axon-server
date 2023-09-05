@@ -5,7 +5,6 @@ import bio.terra.axonserver.model.ApiNotebookStatus;
 import bio.terra.axonserver.model.ApiSignedUrlReport;
 import bio.terra.axonserver.service.cloud.aws.AwsService;
 import bio.terra.axonserver.service.exception.FeatureNotEnabledException;
-import bio.terra.axonserver.service.features.FeatureService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.utils.notebook.AwsSageMakerNotebookUtil;
 import bio.terra.axonserver.utils.notebook.NotebookStatus;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class AwsResourceController extends ControllerBase implements AwsResourceApi {
 
-  private final FeatureService featureService;
   private final WorkspaceManagerService wsmService;
   private final AwsService awsService;
 
@@ -42,19 +40,11 @@ public class AwsResourceController extends ControllerBase implements AwsResource
   public AwsResourceController(
       BearerTokenFactory bearerTokenFactory,
       HttpServletRequest request,
-      FeatureService featureService,
       WorkspaceManagerService wsmService,
       AwsService awsService) {
     super(bearerTokenFactory, request);
-    this.featureService = featureService;
     this.wsmService = wsmService;
     this.awsService = awsService;
-  }
-
-  private void checkAwsEnabled() {
-    if (!featureService.awsEnabled()) {
-      throw new FeatureNotEnabledException("AWS Feature not enabled.");
-    }
   }
 
   /**
@@ -71,7 +61,6 @@ public class AwsResourceController extends ControllerBase implements AwsResource
    */
   @Override
   public ResponseEntity<ApiSignedUrlReport> getSignedConsoleUrl(UUID workspaceId, UUID resourceId) {
-    checkAwsEnabled();
     String accessToken = getAccessToken();
     ResourceDescription resourceDescription =
         wsmService.getResource(workspaceId, resourceId, accessToken);
@@ -98,7 +87,6 @@ public class AwsResourceController extends ControllerBase implements AwsResource
   /** Do not use, public for spy testing */
   @VisibleForTesting
   public AwsSageMakerNotebookUtil getNotebook(UUID workspaceId, UUID resourceId) {
-    checkAwsEnabled();
     String accessToken = getAccessToken();
     return AwsSageMakerNotebookUtil.create(
         wsmService,
@@ -113,7 +101,6 @@ public class AwsResourceController extends ControllerBase implements AwsResource
       UUID workspaceId,
       UUID resourceId,
       @Nullable AwsCredentialAccessScope awsCredentialAccessScope) {
-    checkAwsEnabled();
     String accessToken = getAccessToken();
     return AwsSageMakerNotebookUtil.create(
         wsmService,
