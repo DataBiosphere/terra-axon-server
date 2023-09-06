@@ -967,6 +967,12 @@ components:
         build:
           type: string
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
+        oldestSupportedCli:
+          type: string
+          description: Oldest supported CLI version; allows the CLI to perform a compatibility check
+        latestSupportedCli:
+          type: string
+          description: Latest supported CLI version; allows the CLI to perform a compatibility check; informs installation script
 
     WorkflowIdAndStatus:
       type: object

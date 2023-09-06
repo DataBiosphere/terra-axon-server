@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import bio.terra.axonserver.app.configuration.CliVersionConfiguration;
 import bio.terra.axonserver.app.configuration.VersionConfiguration;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ class PublicApiControllerTest extends BaseUnitTest {
   @Autowired private MockMvc mockMvc;
 
   @Autowired private VersionConfiguration versionConfiguration;
+  @Autowired private CliVersionConfiguration cliVersionConfiguration;
 
   @Test
   void testStatus() throws Exception {
@@ -29,7 +31,11 @@ class PublicApiControllerTest extends BaseUnitTest {
         .andExpect(jsonPath("$.gitTag").value(versionConfiguration.getGitTag()))
         .andExpect(jsonPath("$.gitHash").value(versionConfiguration.getGitHash()))
         .andExpect(jsonPath("$.github").value(versionConfiguration.getGithub()))
-        .andExpect(jsonPath("$.build").value(versionConfiguration.getBuild()));
+        .andExpect(jsonPath("$.build").value(versionConfiguration.getBuild()))
+        .andExpect(
+            jsonPath("$.oldestSupportedCli").value(cliVersionConfiguration.getOldestVersion()))
+        .andExpect(
+            jsonPath("$.latestSupportedCli").value(cliVersionConfiguration.getLatestVersion()));
   }
 
   @Test
