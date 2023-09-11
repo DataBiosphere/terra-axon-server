@@ -76,4 +76,15 @@ public class SamService {
       throw SamExceptionFactory.create("Error getting user's pet SA email.", apiException);
     }
   }
+
+  public String getPetServiceAccountKey(
+      String projectId, String userEmail, BearerToken userRequest) {
+    try {
+      return new GoogleApi(getApiClient(userRequest.getToken()))
+          .getUserPetServiceAccountKey(projectId, userEmail);
+    } catch (ApiException apiException) {
+      throw SamExceptionFactory.create(
+          "Error getting user's pet SA key for project.", apiException);
+    }
+  }
 }

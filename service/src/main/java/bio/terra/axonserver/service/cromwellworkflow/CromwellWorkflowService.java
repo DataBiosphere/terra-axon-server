@@ -228,9 +228,10 @@ public class CromwellWorkflowService {
       // Adjoin preset options for the options file.
       // Place the project ID + compute SA + docker image into the options.
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
+      String userEmail = samService.getUserStatusInfo(token).getUserEmail();
+      String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail, token);
+      workflowOptions.put("user_service_account_json", petSaKey);
       workflowOptions.put("google_project", projectId);
-      workflowOptions.put(
-          "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
       workflowOptions.put(
           "default_runtime_attributes",
           new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
@@ -240,7 +241,7 @@ public class CromwellWorkflowService {
       }
 
       labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
-      labels.put(USER_EMAIL_LABEL_KEY, samService.getUserStatusInfo(token).getUserEmail());
+      labels.put(USER_EMAIL_LABEL_KEY, userEmail);
       if (workflowGcsUri != null) {
         labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
