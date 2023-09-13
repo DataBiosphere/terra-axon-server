@@ -234,6 +234,7 @@ public class CromwellWorkflowService {
       String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail, token);
       workflowOptions.put("user_service_account_json", petSaKey);
 
+      // Limit call caching to root bucket
       String[] cachePrefixes = {rootBucket.toString()};
       workflowOptions.put("call_cache_hit_path_prefixes", cachePrefixes);
       workflowOptions.put("google_project", projectId);
