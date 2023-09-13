@@ -64,6 +64,7 @@ import womtool.inputs.Inputs;
  */
 @Component
 public class CromwellWorkflowService {
+
   private final CromwellConfiguration cromwellConfig;
   private final FileService fileService;
   private final WorkspaceManagerService wsmService;
@@ -202,7 +203,8 @@ public class CromwellWorkflowService {
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
-    if (workflowOptions == null || workflowOptions.get("jes_gcs_root") == null) {
+    var rootBucket = workflowOptions.get("jes_gcs_root");
+    if (workflowOptions == null || rootBucket == null) {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
 
@@ -228,19 +230,25 @@ public class CromwellWorkflowService {
       // Adjoin preset options for the options file.
       // Place the project ID + compute SA + docker image into the options.
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
+      String userEmail = samService.getUserStatusInfo(token).getUserEmail();
+      String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail, token);
+      workflowOptions.put("user_service_account_json", petSaKey);
+
+      // Limit call caching to root bucket
+      String[] cachePrefixes = {rootBucket.toString()};
+      workflowOptions.put("call_cache_hit_path_prefixes", cachePrefixes);
       workflowOptions.put("google_project", projectId);
       workflowOptions.put(
           "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
       workflowOptions.put(
           "default_runtime_attributes",
           new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
-
       try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
       }
 
       labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
-      labels.put(USER_EMAIL_LABEL_KEY, samService.getUserStatusInfo(token).getUserEmail());
+      labels.put(USER_EMAIL_LABEL_KEY, userEmail);
       if (workflowGcsUri != null) {
         labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
@@ -265,8 +273,6 @@ public class CromwellWorkflowService {
             StandardCopyOption.REPLACE_EXISTING);
       }
 
-      // TODO (PF-2650): Write inputs.json + options.json to jes_gcs_root (to leave artifacts in the
-      // bucket). This is not required, but it's useful for logging.
       return new WorkflowsApi(getApiClient())
           .submit(
               CROMWELL_CLIENT_API_VERSION,
