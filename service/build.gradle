@@ -68,7 +68,7 @@ dependencies {
         implementation('org.postgresql:postgresql:42.3.7')
         implementation('org.hsqldb:hsqldb:org.hsqldb:hsqldb')
         implementation('org.http4s:http4s-core_2.13:0.21.34')
-        implementation('org.apache.bcel:bcel:6.6.0')
+        spotbugs('org.apache.bcel:bcel:6.6.0')
         implementation('com.github.spotbugs:spotbugs-annotations:4.7.3')
     }
 
