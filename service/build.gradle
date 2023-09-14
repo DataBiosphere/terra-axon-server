@@ -12,10 +12,6 @@ apply from: "$gradleIncDir/publishing.gradle"
 apply from: "$gradleIncDir/dependency-locking.gradle"
 apply from: "$gradleIncDir/sonarqube.gradle"
 
-// Thymeleaf has a known security vulnerability but is managed by the Spring Boot dependency
-// management plugin. This can be removed when ECM is on Spring Boot 3.
-ext['thymeleaf.version'] = '3.1.2.RELEASE'
-
 dependencies {
     // Google dependencies
     constraints {

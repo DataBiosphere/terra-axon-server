@@ -5,3 +5,7 @@ plugins {
     id 'io.spring.dependency-management'
     id 'org.springframework.boot'
 }
+
+// Thymeleaf has a known security vulnerability but is managed by the Spring Boot dependency
+// management plugin. This can be removed when ECM is on Spring Boot 3.
+ext['thymeleaf.version'] = '3.1.2.RELEASE'
