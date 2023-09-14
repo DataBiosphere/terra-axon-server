@@ -7,5 +7,5 @@ plugins {
 }
 
 // Thymeleaf has a known security vulnerability but is managed by the Spring Boot dependency
-// management plugin. This can be removed when ECM is on Spring Boot 3.
+// management plugin. This can be removed when Axon is on Spring Boot 3.
 ext['thymeleaf.version'] = '3.1.2.RELEASE'
