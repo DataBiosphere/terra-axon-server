@@ -231,7 +231,7 @@ public class CromwellWorkflowService {
       // Place the project ID + compute SA + docker image into the options.
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
       String userEmail = samService.getUserStatusInfo(token).getUserEmail();
-      String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail, token);
+      String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail);
       workflowOptions.put("user_service_account_json", petSaKey);
 
       // Limit call caching to root bucket
