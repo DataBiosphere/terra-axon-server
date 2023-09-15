@@ -25,7 +25,7 @@ public class BeanConfig {
         .setDefaultPropertyInclusion(JsonInclude.Include.NON_ABSENT);
   }
 
-  // Enables locally running UI the ability to query the server
+  // Grants locally running UI the ability to query the server
   @Bean
   @Profile("local")
   public WebMvcConfigurer corsConfigurer() {
