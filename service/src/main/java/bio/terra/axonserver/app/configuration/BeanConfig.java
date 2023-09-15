@@ -8,6 +8,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class BeanConfig {
@@ -20,5 +23,15 @@ public class BeanConfig {
         .registerModule(new JavaTimeModule())
         .setDateFormat(new ISO8601DateFormat())
         .setDefaultPropertyInclusion(JsonInclude.Include.NON_ABSENT);
+  }
+
+  @Bean
+  @Profile("local")
+  public WebMvcConfigurer corsConfigurer() {
+    return new WebMvcConfigurer() {
+      public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**").allowedOrigins("*").allowedMethods("*").allowedHeaders("*");
+      }
+    };
   }
 }
