@@ -20,9 +20,10 @@ View current usage information for `write-config.sh` by entering
 ```
 
 ### Running
-To start the server locally with swagger, run:
+To start the server locally with swagger, run the following. The env var turns
+CORS on so a local UI can talk to the server.
 ```
-./gradlew bootRun
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
 ```
 
 ### Updating Dependency Locks
