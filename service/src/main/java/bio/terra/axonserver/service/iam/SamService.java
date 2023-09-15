@@ -4,6 +4,8 @@ import bio.terra.axonserver.app.configuration.SamConfiguration;
 import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.common.sam.exception.SamExceptionFactory;
+import com.google.auth.oauth2.GoogleCredentials;
+import java.io.IOException;
 import org.broadinstitute.dsde.workbench.client.sam.ApiClient;
 import org.broadinstitute.dsde.workbench.client.sam.ApiException;
 import org.broadinstitute.dsde.workbench.client.sam.api.GoogleApi;
@@ -11,10 +13,17 @@ import org.broadinstitute.dsde.workbench.client.sam.api.UsersApi;
 import org.broadinstitute.dsde.workbench.client.sam.model.UserStatusInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.collect.ImmutableSet;
+import java.io.IOException;
+import java.util.Set;
+import bio.terra.common.exception.InternalServerErrorException;
+
 
 @Component
 public class SamService {
 
+  private static final Set<String> SAM_OAUTH_SCOPES = ImmutableSet.of("openid", "email", "profile");
   private final SamConfiguration samConfig;
 
   @Autowired
@@ -77,14 +86,25 @@ public class SamService {
     }
   }
 
-  public String getPetServiceAccountKey(
-      String projectId, String userEmail, BearerToken userRequest) {
+  public String getPetServiceAccountKey(String projectId, String userEmail) {
     try {
-      return new GoogleApi(getApiClient(userRequest.getToken()))
+      return new GoogleApi(getApiClient(getAxonServiceAccountToken()))
           .getUserPetServiceAccountKey(projectId, userEmail);
     } catch (ApiException apiException) {
       throw SamExceptionFactory.create(
           "Error getting user's pet SA key for project.", apiException);
+    }
+  }
+
+  public String getAxonServiceAccountToken() {
+    try {
+      GoogleCredentials creds =
+          GoogleCredentials.getApplicationDefault().createScoped(SAM_OAUTH_SCOPES);
+      creds.refreshIfExpired();
+      return creds.getAccessToken().getTokenValue();
+    } catch (IOException e) {
+      throw new InternalServerErrorException(
+          "Internal server error retrieving axon credentials", e);
     }
   }
 }
