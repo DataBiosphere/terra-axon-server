@@ -8,17 +8,21 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.AutoDeletingTempDir;
 import bio.terra.axonserver.utils.AutoDeletingTempFile;
+import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import cromwell.core.path.DefaultPath;
@@ -30,23 +34,32 @@ import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.zeroturnaround.zip.ZipUtil;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
 import womtool.WomtoolMain.UnsuccessfulTermination;
@@ -65,10 +78,13 @@ import womtool.inputs.Inputs;
 @Component
 public class CromwellWorkflowService {
 
+  private static final Logger logger = LoggerFactory.getLogger(CromwellWorkflowService.class);
   private final CromwellConfiguration cromwellConfig;
   private final FileService fileService;
   private final WorkspaceManagerService wsmService;
   private final SamService samService;
+
+  private final GcpService gcpService;
 
   public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
   public static final String USER_EMAIL_LABEL_KEY = "terra-user-email";
@@ -81,11 +97,13 @@ public class CromwellWorkflowService {
       CromwellConfiguration cromwellConfig,
       FileService fileService,
       WorkspaceManagerService wsmService,
-      SamService samService) {
+      SamService samService,
+      GcpService gcpService) {
     this.cromwellConfig = cromwellConfig;
     this.fileService = fileService;
     this.wsmService = wsmService;
     this.samService = samService;
+    this.gcpService = gcpService;
   }
 
   private ApiClient getApiClient() {
@@ -216,8 +234,9 @@ public class CromwellWorkflowService {
             new AutoDeletingTempFile("workflow-labels-", "-terra");
         AutoDeletingTempFile tempWorkflowSourceFile =
             new AutoDeletingTempFile("workflow-source-", "-terra");
+        AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-");
         AutoDeletingTempFile tempWorkflowDependenciesFile =
-            new AutoDeletingTempFile("workflow-dependencies-", "-terra")) {
+            new AutoDeletingTempFile("workflow-deps-zip-", "-terra")) {
 
       // Create inputs file
       ObjectMapper mapper = new ObjectMapper();
@@ -262,15 +281,15 @@ public class CromwellWorkflowService {
         out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
       }
 
-      // Get dependencies from GCS and create temp file
-      if (workflowDependenciesGcsUri != null) {
-        InputStream inputStream =
-            fileService.getFile(
-                token, workspaceId, workflowDependenciesGcsUri, /*convertTo=*/ null);
-        Files.copy(
-            inputStream,
-            tempWorkflowDependenciesFile.getFile().toPath(),
-            StandardCopyOption.REPLACE_EXISTING);
+      // If the WDL has dependencies, download, zip and submit.
+      String sourceWdlPath = tempWorkflowSourceFile.getFile().getPath().toString();
+      if (containsImportStatement(sourceWdlPath)) {
+        logger.info("{} contains import statements. Downloading.", workflowGcsUri);
+        downloadWdlDependencies(workspaceId, token, workflowGcsUri, tempDir.getDir().toString());
+        logger.info("Attempting to zip dependencies");
+        ZipUtil.pack(
+            new File(tempDir.getDir().toString()),
+            new File(tempWorkflowDependenciesFile.getFile().toString()));
       }
 
       return new WorkflowsApi(getApiClient())
@@ -304,14 +323,21 @@ public class CromwellWorkflowService {
   public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
       throws IOException, InvalidWdlException {
     // 1) Get the WDL file and write it to disk
-    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-", "-terra")) {
+    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-"); ) {
+      Path mainFilePath = Paths.get(tempDir.getDir().toString(), "main.wdl");
       InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
-      DefaultPath cromwellPath = DefaultPathBuilder.build(tempWdlFile.getFile().toPath());
-      Files.copy(
-          resourceObjectStream,
-          tempWdlFile.getFile().toPath(),
-          StandardCopyOption.REPLACE_EXISTING);
+      DefaultPath cromwellPath = DefaultPathBuilder.build(mainFilePath);
+      Files.copy(resourceObjectStream, mainFilePath, StandardCopyOption.REPLACE_EXISTING);
 
+      if (containsImportStatement(mainFilePath.toString())) {
+        logger.info(
+            "Attempting to download wdl dependencies from {} to {}",
+            gcsPath,
+            tempDir.getDir().toString());
+        downloadWdlDependencies(workspaceId, token, gcsPath, tempDir.getDir().toString());
+      } else {
+        logger.info("Source WDL does not contain dependencies");
+      }
       // 2) Call Womtool's input parsing method
       Termination termination = Inputs.inputsJson(cromwellPath, true);
 
@@ -344,6 +370,41 @@ public class CromwellWorkflowService {
       throw new BadRequestException(
           "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
+  }
+
+  private static boolean containsImportStatement(String filePath) throws IOException {
+    BufferedReader reader = new BufferedReader(new FileReader(filePath));
+    String line;
+    Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
+
+    while ((line = reader.readLine()) != null) {
+      if (importPattern.matcher(line).matches()) {
+        reader.close();
+        return true;
+      }
+    }
+    reader.close();
+    return false;
+  }
+
+  private void downloadWdlDependencies(
+      UUID workspaceId, BearerToken token, String workflowGcsUri, String destinationPath) {
+    GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
+    logger.info("Extracting bucket and dir path from {}", workflowGcsUri);
+
+    // Parse the bucket and object name
+    String[] parts = CloudStorageUtils.extractBucketAndObjectFromUri(workflowGcsUri);
+    String sourceBucket = parts[0];
+    String sourceObject = parts[1];
+
+    // Parse the directory name if there is one
+    int lastIndex = sourceObject.lastIndexOf('/');
+    String sourceDir = lastIndex == -1 ? "" : sourceObject.substring(0, lastIndex);
+
+    // Download dependencies
+    logger.info("Downloading dependencies from bucket: {}, dir: {}", sourceBucket, sourceDir);
+    CloudStorageUtils.downloadGcsDir(
+        googleCredentials, sourceBucket, sourceDir, destinationPath, ".wdl");
   }
 
   /**

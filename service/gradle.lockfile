@@ -542,6 +542,7 @@ org.webjars:webjars-locator-core:0.50=compileClasspath,productionRuntimeClasspat
 org.xmlresolver:xmlresolver:4.4.3=spotbugs
 org.xmlunit:xmlunit-core:2.9.1=testCompileClasspath,testRuntimeClasspath
 org.yaml:snakeyaml:1.30=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.zeroturnaround:zt-zip:1.16=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.awssdk:annotations:2.18.34=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 software.amazon.awssdk:apache-client:2.18.34=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 software.amazon.awssdk:arns:2.18.34=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
