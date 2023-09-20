@@ -292,7 +292,6 @@ public class CromwellWorkflowService {
         logger.info("Zipping dependencies to {}", zipPath);
         ZipUtil.pack(new File(dirPath), new File(zipPath));
       }
-      logger.info("Submitting all files to Cromwell");
       return new WorkflowsApi(getApiClient())
           .submit(
               CROMWELL_CLIENT_API_VERSION,
