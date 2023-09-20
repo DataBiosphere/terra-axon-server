@@ -1,11 +1,7 @@
 package bio.terra.axonserver.service.cromwellworkflow;
 
 import bio.terra.axonserver.app.configuration.CromwellConfiguration;
-import bio.terra.axonserver.model.ApiCallMetadata;
-import bio.terra.axonserver.model.ApiCallMetadataCallCaching;
-import bio.terra.axonserver.model.ApiFailureMessages;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
-import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cloud.gcp.GcpService;
@@ -27,12 +23,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import cromwell.core.path.DefaultPath;
 import cromwell.core.path.DefaultPathBuilder;
-import io.swagger.client.model.CromwellApiCallMetadata;
-import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
-import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.io.BufferedReader;
 import java.io.File;
@@ -53,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -300,6 +292,8 @@ public class CromwellWorkflowService {
         var zipPath = tempWorkflowDependenciesFile.getFile().toString();
         logger.info("Zipping dependencies to {}", dirPath);
         ZipUtil.pack(new File(dirPath), new File(zipPath));
+        logger.info("Zip contains following dependencies:");
+        ZipUtil.iterate(new File(zipPath), (in, zipEntry) -> logger.info(zipEntry.getName()));
       }
       logger.info("Submitting all files to Cromwell");
       return new WorkflowsApi(getApiClient())
@@ -456,93 +450,7 @@ public class CromwellWorkflowService {
 
   public static ApiWorkflowMetadataResponse toApiMetadataResponse(
       CromwellApiWorkflowMetadataResponse metadataResponse) {
-    Map<String, List<CromwellApiCallMetadata>> cromwellCallMetadataMap =
-        metadataResponse.getCalls();
-
-    // Convert each value of the map from list of cromwell call metadata into a list of api call
-    // metadata.
-    Map<String, List<ApiCallMetadata>> callMetadataMap =
-        cromwellCallMetadataMap == null
-            ? null
-            : cromwellCallMetadataMap.entrySet().stream()
-                .collect(
-                    Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry ->
-                            entry.getValue().stream()
-                                .map(
-                                    m -> {
-                                      ApiCallMetadata apiCallMetadata =
-                                          new ApiCallMetadata()
-                                              .inputs(m.getInputs())
-                                              .executionStatus(m.getExecutionStatus())
-                                              .backend(m.getBackend())
-                                              .backendStatus(m.getBackendStatus())
-                                              .start(m.getStart())
-                                              .end(m.getEnd())
-                                              .jobId(m.getJobId())
-                                              .failures(toApiFailureMessages(m.getFailures()))
-                                              .returnCode(m.getReturnCode())
-                                              .callRoot(m.getCallRoot())
-                                              .stdout(m.getStdout())
-                                              .stderr(m.getStderr())
-                                              .backendLogs(m.getBackendLogs());
-
-                                      if (m.getCallCaching() != null) {
-                                        apiCallMetadata.callCaching(
-                                            new ApiCallMetadataCallCaching()
-                                                .allowResultReuse(
-                                                    m.getCallCaching().isAllowResultReuse())
-                                                .effectiveCallCachingMode(
-                                                    m.getCallCaching()
-                                                        .getEffectiveCallCachingMode())
-                                                .hit(m.getCallCaching().isHit())
-                                                .result(m.getCallCaching().getResult()));
-                                      }
-
-                                      return apiCallMetadata;
-                                    })
-                                .toList()));
-
-    CromwellApiWorkflowMetadataResponseSubmittedFiles cromwellSubmittedFiles =
-        metadataResponse.getSubmittedFiles();
-
-    var submittedFiles =
-        cromwellSubmittedFiles == null
-            ? null
-            : new ApiWorkflowMetadataResponseSubmittedFiles()
-                .workflow(cromwellSubmittedFiles.getWorkflow())
-                .options(cromwellSubmittedFiles.getOptions())
-                .inputs(cromwellSubmittedFiles.getInputs())
-                .workflowType(cromwellSubmittedFiles.getWorkflowType())
-                .root(cromwellSubmittedFiles.getRoot())
-                .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
-                .labels(cromwellSubmittedFiles.getLabels());
-
-    return new ApiWorkflowMetadataResponse()
-        .id(UUID.fromString(metadataResponse.getId()))
-        .status(metadataResponse.getStatus())
-        .submission(metadataResponse.getSubmission())
-        .start(metadataResponse.getStart())
-        .end(metadataResponse.getEnd())
-        .inputs(metadataResponse.getInputs())
-        .outputs(metadataResponse.getOutputs())
-        .submittedFiles(submittedFiles)
-        .calls(callMetadataMap)
-        .failures(toApiFailureMessages(metadataResponse.getFailures()));
-  }
-
-  private static List<ApiFailureMessages> toApiFailureMessages(
-      List<CromwellApiFailureMessages> failureMessages) {
-    if (failureMessages == null) {
-      return null;
-    }
-    return failureMessages.stream()
-        .map(
-            failure ->
-                new ApiFailureMessages()
-                    .message(failure.getMessage())
-                    .causedBy(toApiFailureMessages(failure.getCausedBy())))
-        .toList();
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.convertValue(metadataResponse, ApiWorkflowMetadataResponse.class);
   }
 }

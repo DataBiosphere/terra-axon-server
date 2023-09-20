@@ -1004,58 +1004,7 @@ components:
             type: string
 
     WorkflowMetadataResponse:
-      description: Workflow and call level metadata.
-      required: [id, status, submission]
-      properties:
-        id:
-          $ref: '#/components/schemas/WorkflowId'
-        status:
-          $ref: '#/components/schemas/WorkflowStatus'
-        submission:
-          type: string
-          format: date-time
-          description: Submission datetime of the workflow in ISO 8601 format with milliseconds
-        start:
-          type: string
-          format: date-time
-          description: Start datetime of the workflow in ISO 8601 format with milliseconds
-        end:
-          type: string
-          format: date-time
-          description: End datetime of the workflow in ISO 8601 format with milliseconds
-        inputs:
-          type: object
-          description: Map of input keys to input values
-        outputs:
-          type: object
-          description: Map of output keys to output values
-        submittedFiles:
-          type: object
-          properties:
-            workflow:
-              type: string
-            options:
-              type: string
-            inputs:
-              type: string
-            workflowType:
-              type: string
-            root:
-              type: string
-            workflowUrl:
-              type: string
-            labels:
-              type: string
-        calls:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              $ref: "#/components/schemas/CallMetadata"
-        failures:
-          type: array
-          items:
-            $ref: '#/components/schemas/FailureMessages'
+      $ref: './cromwell-openapi.yaml#/definitions/WorkflowMetadataResponse'
 
     SubmitWorkflowRequestBody:
       type: object
