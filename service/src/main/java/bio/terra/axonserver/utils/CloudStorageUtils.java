@@ -89,7 +89,7 @@ public class CloudStorageUtils {
   }
 
   public static String[] extractBucketAndObjectFromUri(String gcsUri) {
-    Pattern pattern = Pattern.compile("gs://(.*?)/(.*)");
+    Pattern pattern = Pattern.compile("gs://([^/]*)/(.*)");
     Matcher matcher = pattern.matcher(gcsUri);
 
     if (matcher.matches()) {
