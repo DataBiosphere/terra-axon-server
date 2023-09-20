@@ -91,6 +91,7 @@ public class CromwellWorkflowService {
 
   public static final String GCS_SOURCE_LABEL_KEY = "terra-gcs-source-uri";
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
+  private GoogleCredentials googleCredentials;
 
   @Autowired
   public CromwellWorkflowService(
@@ -222,7 +223,7 @@ public class CromwellWorkflowService {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
     var rootBucket = workflowOptions.get("jes_gcs_root");
-    if (workflowOptions == null || rootBucket == null) {
+    if (rootBucket == null) {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
 
@@ -244,6 +245,8 @@ public class CromwellWorkflowService {
         try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
           out.write(mapper.writeValueAsString(workflowInputs).getBytes(StandardCharsets.UTF_8));
         }
+        logger.info(
+            "Wrote inputs {} to tmp file {}", workflowInputs, tempInputsFile.getFile().getPath());
       }
 
       // Adjoin preset options for the options file.
@@ -264,34 +267,41 @@ public class CromwellWorkflowService {
           new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
       try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
+        logger.info(
+            "Wrote options to tmp file {} (Options omitted due to sensitive data",
+            tempOptionsFile.getFile().getPath());
       }
 
+      // Put the user email and workspace ID as labels on the workflow
+      // This is used in the UI.
       labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
       labels.put(USER_EMAIL_LABEL_KEY, userEmail);
+
+      // Copy the source wdl from GCS
+      var sourceWdlPath = tempWorkflowSourceFile.getFile().toPath();
       if (workflowGcsUri != null) {
         labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
-        Files.copy(
-            inputStream,
-            tempWorkflowSourceFile.getFile().toPath(),
-            StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(inputStream, sourceWdlPath, StandardCopyOption.REPLACE_EXISTING);
+        logger.info(
+            "Copied source WDL from {} to tmp file {}", workflowGcsUri, sourceWdlPath.toString());
       }
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
         out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
+        logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
       }
 
       // If the WDL has dependencies, download, zip and submit.
-      String sourceWdlPath = tempWorkflowSourceFile.getFile().getPath().toString();
-      if (containsImportStatement(sourceWdlPath)) {
-        logger.info("{} contains import statements. Downloading.", workflowGcsUri);
-        downloadWdlDependencies(workspaceId, token, workflowGcsUri, tempDir.getDir().toString());
-        logger.info("Attempting to zip dependencies");
-        ZipUtil.pack(
-            new File(tempDir.getDir().toString()),
-            new File(tempWorkflowDependenciesFile.getFile().toString()));
+      if (containsImportStatement(sourceWdlPath.toString())) {
+        logger.info("Source WDL has dependencies. Downloading all files at root dir.");
+        var dirPath = tempDir.getDir().toString();
+        downloadWdlDependencies(workspaceId, token, workflowGcsUri, dirPath);
+        var zipPath = tempWorkflowDependenciesFile.getFile().toString();
+        logger.info("Zipping dependencies to {}", dirPath);
+        ZipUtil.pack(new File(dirPath), new File(zipPath));
       }
-
+      logger.info("Submitting all files to Cromwell");
       return new WorkflowsApi(getApiClient())
           .submit(
               CROMWELL_CLIENT_API_VERSION,
@@ -390,7 +400,6 @@ public class CromwellWorkflowService {
   private void downloadWdlDependencies(
       UUID workspaceId, BearerToken token, String workflowGcsUri, String destinationPath) {
     GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
-    logger.info("Extracting bucket and dir path from {}", workflowGcsUri);
 
     // Parse the bucket and object name
     String[] parts = CloudStorageUtils.extractBucketAndObjectFromUri(workflowGcsUri);
@@ -402,7 +411,6 @@ public class CromwellWorkflowService {
     String sourceDir = lastIndex == -1 ? "" : sourceObject.substring(0, lastIndex);
 
     // Download dependencies
-    logger.info("Downloading dependencies from bucket: {}, dir: {}", sourceBucket, sourceDir);
     CloudStorageUtils.downloadGcsDir(
         googleCredentials, sourceBucket, sourceDir, destinationPath, ".wdl");
   }
