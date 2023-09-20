@@ -283,16 +283,14 @@ public class CromwellWorkflowService {
         logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
       }
 
-      // If the WDL has dependencies, download, zip and submit.
       if (containsImportStatement(sourceWdlPath.toString())) {
         logger.info("Source WDL has dependencies. Downloading all files at root dir.");
         var dirPath = tempDir.getDir().toString();
         downloadWdlDependencies(workspaceId, token, workflowGcsUri, dirPath);
+
         var zipPath = tempWorkflowDependenciesFile.getFile().toString();
-        logger.info("Zipping dependencies to {}", dirPath);
+        logger.info("Zipping dependencies to {}", zipPath);
         ZipUtil.pack(new File(dirPath), new File(zipPath));
-        logger.info("Zip contains following dependencies:");
-        ZipUtil.iterate(new File(zipPath), (in, zipEntry) -> logger.info(zipEntry.getName()));
       }
       logger.info("Submitting all files to Cromwell");
       return new WorkflowsApi(getApiClient())
