@@ -55,7 +55,6 @@ import org.springframework.stereotype.Component;
 import org.zeroturnaround.zip.ZipUtil;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
-import womtool.WomtoolMain.UnsuccessfulTermination;
 import womtool.inputs.Inputs;
 
 /**
@@ -277,8 +276,7 @@ public class CromwellWorkflowService {
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
         Files.copy(inputStream, sourceWdlPath, StandardCopyOption.REPLACE_EXISTING);
-        logger.info(
-            "Copied source WDL from {} to tmp file {}", workflowGcsUri, sourceWdlPath.toString());
+        logger.info("Copied source WDL from {} to tmp file {}", workflowGcsUri, sourceWdlPath);
       }
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
         out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
@@ -328,7 +326,7 @@ public class CromwellWorkflowService {
   public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
       throws IOException, InvalidWdlException {
     // 1) Get the WDL file and write it to disk
-    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-"); ) {
+    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-")) {
       Path mainFilePath = Paths.get(tempDir.getDir().toString(), "main.wdl");
       InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
       DefaultPath cromwellPath = DefaultPathBuilder.build(mainFilePath);
@@ -348,12 +346,12 @@ public class CromwellWorkflowService {
 
       // 3) Return the result as json, or return error
       if (termination instanceof SuccessfulTermination) {
-        String jsonString = ((SuccessfulTermination) termination).stdout().get();
+        String jsonString = termination.stdout().get();
         // Use Gson to convert the JSON-like string to a Map<String, String>
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
-        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        String errorMessage = termination.stderr().get();
         throw new InvalidWdlException(errorMessage);
       }
     }
@@ -378,7 +376,9 @@ public class CromwellWorkflowService {
   }
 
   private static boolean containsImportStatement(String filePath) throws IOException {
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
+    try (BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
       String line;
       Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
 
