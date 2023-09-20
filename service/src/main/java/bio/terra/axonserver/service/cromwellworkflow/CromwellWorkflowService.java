@@ -29,10 +29,12 @@ import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -377,7 +379,7 @@ public class CromwellWorkflowService {
   }
 
   private static boolean containsImportStatement(String filePath) throws IOException {
-    BufferedReader reader = new BufferedReader(new FileReader(filePath));
+    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8));
     String line;
     Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
 
