@@ -380,7 +380,7 @@ public class CromwellWorkflowService {
         new BufferedReader(
             new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
       String line;
-      Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
+      Pattern importPattern = Pattern.compile("^import\\s\"[^\"]*\".*");
 
       while ((line = reader.readLine()) != null) {
         if (importPattern.matcher(line).matches()) {

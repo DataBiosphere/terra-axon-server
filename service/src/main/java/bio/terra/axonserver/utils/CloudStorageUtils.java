@@ -82,7 +82,7 @@ public class CloudStorageUtils {
         try (FileOutputStream fos = new FileOutputStream(localFile)) {
           fos.write(content);
         } catch (IOException e) {
-          e.printStackTrace();
+          throw new RuntimeException("Error downloading dependency: " + e);
         }
       }
     }
