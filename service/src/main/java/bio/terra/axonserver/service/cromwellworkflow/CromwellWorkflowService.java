@@ -378,18 +378,19 @@ public class CromwellWorkflowService {
   }
 
   private static boolean containsImportStatement(String filePath) throws IOException {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8));
-    String line;
-    Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
+      String line;
+      Pattern importPattern = Pattern.compile("^import\\s\".*\".*");
 
-    while ((line = reader.readLine()) != null) {
-      if (importPattern.matcher(line).matches()) {
-        reader.close();
-        return true;
+      while ((line = reader.readLine()) != null) {
+        if (importPattern.matcher(line).matches()) {
+          reader.close();
+          return true;
+        }
       }
+      reader.close();
+      return false;
     }
-    reader.close();
-    return false;
   }
 
   private void downloadWdlDependencies(
