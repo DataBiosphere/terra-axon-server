@@ -216,7 +216,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 .failures(failureMessage));
 
     ApiWorkflowMetadataResponse result = getWorkflowMetadata(USER_REQUEST, workspaceId, workflowId);
-    Assertions.assertEquals(result.getId(), workflowId);
+    Assertions.assertEquals(result.getId(), workflowId.toString());
     Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
     Assertions.assertEquals(result.getSubmission(), DEFAULT_WORKFLOW_SUBMISSION_DATE);
 

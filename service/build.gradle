@@ -50,6 +50,7 @@ dependencies {
         exclude group: 'bio.terra', module: 'workspace-manager-client'
     }
 
+    // Zip library
     implementation 'org.zeroturnaround:zt-zip:1.16'
 
     // Terra Workspace Manager Client
