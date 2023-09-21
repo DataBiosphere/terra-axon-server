@@ -1,7 +1,7 @@
 package bio.terra.axonserver.app.controller;
 
 import bio.terra.axonserver.api.PublicApi;
-import bio.terra.axonserver.app.configuration.CliVersionConfiguration;
+import bio.terra.axonserver.app.configuration.CliConfiguration;
 import bio.terra.axonserver.app.configuration.VersionConfiguration;
 import bio.terra.axonserver.model.ApiVersionProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +12,12 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class PublicApiController implements PublicApi {
   private final VersionConfiguration versionConfiguration;
-  private final CliVersionConfiguration cliVersionConfiguration;
+  private final CliConfiguration cliConfiguration;
 
   @Autowired
   public PublicApiController(
-      CliVersionConfiguration cliVersionConfiguration, VersionConfiguration versionConfiguration) {
-    this.cliVersionConfiguration = cliVersionConfiguration;
+      CliConfiguration cliConfiguration, VersionConfiguration versionConfiguration) {
+    this.cliConfiguration = cliConfiguration;
     this.versionConfiguration = versionConfiguration;
   }
 
@@ -34,8 +34,12 @@ public class PublicApiController implements PublicApi {
             .gitHash(versionConfiguration.getGitHash())
             .github(versionConfiguration.getGithub())
             .build(versionConfiguration.getBuild())
-            .latestSupportedCli(cliVersionConfiguration.getLatestVersion())
-            .oldestSupportedCli(cliVersionConfiguration.getOldestVersion());
+            .latestSupportedCli(cliConfiguration.getLatestVersion())
+            .oldestSupportedCli(cliConfiguration.getOldestVersion())
+            .cliDockerRepoHost(cliConfiguration.getDockerRepoHost())
+            .cliDockerImageName(cliConfiguration.getDockerImageName())
+            .cliDockerImageTag(cliConfiguration.getDockerImageTag())
+            .cliDistributionPath(cliConfiguration.getDistributionPath());
     return new ResponseEntity<>(currentVersion, HttpStatus.OK);
   }
 }
