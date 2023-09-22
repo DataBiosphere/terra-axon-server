@@ -78,12 +78,9 @@ public class CromwellWorkflowService {
 
   private final GcpService gcpService;
 
-  public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
-  public static final String USER_EMAIL_LABEL_KEY = "terra-user-email";
+  private final ObjectMapper objectMapper;
 
-  public static final String GCS_SOURCE_LABEL_KEY = "terra-gcs-source-uri";
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
-  private GoogleCredentials googleCredentials;
 
   @Autowired
   public CromwellWorkflowService(
@@ -91,12 +88,14 @@ public class CromwellWorkflowService {
       FileService fileService,
       WorkspaceManagerService wsmService,
       SamService samService,
-      GcpService gcpService) {
+      GcpService gcpService,
+      ObjectMapper objectMapper) {
     this.cromwellConfig = cromwellConfig;
     this.fileService = fileService;
     this.wsmService = wsmService;
     this.samService = samService;
     this.gcpService = gcpService;
+    this.objectMapper = objectMapper;
   }
 
   private ApiClient getApiClient() {
@@ -214,7 +213,7 @@ public class CromwellWorkflowService {
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
-    var rootBucket = workflowOptions.get("jes_gcs_root");
+    var rootBucket = workflowOptions.get(WorkflowOptionKeys.JES_GCS_ROOT.getKey());
     if (rootBucket == null) {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
@@ -232,56 +231,36 @@ public class CromwellWorkflowService {
             new AutoDeletingTempFile("workflow-deps-zip-", "-terra")) {
 
       // Create inputs file
-      ObjectMapper mapper = new ObjectMapper();
       if (workflowInputs != null) {
-        try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          out.write(mapper.writeValueAsString(workflowInputs).getBytes(StandardCharsets.UTF_8));
-        }
-        logger.info(
-            "Wrote inputs {} to tmp file {}", workflowInputs, tempInputsFile.getFile().getPath());
+        writeToTmpFile(workflowInputs, tempInputsFile);
       }
 
-      // Adjoin preset options for the options file.
-      // Place the project ID + compute SA + docker image into the options.
+      // Set preset options
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
       String userEmail = samService.getUserStatusInfo(token).getUserEmail();
       String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail);
-      workflowOptions.put("user_service_account_json", petSaKey);
-
-      // Limit call caching to root bucket
-      String[] cachePrefixes = {rootBucket.toString()};
-      workflowOptions.put("call_cache_hit_path_prefixes", cachePrefixes);
-      workflowOptions.put("google_project", projectId);
-      workflowOptions.put(
-          "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
-      workflowOptions.put(
-          "default_runtime_attributes",
-          new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
-      try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
-        out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
-        logger.info(
-            "Wrote options to tmp file {} (Options omitted due to sensitive data)",
-            tempOptionsFile.getFile().getPath());
-      }
-
-      // Put the user email and workspace ID as labels on the workflow
-      // This is used in the UI.
-      labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
-      labels.put(USER_EMAIL_LABEL_KEY, userEmail);
+      String saEmail = samService.getPetServiceAccount(projectId, token);
+      setPresetWorkflowOptions(
+          workflowOptions, rootBucket.toString(), projectId, petSaKey, saEmail);
+      writeToTmpFile(workflowOptions, tempOptionsFile);
+      logger.info(
+          "Wrote options to tmp file {} (Options omitted due to sensitive data)",
+          tempOptionsFile.getFile().getPath());
 
       // Copy the source wdl from GCS
       var localMainWdlPath = tempWorkflowSourceFile.getFile().toPath();
       if (workflowGcsUri != null) {
-        labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
         Files.copy(inputStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
         logger.info("Copied source WDL from {} to tmp file {}", workflowGcsUri, localMainWdlPath);
       }
-      try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
-        logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
-      }
+
+      // Set preset labels
+      setPresetLabels(labels, workspaceId, userEmail, workflowGcsUri);
+      writeToTmpFile(labels, tempLabelsFile);
+      logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
+
       if (downloadDependenciesIfExist(
           workspaceId, token, localMainWdlPath, workflowGcsUri, tempDepsDir.getDir())) {
         var zipPath = tempWorkflowDependenciesFile.getFile().toString();
@@ -353,14 +332,51 @@ public class CromwellWorkflowService {
   private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId) {
     try {
       Map<String, String> labels = getLabels(workflowId).getLabels();
-      if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
-          || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
+      var workspaceIdLabel = labels.get(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey());
+      if (workspaceIdLabel == null || !workspaceIdLabel.equals(workspaceId.toString())) {
         throw new BadRequestException(
             "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
       }
     } catch (ApiException e) {
       throw new BadRequestException(
           "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
+    }
+  }
+
+  private void writeToTmpFile(Map<String, ?> data, AutoDeletingTempFile tempFile)
+      throws IOException {
+    if (data != null) {
+      try (OutputStream out = new FileOutputStream(tempFile.getFile())) {
+        out.write(objectMapper.writeValueAsString(data).getBytes(StandardCharsets.UTF_8));
+      }
+    }
+  }
+
+  private void setPresetWorkflowOptions(
+      Map<String, Object> workflowOptions,
+      String rootBucket,
+      String projectId,
+      String petSaKey,
+      String saEmail) {
+    workflowOptions.put(WorkflowOptionKeys.USER_SERVICE_ACCOUNT_JSON.getKey(), petSaKey);
+    workflowOptions.put(
+        WorkflowOptionKeys.CALL_CACHE_HIT_PATH_PREFIXES.getKey(), new String[] {rootBucket});
+    workflowOptions.put(WorkflowOptionKeys.GOOGLE_PROJECT.getKey(), projectId);
+    workflowOptions.put(WorkflowOptionKeys.GOOGLE_COMPUTE_SERVICE_ACCOUNT.getKey(), saEmail);
+    workflowOptions.put(
+        WorkflowOptionKeys.DEFAULT_RUNTIME_ATTRIBUTES.getKey(),
+        new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
+  }
+
+  private void setPresetLabels(
+      Map<String, String> workflowLabels,
+      UUID workspaceId,
+      String userEmail,
+      String workflowGcsUri) {
+    workflowLabels.put(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(), workspaceId.toString());
+    workflowLabels.put(WorkflowLabelKeys.USER_EMAIL_LABEL_KEY.getKey(), userEmail);
+    if (workflowGcsUri != null) {
+      workflowLabels.put(WorkflowLabelKeys.GCS_SOURCE_LABEL_KEY.getKey(), workflowGcsUri);
     }
   }
 

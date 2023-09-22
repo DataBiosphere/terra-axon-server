@@ -1,7 +1,5 @@
 package bio.terra.axonserver.app.controller;
 
-import static bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY;
-
 import bio.terra.axonserver.api.CromwellWorkflowApi;
 import bio.terra.axonserver.model.ApiSubmitWorkflowRequestBody;
 import bio.terra.axonserver.model.ApiWorkflowIdAndLabel;
@@ -10,6 +8,7 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
+import bio.terra.axonserver.service.cromwellworkflow.WorkflowLabelKeys;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
@@ -41,10 +40,9 @@ import org.springframework.stereotype.Controller;
 @Controller
 public class CromwellWorkflowController extends ControllerBase implements CromwellWorkflowApi {
   private final CromwellWorkflowService cromwellWorkflowService;
-  private final FileService fileService;
   private final WorkspaceManagerService wsmService;
 
-  private ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   @Autowired
   public CromwellWorkflowController(
@@ -56,7 +54,6 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       ObjectMapper objectMapper) {
     super(bearerTokenFactory, request);
     this.cromwellWorkflowService = cromwellWorkflowService;
-    this.fileService = fileService;
     this.wsmService = wsmService;
     this.objectMapper = objectMapper;
   }
@@ -134,7 +131,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
     try {
       List<String> workspaceValidationLabel = new ArrayList<>();
       // Restrict the subset to only workflows with the corresponding workspace id label.
-      workspaceValidationLabel.add("%s:%s".formatted(WORKSPACE_ID_LABEL_KEY, workspaceId));
+      workspaceValidationLabel.add(
+          "%s:%s".formatted(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(), workspaceId));
       CromwellApiWorkflowQueryResponse workflowQuery =
           cromwellWorkflowService.getQuery(
               submission,
