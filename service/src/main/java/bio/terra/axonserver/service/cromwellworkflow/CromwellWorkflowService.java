@@ -302,8 +302,9 @@ public class CromwellWorkflowService {
   }
 
   /**
-   * Use's The Broad's WOMTool to parse inputs from a WDL.
-   * Downloads dependent WDLs in order to handle WDLs with sub-wdls.
+   * Use's The Broad's WOMTool to parse inputs from a WDL. Downloads dependent WDLs in order to
+   * handle WDLs with sub-wdls.
+   *
    * @param workspaceId - Workspace containing WDL
    * @param workflowGcsUri - GCS URI path to wdl
    * @param token - User's OAuth2 token
@@ -353,6 +354,7 @@ public class CromwellWorkflowService {
 
   /**
    * Writes Map data to a temp file. Used to write inputs.json, options.json and labels.json
+   *
    * @param data - Map data representing JSON to write to file
    * @param tempFile - Temporary file to write to
    */
@@ -365,12 +367,22 @@ public class CromwellWorkflowService {
     }
   }
 
+  /**
+   * Sets required options for Cromwell
+   *
+   * @param workflowOptions - Existing options set by the user
+   * @param rootBucket - Root bucket to run workflow in.
+   * @param projectId - Project to run workflow in.
+   * @param petSaKey - Pet service account key for the user
+   * @param saEmail - Service account email for the user.
+   */
   private void setPresetWorkflowOptions(
       Map<String, Object> workflowOptions,
       String rootBucket,
       String projectId,
       String petSaKey,
       String saEmail) {
+    // TODO: This will likely change in the near future when we update cromwell to use tokens
     workflowOptions.put(WorkflowOptionKeys.USER_SERVICE_ACCOUNT_JSON.getKey(), petSaKey);
     workflowOptions.put(
         WorkflowOptionKeys.CALL_CACHE_HIT_PATH_PREFIXES.getKey(), new String[] {rootBucket});
@@ -381,6 +393,15 @@ public class CromwellWorkflowService {
         new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
   }
 
+  /**
+   * Set required labels for Cromwell
+   *
+   * @param workflowLabels - Existing labels set by user.
+   * @param workspaceId - Workspace ID the workflow is attached to. This is used to query workflows
+   *     in the future.
+   * @param userEmail - Email of the user who submitted the job.
+   * @param workflowGcsUri - GCS URI of the workflow.
+   */
   private void setPresetLabels(
       Map<String, String> workflowLabels,
       UUID workspaceId,
@@ -389,7 +410,10 @@ public class CromwellWorkflowService {
     workflowLabels.put(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(), workspaceId.toString());
     workflowLabels.put(WorkflowLabelKeys.USER_EMAIL_LABEL_KEY.getKey(), userEmail);
     if (workflowGcsUri != null) {
+      // TODO: Deprecate GCS source in favor of general purpose workflow source url key
+      // Will update in a future PR once UI is updated.
       workflowLabels.put(WorkflowLabelKeys.GCS_SOURCE_LABEL_KEY.getKey(), workflowGcsUri);
+      workflowLabels.put(WorkflowLabelKeys.WORKFLOW_SOURCE_URL_LABEL_KEY.getKey(), workflowGcsUri);
     }
   }
 
