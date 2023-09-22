@@ -85,7 +85,7 @@ public class CloudStorageUtils {
 
         String relativePath = blobName.substring(directoryPath.length());
         File localFile = Paths.get(localDestination, relativePath).toFile();
-        if (!localFile.getParentFile().mkdirs()) {
+        if (!localFile.getParentFile().mkdirs() && !localFile.getParentFile().exists()) {
           throw new RuntimeException("Error creating local directory for downloaded dependency");
         }
         ;
