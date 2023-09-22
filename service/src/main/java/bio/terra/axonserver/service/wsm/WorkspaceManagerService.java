@@ -178,7 +178,7 @@ public class WorkspaceManagerService {
    *
    * @param resourceDescription description of resource to request credential for
    * @param accessScope access scope to request
-   * @param duration requested lifetime duration for credeential in seconds (between {@link
+   * @param duration requested lifetime duration for credential in seconds (between {@link
    *     WorkspaceManagerService#AWS_RESOURCE_CREDENTIAL_DURATION_MIN} and {@link
    *     WorkspaceManagerService#AWS_RESOURCE_CREDENTIAL_DURATION_MAX} (inclusive)
    * @param accessToken user access token

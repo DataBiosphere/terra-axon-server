@@ -169,10 +169,8 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       ApiWorkflowParsedInputsResponse result =
           new ApiWorkflowParsedInputsResponse().inputs(parsedInputs);
       return new ResponseEntity<>(result, HttpStatus.OK);
-    } catch (IOException e) {
-      throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
-    } catch (InvalidWdlException e) {
-      throw new ApiException("Error parsing inputs. %s".formatted(e.getMessage(), e));
+    } catch (IOException | InvalidWdlException e) {
+      throw new ApiException("Error parsing inputs. %s, %s".formatted(e.getMessage(), e));
     }
   }
 
@@ -214,7 +212,6 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       String workflowTypeVersion =
           body.getWorkflowTypeVersion() == null ? null : body.getWorkflowTypeVersion().toString();
 
-      String workflowDependenciesGcsUri = body.getWorkflowDependenciesGcsUri();
       UUID requestedWorkflowId = body.getRequestedWorkflowId();
 
       CromwellApiWorkflowIdAndStatus workflowStatus =
@@ -228,7 +225,6 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
               workflowType,
               workflowTypeVersion,
               labels,
-              workflowDependenciesGcsUri,
               requestedWorkflowId,
               token);
       return new ResponseEntity<>(

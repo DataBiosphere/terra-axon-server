@@ -193,9 +193,7 @@ public class CromwellWorkflowService {
    * @param workflowOptions Object containing the options.
    * @param workflowType Workflow language for the submitted file (i.e., WDL)
    * @param workflowTypeVersion Version for the workflow language (draft-2 or 1.0).
-   * @param labels JSON string of labels.
-   * @param workflowDependenciesGcsUri URI pointing to the workflow dependencies: a GCS object that
-   *     is a ZIP file.
+   * @param labels JSON string of labels. is a ZIP file.
    * @param requestedWorkflowId An ID to ascribe to this workflow. If not supplied, then a random ID
    *     will be generated.
    * @param token Bearer token.
@@ -213,7 +211,6 @@ public class CromwellWorkflowService {
       String workflowType,
       String workflowTypeVersion,
       Map<String, String> labels,
-      String workflowDependenciesGcsUri,
       UUID requestedWorkflowId,
       BearerToken token)
       throws bio.terra.cromwell.client.ApiException, IOException {
