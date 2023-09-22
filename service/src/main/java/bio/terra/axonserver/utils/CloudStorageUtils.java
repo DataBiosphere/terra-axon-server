@@ -20,6 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.springframework.http.HttpRange;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageUtils {
@@ -33,6 +35,10 @@ public class CloudStorageUtils {
    * @param byteRange Byte range to read from the object
    * @return InputStream for the object content
    */
+
+  @Retryable(
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 1000))
   public static InputStream getBucketObject(
       GoogleCredentials googleCredentials,
       String bucketName,
