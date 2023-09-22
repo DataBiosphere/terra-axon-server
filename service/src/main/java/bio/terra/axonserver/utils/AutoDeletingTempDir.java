@@ -2,11 +2,8 @@ package bio.terra.axonserver.utils;
 
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -29,22 +26,6 @@ public class AutoDeletingTempDir implements AutoCloseable {
   @Override
   public void close() throws IOException {
     Files.walkFileTree(
-        dir,
-        EnumSet.noneOf(FileVisitOption.class),
-        Integer.MAX_VALUE,
-        new SimpleFileVisitor<Path>() {
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            Files.delete(file);
-            return FileVisitResult.CONTINUE;
-          }
-
-          @Override
-          public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            Files.delete(dir);
-            return FileVisitResult.CONTINUE;
-          }
-        });
+        dir, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new DeletionFileVisitor());
   }
 }

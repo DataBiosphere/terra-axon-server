@@ -23,6 +23,7 @@ import org.springframework.http.HttpRange;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageUtils {
+
   /**
    * Get the contents of a GCS bucket object
    *
@@ -58,6 +59,15 @@ public class CloudStorageUtils {
     }
   }
 
+  /**
+   * Recursively downloads all files in a given GCS directory to a local directory.
+   *
+   * @param googleCredentials Google credentials to use for the request
+   * @param bucketName Name of the bucket
+   * @param directoryPath Path to directory to download in gcs
+   * @param localDestination Path where files should be written locally
+   * @param filterSuffix Optional suffix to filter for
+   */
   public static void downloadGcsDir(
       GoogleCredentials googleCredentials,
       String bucketName,
@@ -75,9 +85,10 @@ public class CloudStorageUtils {
 
         String relativePath = blobName.substring(directoryPath.length());
         File localFile = Paths.get(localDestination, relativePath).toFile();
-
-        // Create directories
-        localFile.getParentFile().mkdirs();
+        if (!localFile.getParentFile().mkdirs()) {
+          throw new RuntimeException("Error creating local directory for downloaded dependency");
+        }
+        ;
 
         try (FileOutputStream fos = new FileOutputStream(localFile)) {
           fos.write(content);
@@ -88,7 +99,16 @@ public class CloudStorageUtils {
     }
   }
 
+  /**
+   * Parse a bucket name and object name from a gcs URI
+   *
+   * @param gcsUri gs:// URI to parse
+   */
   public static String[] extractBucketAndObjectFromUri(String gcsUri) {
+    if (gcsUri == null || gcsUri.isEmpty()) {
+      throw new IllegalArgumentException("Invalid GCS URI: Input is null or empty.");
+    }
+
     Pattern pattern = Pattern.compile("gs://([^/]*)/(.*)");
     Matcher matcher = pattern.matcher(gcsUri);
 
@@ -97,6 +117,6 @@ public class CloudStorageUtils {
       String objectPath = matcher.group(2);
       return new String[] {bucketName, objectPath};
     }
-    return null; // Invalid GCS URI
+    throw new IllegalArgumentException("Invalid GCS URI: " + gcsUri);
   }
 }

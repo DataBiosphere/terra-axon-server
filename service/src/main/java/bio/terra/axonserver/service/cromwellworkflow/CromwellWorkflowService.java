@@ -227,7 +227,7 @@ public class CromwellWorkflowService {
             new AutoDeletingTempFile("workflow-labels-", "-terra");
         AutoDeletingTempFile tempWorkflowSourceFile =
             new AutoDeletingTempFile("workflow-source-", "-terra");
-        AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-");
+        AutoDeletingTempDir tempDepsDir = new AutoDeletingTempDir("workflow-deps-");
         AutoDeletingTempFile tempWorkflowDependenciesFile =
             new AutoDeletingTempFile("workflow-deps-zip-", "-terra")) {
 
@@ -260,7 +260,7 @@ public class CromwellWorkflowService {
       try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
         out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
         logger.info(
-            "Wrote options to tmp file {} (Options omitted due to sensitive data",
+            "Wrote options to tmp file {} (Options omitted due to sensitive data)",
             tempOptionsFile.getFile().getPath());
       }
 
@@ -270,28 +270,25 @@ public class CromwellWorkflowService {
       labels.put(USER_EMAIL_LABEL_KEY, userEmail);
 
       // Copy the source wdl from GCS
-      var sourceWdlPath = tempWorkflowSourceFile.getFile().toPath();
+      var localMainWdlPath = tempWorkflowSourceFile.getFile().toPath();
       if (workflowGcsUri != null) {
         labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
-        Files.copy(inputStream, sourceWdlPath, StandardCopyOption.REPLACE_EXISTING);
-        logger.info("Copied source WDL from {} to tmp file {}", workflowGcsUri, sourceWdlPath);
+        Files.copy(inputStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
+        logger.info("Copied source WDL from {} to tmp file {}", workflowGcsUri, localMainWdlPath);
       }
       try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
         out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
         logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
       }
-
-      if (containsImportStatement(sourceWdlPath.toString())) {
-        logger.info("Source WDL has dependencies. Downloading all files at root dir.");
-        var dirPath = tempDir.getDir().toString();
-        downloadWdlDependencies(workspaceId, token, workflowGcsUri, dirPath);
-
+      if (downloadDependenciesIfExist(
+          workspaceId, token, localMainWdlPath, workflowGcsUri, tempDepsDir.getDir())) {
         var zipPath = tempWorkflowDependenciesFile.getFile().toString();
         logger.info("Zipping dependencies to {}", zipPath);
-        ZipUtil.pack(new File(dirPath), new File(zipPath));
+        ZipUtil.pack(new File(tempDepsDir.getDir().toString()), new File(zipPath));
       }
+
       return new WorkflowsApi(getApiClient())
           .submit(
               CROMWELL_CLIENT_API_VERSION,
@@ -320,24 +317,19 @@ public class CromwellWorkflowService {
         .labels(CROMWELL_CLIENT_API_VERSION, workflowId.toString());
   }
 
-  public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
+  public Map<String, String> parseInputs(UUID workspaceId, String workflowGcsUri, BearerToken token)
       throws IOException, InvalidWdlException {
     // 1) Get the WDL file and write it to disk
     try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-")) {
-      Path mainFilePath = Paths.get(tempDir.getDir().toString(), "main.wdl");
-      InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
-      DefaultPath cromwellPath = DefaultPathBuilder.build(mainFilePath);
-      Files.copy(resourceObjectStream, mainFilePath, StandardCopyOption.REPLACE_EXISTING);
+      Path localMainWdlPath = Paths.get(tempDir.getDir().toString(), "main.wdl");
+      InputStream resourceObjectStream =
+          fileService.getFile(token, workspaceId, workflowGcsUri, null);
+      DefaultPath cromwellPath = DefaultPathBuilder.build(localMainWdlPath);
+      Files.copy(resourceObjectStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
 
-      if (containsImportStatement(mainFilePath.toString())) {
-        logger.info(
-            "Attempting to download wdl dependencies from {} to {}",
-            gcsPath,
-            tempDir.getDir().toString());
-        downloadWdlDependencies(workspaceId, token, gcsPath, tempDir.getDir().toString());
-      } else {
-        logger.info("Source WDL does not contain dependencies");
-      }
+      downloadDependenciesIfExist(
+          workspaceId, token, localMainWdlPath, workflowGcsUri, tempDir.getDir());
+
       // 2) Call Womtool's input parsing method
       Termination termination = Inputs.inputsJson(cromwellPath, true);
 
@@ -372,20 +364,18 @@ public class CromwellWorkflowService {
     }
   }
 
-  private static boolean containsImportStatement(String filePath) throws IOException {
+  private boolean containsImportStatement(Path filePath) throws IOException {
     try (BufferedReader reader =
         new BufferedReader(
-            new InputStreamReader(new FileInputStream(filePath), StandardCharsets.UTF_8))) {
+            new InputStreamReader(
+                new FileInputStream(filePath.toString()), StandardCharsets.UTF_8))) {
       String line;
       Pattern importPattern = Pattern.compile("^import\\s\"[^\"]*\".*");
-
       while ((line = reader.readLine()) != null) {
         if (importPattern.matcher(line).matches()) {
-          reader.close();
           return true;
         }
       }
-      reader.close();
       return false;
     }
   }
@@ -406,6 +396,23 @@ public class CromwellWorkflowService {
     // Download dependencies
     CloudStorageUtils.downloadGcsDir(
         googleCredentials, sourceBucket, sourceDir, destinationPath, ".wdl");
+  }
+
+  public boolean downloadDependenciesIfExist(
+      UUID workspaceId,
+      BearerToken token,
+      Path localWdlPath,
+      String workflowGcsUri,
+      Path downloadPath)
+      throws IOException {
+
+    if (containsImportStatement(localWdlPath)) {
+      logger.info("Source WDL has dependencies. Downloading all files to {}.", downloadPath);
+      downloadWdlDependencies(workspaceId, token, workflowGcsUri, downloadPath.toString());
+      return true;
+    }
+    logger.info("Source WDL has no dependencies");
+    return false;
   }
 
   /**
