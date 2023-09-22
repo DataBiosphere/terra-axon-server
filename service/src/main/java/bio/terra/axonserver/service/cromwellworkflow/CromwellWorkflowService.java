@@ -82,6 +82,15 @@ public class CromwellWorkflowService {
 
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
 
+  // Temp file prefixes
+  private static final String INPUTS_PREFIX = "workflow-inputs-";
+  private static final String OPTIONS_PREFIX = "workflow-options-";
+  private static final String LABELS_PREFIX = "workflow-labels-";
+  private static final String SOURCE_PREFIX = "workflow-source-";
+  private static final String DEPS_DIR_PREFIX = "workflow-deps-";
+  private static final String DEPS_ZIP_PREFIX = "workflow-deps-zip-";
+  private static final String SUFFIX = "-terra";
+
   @Autowired
   public CromwellWorkflowService(
       CromwellConfiguration cromwellConfig,
@@ -218,17 +227,14 @@ public class CromwellWorkflowService {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
 
-    try (AutoDeletingTempFile tempInputsFile =
-            new AutoDeletingTempFile("workflow-inputs-", "-terra");
-        AutoDeletingTempFile tempOptionsFile =
-            new AutoDeletingTempFile("workflow-options-", "-terra");
-        AutoDeletingTempFile tempLabelsFile =
-            new AutoDeletingTempFile("workflow-labels-", "-terra");
+    try (AutoDeletingTempFile tempInputsFile = new AutoDeletingTempFile(INPUTS_PREFIX, SUFFIX);
+        AutoDeletingTempFile tempOptionsFile = new AutoDeletingTempFile(OPTIONS_PREFIX, SUFFIX);
+        AutoDeletingTempFile tempLabelsFile = new AutoDeletingTempFile(LABELS_PREFIX, SUFFIX);
         AutoDeletingTempFile tempWorkflowSourceFile =
-            new AutoDeletingTempFile("workflow-source-", "-terra");
-        AutoDeletingTempDir tempDepsDir = new AutoDeletingTempDir("workflow-deps-");
+            new AutoDeletingTempFile(SOURCE_PREFIX, SUFFIX);
+        AutoDeletingTempDir tempDepsDir = new AutoDeletingTempDir(DEPS_DIR_PREFIX);
         AutoDeletingTempFile tempWorkflowDependenciesFile =
-            new AutoDeletingTempFile("workflow-deps-zip-", "-terra")) {
+            new AutoDeletingTempFile(DEPS_ZIP_PREFIX, SUFFIX)) {
 
       // Create inputs file
       if (workflowInputs != null) {
