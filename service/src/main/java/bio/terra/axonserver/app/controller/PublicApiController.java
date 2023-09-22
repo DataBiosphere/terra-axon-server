@@ -37,8 +37,8 @@ public class PublicApiController implements PublicApi {
             .latestSupportedCli(cliConfiguration.getLatestVersion())
             .oldestSupportedCli(cliConfiguration.getOldestVersion())
             .cliDockerRepoHost(cliConfiguration.getDockerRepoHost())
-            .cliDockerImageName(cliConfiguration.getDockerImageName())
-            .cliDockerImageTag(cliConfiguration.getDockerImageTag())
+            .cliDockerImageName(cliConfiguration.getDockerRepoImageName())
+            .cliDockerImageTag(cliConfiguration.getDockerRepoImageTag())
             .cliDistributionPath(cliConfiguration.getDistributionPath());
     return new ResponseEntity<>(currentVersion, HttpStatus.OK);
   }

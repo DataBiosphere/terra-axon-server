@@ -35,8 +35,9 @@ class PublicApiControllerTest extends BaseUnitTest {
         .andExpect(jsonPath("$.oldestSupportedCli").value(cliConfiguration.getOldestVersion()))
         .andExpect(jsonPath("$.latestSupportedCli").value(cliConfiguration.getLatestVersion()))
         .andExpect(jsonPath("$.cliDockerRepoHost").value(cliConfiguration.getDockerRepoHost()))
-        .andExpect(jsonPath("$.cliDockerImageName").value(cliConfiguration.getDockerImageName()))
-        .andExpect(jsonPath("$.cliDockerImageTag").value(cliConfiguration.getDockerImageTag()))
+        .andExpect(
+            jsonPath("$.cliDockerImageName").value(cliConfiguration.getDockerRepoImageName()))
+        .andExpect(jsonPath("$.cliDockerImageTag").value(cliConfiguration.getDockerRepoImageTag()))
         .andExpect(jsonPath("$.cliDistributionPath").value(cliConfiguration.getDistributionPath()));
   }
 

@@ -9,8 +9,8 @@ public class CliConfiguration {
   private String oldestVersion = "none";
   private String latestVersion = "none";
   private String dockerRepoHost = "none";
-  private String dockerImageName = "none";
-  private String dockerImageTag = "none";
+  private String dockerRepoImageName = "none";
+  private String dockerRepoImageTag = "none";
   private String distributionPath = "none";
 
   public String getOldestVersion() {
@@ -37,20 +37,20 @@ public class CliConfiguration {
     this.dockerRepoHost = dockerRepoHost;
   }
 
-  public String getDockerImageName() {
-    return dockerImageName;
+  public String getDockerRepoImageName() {
+    return dockerRepoImageName;
   }
 
-  public void setDockerImageName(String dockerImageName) {
-    this.dockerImageName = dockerImageName;
+  public void setDockerRepoImageName(String dockerRepoImageName) {
+    this.dockerRepoImageName = dockerRepoImageName;
   }
 
-  public String getDockerImageTag() {
-    return dockerImageTag;
+  public String getDockerRepoImageTag() {
+    return dockerRepoImageTag;
   }
 
-  public void setDockerImageTag(String dockerImageTag) {
-    this.dockerImageTag = dockerImageTag;
+  public void setDockerRepoImageTag(String dockerRepoImageTag) {
+    this.dockerRepoImageTag = dockerRepoImageTag;
   }
 
   public String getDistributionPath() {
