@@ -35,10 +35,7 @@ public class CloudStorageUtils {
    * @param byteRange Byte range to read from the object
    * @return InputStream for the object content
    */
-
-  @Retryable(
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000))
+  @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 1000))
   public static InputStream getBucketObject(
       GoogleCredentials googleCredentials,
       String bucketName,
