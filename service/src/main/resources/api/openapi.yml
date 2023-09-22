@@ -969,10 +969,22 @@ components:
           description: Version of the currently deployed app declared in build.gradle. Client and server versions are linked.
         oldestSupportedCli:
           type: string
-          description: Oldest supported CLI version; allows the CLI to perform a compatibility check
+          description: Oldest supported CLI version; allows the CLI to perform a compatibility check.
         latestSupportedCli:
           type: string
-          description: Latest supported CLI version; allows the CLI to perform a compatibility check; informs installation script
+          description: Latest supported CLI version; allows the CLI to perform a compatibility check; informs installation script.
+        cliDockerRepoHost:
+            type: string
+            description: Docker repo host for CLI images, e.g. gcr.io/terra-cli-dev.
+        cliDockerImageName:
+            type: string
+            description: Docker image name for CLI images.
+        cliDockerImageTag:
+            type: string
+            description: Docker image tag for CLI images.
+        cliDistributionPath:
+            type: string
+            description: CLI distribution url.
 
     WorkflowIdAndStatus:
       type: object
