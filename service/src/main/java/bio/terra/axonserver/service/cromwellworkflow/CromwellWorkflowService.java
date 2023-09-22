@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import cromwell.core.path.DefaultPath;
 import cromwell.core.path.DefaultPathBuilder;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
@@ -302,26 +301,29 @@ public class CromwellWorkflowService {
         .labels(CROMWELL_CLIENT_API_VERSION, workflowId.toString());
   }
 
+  /**
+   * Use's The Broad's WOMTool to parse inputs from a WDL.
+   * Downloads dependent WDLs in order to handle WDLs with sub-wdls.
+   * @param workspaceId - Workspace containing WDL
+   * @param workflowGcsUri - GCS URI path to wdl
+   * @param token - User's OAuth2 token
+   * @return inputs - Map of inputs for WDL
+   * @throws InvalidWdlException - WomTool will throw this if the WDL is invalid.
+   */
   public Map<String, String> parseInputs(UUID workspaceId, String workflowGcsUri, BearerToken token)
       throws IOException, InvalidWdlException {
-    // 1) Get the WDL file and write it to disk
-    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir("workflow-deps-")) {
+    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir(DEPS_DIR_PREFIX)) {
       Path localMainWdlPath = Paths.get(tempDir.getDir().toString(), "main.wdl");
       InputStream resourceObjectStream =
           fileService.getFile(token, workspaceId, workflowGcsUri, null);
-      DefaultPath cromwellPath = DefaultPathBuilder.build(localMainWdlPath);
       Files.copy(resourceObjectStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
 
       downloadDependenciesIfExist(
           workspaceId, token, localMainWdlPath, workflowGcsUri, tempDir.getDir());
 
-      // 2) Call Womtool's input parsing method
-      Termination termination = Inputs.inputsJson(cromwellPath, true);
-
-      // 3) Return the result as json, or return error
+      Termination termination = Inputs.inputsJson(DefaultPathBuilder.build(localMainWdlPath), true);
       if (termination instanceof SuccessfulTermination) {
         String jsonString = termination.stdout().get();
-        // Use Gson to convert the JSON-like string to a Map<String, String>
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
@@ -349,6 +351,11 @@ public class CromwellWorkflowService {
     }
   }
 
+  /**
+   * Writes Map data to a temp file. Used to write inputs.json, options.json and labels.json
+   * @param data - Map data representing JSON to write to file
+   * @param tempFile - Temporary file to write to
+   */
   private void writeToTmpFile(Map<String, ?> data, AutoDeletingTempFile tempFile)
       throws IOException {
     if (data != null) {
