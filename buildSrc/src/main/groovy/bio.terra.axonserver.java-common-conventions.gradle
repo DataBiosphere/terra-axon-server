@@ -54,6 +54,12 @@ dependencies {
     configurations.all {
         exclude group: 'org.bouncycastle', module: 'bcpkix-jdk18on'
     }
+    // Constrain versions of transitive dependencies. These are not explicitly
+    // pulled in, but if other libraries include them their versions will be
+    // constrained due to known security vulnerabilities.
+    constraints {
+        spotbugs('org.apache.bcel:bcel:6.6.1')
+    }
 }
 
 tasks.named('test') {
