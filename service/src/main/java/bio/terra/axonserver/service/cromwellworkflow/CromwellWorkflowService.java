@@ -1,55 +1,59 @@
 package bio.terra.axonserver.service.cromwellworkflow;
 
 import bio.terra.axonserver.app.configuration.CromwellConfiguration;
-import bio.terra.axonserver.model.ApiCallMetadata;
-import bio.terra.axonserver.model.ApiCallMetadataCallCaching;
-import bio.terra.axonserver.model.ApiFailureMessages;
 import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
-import bio.terra.axonserver.model.ApiWorkflowMetadataResponseSubmittedFiles;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
+import bio.terra.axonserver.service.cloud.gcp.GcpService;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.iam.SamService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
+import bio.terra.axonserver.utils.AutoDeletingTempDir;
 import bio.terra.axonserver.utils.AutoDeletingTempFile;
+import bio.terra.axonserver.utils.CloudStorageUtils;
 import bio.terra.common.exception.BadRequestException;
 import bio.terra.common.iam.BearerToken;
 import bio.terra.cromwell.api.WorkflowsApi;
 import bio.terra.cromwell.client.ApiClient;
 import bio.terra.cromwell.client.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import cromwell.core.path.DefaultPath;
 import cromwell.core.path.DefaultPathBuilder;
-import io.swagger.client.model.CromwellApiCallMetadata;
-import io.swagger.client.model.CromwellApiFailureMessages;
 import io.swagger.client.model.CromwellApiLabelsResponse;
 import io.swagger.client.model.CromwellApiWorkflowIdAndStatus;
 import io.swagger.client.model.CromwellApiWorkflowMetadataResponse;
-import io.swagger.client.model.CromwellApiWorkflowMetadataResponseSubmittedFiles;
 import io.swagger.client.model.CromwellApiWorkflowQueryResponse;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.zeroturnaround.zip.ZipUtil;
 import womtool.WomtoolMain.SuccessfulTermination;
 import womtool.WomtoolMain.Termination;
-import womtool.WomtoolMain.UnsuccessfulTermination;
 import womtool.inputs.Inputs;
 
 /**
@@ -65,27 +69,41 @@ import womtool.inputs.Inputs;
 @Component
 public class CromwellWorkflowService {
 
+  private static final Logger logger = LoggerFactory.getLogger(CromwellWorkflowService.class);
   private final CromwellConfiguration cromwellConfig;
   private final FileService fileService;
   private final WorkspaceManagerService wsmService;
   private final SamService samService;
 
-  public static final String WORKSPACE_ID_LABEL_KEY = "terra-workspace-id";
-  public static final String USER_EMAIL_LABEL_KEY = "terra-user-email";
+  private final GcpService gcpService;
 
-  public static final String GCS_SOURCE_LABEL_KEY = "terra-gcs-source-uri";
+  private final ObjectMapper objectMapper;
+
   private static final String CROMWELL_CLIENT_API_VERSION = "v1";
+
+  // Temp file prefixes
+  private static final String INPUTS_PREFIX = "workflow-inputs-";
+  private static final String OPTIONS_PREFIX = "workflow-options-";
+  private static final String LABELS_PREFIX = "workflow-labels-";
+  private static final String SOURCE_PREFIX = "workflow-source-";
+  private static final String DEPS_DIR_PREFIX = "workflow-deps-";
+  private static final String DEPS_ZIP_PREFIX = "workflow-deps-zip-";
+  private static final String SUFFIX = "-terra";
 
   @Autowired
   public CromwellWorkflowService(
       CromwellConfiguration cromwellConfig,
       FileService fileService,
       WorkspaceManagerService wsmService,
-      SamService samService) {
+      SamService samService,
+      GcpService gcpService,
+      ObjectMapper objectMapper) {
     this.cromwellConfig = cromwellConfig;
     this.fileService = fileService;
     this.wsmService = wsmService;
     this.samService = samService;
+    this.gcpService = gcpService;
+    this.objectMapper = objectMapper;
   }
 
   private ApiClient getApiClient() {
@@ -175,9 +193,7 @@ public class CromwellWorkflowService {
    * @param workflowOptions Object containing the options.
    * @param workflowType Workflow language for the submitted file (i.e., WDL)
    * @param workflowTypeVersion Version for the workflow language (draft-2 or 1.0).
-   * @param labels JSON string of labels.
-   * @param workflowDependenciesGcsUri URI pointing to the workflow dependencies: a GCS object that
-   *     is a ZIP file.
+   * @param labels JSON string of labels. is a ZIP file.
    * @param requestedWorkflowId An ID to ascribe to this workflow. If not supplied, then a random ID
    *     will be generated.
    * @param token Bearer token.
@@ -195,7 +211,6 @@ public class CromwellWorkflowService {
       String workflowType,
       String workflowTypeVersion,
       Map<String, String> labels,
-      String workflowDependenciesGcsUri,
       UUID requestedWorkflowId,
       BearerToken token)
       throws bio.terra.cromwell.client.ApiException, IOException {
@@ -203,74 +218,56 @@ public class CromwellWorkflowService {
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
-    var rootBucket = workflowOptions.get("jes_gcs_root");
-    if (workflowOptions == null || rootBucket == null) {
+    var rootBucket = workflowOptions.get(WorkflowRequiredOptionsKeys.JES_GCS_ROOT);
+    if (rootBucket == null) {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
 
-    try (AutoDeletingTempFile tempInputsFile =
-            new AutoDeletingTempFile("workflow-inputs-", "-terra");
-        AutoDeletingTempFile tempOptionsFile =
-            new AutoDeletingTempFile("workflow-options-", "-terra");
-        AutoDeletingTempFile tempLabelsFile =
-            new AutoDeletingTempFile("workflow-labels-", "-terra");
+    try (AutoDeletingTempFile tempInputsFile = new AutoDeletingTempFile(INPUTS_PREFIX, SUFFIX);
+        AutoDeletingTempFile tempOptionsFile = new AutoDeletingTempFile(OPTIONS_PREFIX, SUFFIX);
+        AutoDeletingTempFile tempLabelsFile = new AutoDeletingTempFile(LABELS_PREFIX, SUFFIX);
         AutoDeletingTempFile tempWorkflowSourceFile =
-            new AutoDeletingTempFile("workflow-source-", "-terra");
+            new AutoDeletingTempFile(SOURCE_PREFIX, SUFFIX);
+        AutoDeletingTempDir tempDepsDir = new AutoDeletingTempDir(DEPS_DIR_PREFIX);
         AutoDeletingTempFile tempWorkflowDependenciesFile =
-            new AutoDeletingTempFile("workflow-dependencies-", "-terra")) {
+            new AutoDeletingTempFile(DEPS_ZIP_PREFIX, SUFFIX)) {
 
       // Create inputs file
-      ObjectMapper mapper = new ObjectMapper();
       if (workflowInputs != null) {
-        try (OutputStream out = new FileOutputStream(tempInputsFile.getFile())) {
-          out.write(mapper.writeValueAsString(workflowInputs).getBytes(StandardCharsets.UTF_8));
-        }
+        writeToTmpFile(workflowInputs, tempInputsFile);
       }
 
-      // Adjoin preset options for the options file.
-      // Place the project ID + compute SA + docker image into the options.
+      // Set preset options
       String projectId = wsmService.getGcpContext(workspaceId, token.getToken()).getProjectId();
       String userEmail = samService.getUserStatusInfo(token).getUserEmail();
       String petSaKey = samService.getPetServiceAccountKey(projectId, userEmail);
-      workflowOptions.put("user_service_account_json", petSaKey);
+      String saEmail = samService.getPetServiceAccount(projectId, token);
+      setPresetWorkflowOptions(
+          workflowOptions, rootBucket.toString(), projectId, petSaKey, saEmail);
+      writeToTmpFile(workflowOptions, tempOptionsFile);
+      logger.info(
+          "Wrote options to tmp file {} (Options omitted due to sensitive data)",
+          tempOptionsFile.getFile().getPath());
 
-      // Limit call caching to root bucket
-      String[] cachePrefixes = {rootBucket.toString()};
-      workflowOptions.put("call_cache_hit_path_prefixes", cachePrefixes);
-      workflowOptions.put("google_project", projectId);
-      workflowOptions.put(
-          "google_compute_service_account", samService.getPetServiceAccount(projectId, token));
-      workflowOptions.put(
-          "default_runtime_attributes",
-          new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
-      try (OutputStream out = new FileOutputStream(tempOptionsFile.getFile())) {
-        out.write(mapper.writeValueAsString(workflowOptions).getBytes(StandardCharsets.UTF_8));
-      }
-
-      labels.put(WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
-      labels.put(USER_EMAIL_LABEL_KEY, userEmail);
+      // Copy the source wdl from GCS
+      var localMainWdlPath = tempWorkflowSourceFile.getFile().toPath();
       if (workflowGcsUri != null) {
-        labels.put(GCS_SOURCE_LABEL_KEY, workflowGcsUri);
         InputStream inputStream =
             fileService.getFile(token, workspaceId, workflowGcsUri, /*convertTo=*/ null);
-        Files.copy(
-            inputStream,
-            tempWorkflowSourceFile.getFile().toPath(),
-            StandardCopyOption.REPLACE_EXISTING);
-      }
-      try (OutputStream out = new FileOutputStream(tempLabelsFile.getFile())) {
-        out.write(mapper.writeValueAsString(labels).getBytes(StandardCharsets.UTF_8));
+        Files.copy(inputStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
+        logger.info("Copied source WDL from {} to tmp file {}", workflowGcsUri, localMainWdlPath);
       }
 
-      // Get dependencies from GCS and create temp file
-      if (workflowDependenciesGcsUri != null) {
-        InputStream inputStream =
-            fileService.getFile(
-                token, workspaceId, workflowDependenciesGcsUri, /*convertTo=*/ null);
-        Files.copy(
-            inputStream,
-            tempWorkflowDependenciesFile.getFile().toPath(),
-            StandardCopyOption.REPLACE_EXISTING);
+      // Set preset labels
+      setPresetLabels(labels, workspaceId, userEmail, workflowGcsUri);
+      writeToTmpFile(labels, tempLabelsFile);
+      logger.info("Wrote labels {} to tmp file {}", labels, tempLabelsFile.getFile().getPath());
+
+      if (downloadDependenciesIfExist(
+          workspaceId, token, localMainWdlPath, workflowGcsUri, tempDepsDir.getDir())) {
+        var zipPath = tempWorkflowDependenciesFile.getFile().toString();
+        logger.info("Zipping dependencies to {}", zipPath);
+        ZipUtil.pack(new File(tempDepsDir.getDir().toString()), new File(zipPath));
       }
 
       return new WorkflowsApi(getApiClient())
@@ -301,28 +298,34 @@ public class CromwellWorkflowService {
         .labels(CROMWELL_CLIENT_API_VERSION, workflowId.toString());
   }
 
-  public Map<String, String> parseInputs(UUID workspaceId, String gcsPath, BearerToken token)
+  /**
+   * Use's The Broad's WOMTool to parse inputs from a WDL. Downloads dependent WDLs in order to
+   * handle WDLs with sub-wdls.
+   *
+   * @param workspaceId - Workspace containing WDL
+   * @param workflowGcsUri - GCS URI path to wdl
+   * @param token - User's OAuth2 token
+   * @return inputs - Map of inputs for WDL
+   * @throws InvalidWdlException - WomTool will throw this if the WDL is invalid.
+   */
+  public Map<String, String> parseInputs(UUID workspaceId, String workflowGcsUri, BearerToken token)
       throws IOException, InvalidWdlException {
-    // 1) Get the WDL file and write it to disk
-    try (AutoDeletingTempFile tempWdlFile = new AutoDeletingTempFile("workflow-main-", "-terra")) {
-      InputStream resourceObjectStream = fileService.getFile(token, workspaceId, gcsPath, null);
-      DefaultPath cromwellPath = DefaultPathBuilder.build(tempWdlFile.getFile().toPath());
-      Files.copy(
-          resourceObjectStream,
-          tempWdlFile.getFile().toPath(),
-          StandardCopyOption.REPLACE_EXISTING);
+    try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir(DEPS_DIR_PREFIX)) {
+      Path localMainWdlPath = Paths.get(tempDir.getDir().toString(), "main.wdl");
+      InputStream resourceObjectStream =
+          fileService.getFile(token, workspaceId, workflowGcsUri, null);
+      Files.copy(resourceObjectStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
 
-      // 2) Call Womtool's input parsing method
-      Termination termination = Inputs.inputsJson(cromwellPath, true);
+      downloadDependenciesIfExist(
+          workspaceId, token, localMainWdlPath, workflowGcsUri, tempDir.getDir());
 
-      // 3) Return the result as json, or return error
+      Termination termination = Inputs.inputsJson(DefaultPathBuilder.build(localMainWdlPath), true);
       if (termination instanceof SuccessfulTermination) {
-        String jsonString = ((SuccessfulTermination) termination).stdout().get();
-        // Use Gson to convert the JSON-like string to a Map<String, String>
+        String jsonString = termination.stdout().get();
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
-        String errorMessage = ((UnsuccessfulTermination) termination).stderr().get();
+        String errorMessage = termination.stderr().get();
         throw new InvalidWdlException(errorMessage);
       }
     }
@@ -335,8 +338,8 @@ public class CromwellWorkflowService {
   private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId) {
     try {
       Map<String, String> labels = getLabels(workflowId).getLabels();
-      if (labels.get(WORKSPACE_ID_LABEL_KEY) == null
-          || !labels.get(WORKSPACE_ID_LABEL_KEY).equals(workspaceId.toString())) {
+      var workspaceIdLabel = labels.get(WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY);
+      if (workspaceIdLabel == null || !workspaceIdLabel.equals(workspaceId.toString())) {
         throw new BadRequestException(
             "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
       }
@@ -344,6 +347,123 @@ public class CromwellWorkflowService {
       throw new BadRequestException(
           "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
     }
+  }
+
+  /**
+   * Writes Map data to a temp file. Used to write inputs.json, options.json and labels.json
+   *
+   * @param data - Map data representing JSON to write to file
+   * @param tempFile - Temporary file to write to
+   */
+  private void writeToTmpFile(Map<String, ?> data, AutoDeletingTempFile tempFile)
+      throws IOException {
+    if (data != null) {
+      try (OutputStream out = new FileOutputStream(tempFile.getFile())) {
+        out.write(objectMapper.writeValueAsString(data).getBytes(StandardCharsets.UTF_8));
+      }
+    }
+  }
+
+  /**
+   * Sets required options for Cromwell
+   *
+   * @param workflowOptions - Existing options set by the user
+   * @param rootBucket - Root bucket to run workflow in.
+   * @param projectId - Project to run workflow in.
+   * @param petSaKey - Pet service account key for the user
+   * @param saEmail - Service account email for the user.
+   */
+  private void setPresetWorkflowOptions(
+      Map<String, Object> workflowOptions,
+      String rootBucket,
+      String projectId,
+      String petSaKey,
+      String saEmail) {
+    // TODO: Update to use token auth mode once available
+    // https://verily.atlassian.net/browse/BENCH-1241
+    workflowOptions.put(WorkflowRequiredOptionsKeys.USER_SERVICE_ACCOUNT_JSON, petSaKey);
+    workflowOptions.put(
+        WorkflowRequiredOptionsKeys.CALL_CACHE_HIT_PATH_PREFIXES, new String[] {rootBucket});
+    workflowOptions.put(WorkflowRequiredOptionsKeys.GOOGLE_PROJECT, projectId);
+    workflowOptions.put(WorkflowRequiredOptionsKeys.GOOGLE_COMPUTE_SERVICE_ACCOUNT, saEmail);
+    workflowOptions.put(
+        WorkflowRequiredOptionsKeys.DEFAULT_RUNTIME_ATTRIBUTES,
+        new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
+  }
+
+  /**
+   * Set required labels for Cromwell
+   *
+   * @param workflowLabels - Existing labels set by user.
+   * @param workspaceId - Workspace ID the workflow is attached to. This is used to query workflows
+   *     in the future.
+   * @param userEmail - Email of the user who submitted the job.
+   * @param workflowGcsUri - GCS URI of the workflow.
+   */
+  private void setPresetLabels(
+      Map<String, String> workflowLabels,
+      UUID workspaceId,
+      String userEmail,
+      String workflowGcsUri) {
+    workflowLabels.put(WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
+    workflowLabels.put(WorkflowReservedLabelKeys.USER_EMAIL_LABEL_KEY, userEmail);
+    if (workflowGcsUri != null) {
+      // TODO: Deprecate GCS source in favor of general purpose workflow source url
+      // https://verily.atlassian.net/browse/BENCH-1242
+      workflowLabels.put(WorkflowReservedLabelKeys.GCS_SOURCE_LABEL_KEY, workflowGcsUri);
+      workflowLabels.put(WorkflowReservedLabelKeys.WORKFLOW_SOURCE_URL_LABEL_KEY, workflowGcsUri);
+    }
+  }
+
+  private static boolean containsImportStatement(Path filePath) throws IOException {
+    try (BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(
+                new FileInputStream(filePath.toString()), StandardCharsets.UTF_8))) {
+      String line;
+      Pattern importPattern = Pattern.compile("^import\\s\"[^\"]*\".*");
+      while ((line = reader.readLine()) != null) {
+        if (importPattern.matcher(line).matches()) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+
+  private void downloadWdlDependencies(
+      UUID workspaceId, BearerToken token, String workflowGcsUri, String destinationPath) {
+    GoogleCredentials googleCredentials = gcpService.getPetSACredentials(workspaceId, token);
+
+    // Parse the bucket and object name
+    String[] parts = CloudStorageUtils.extractBucketAndObjectFromUri(workflowGcsUri);
+    String sourceBucket = parts[0];
+    String sourceObject = parts[1];
+
+    // Parse the directory name if there is one
+    int lastIndex = sourceObject.lastIndexOf('/');
+    String sourceDir = lastIndex == -1 ? "" : sourceObject.substring(0, lastIndex);
+
+    // Download dependencies
+    CloudStorageUtils.downloadGcsDir(
+        googleCredentials, sourceBucket, sourceDir, destinationPath, ".wdl");
+  }
+
+  public boolean downloadDependenciesIfExist(
+      UUID workspaceId,
+      BearerToken token,
+      Path localWdlPath,
+      String workflowGcsUri,
+      Path downloadPath)
+      throws IOException {
+
+    if (containsImportStatement(localWdlPath)) {
+      logger.info("Source WDL has dependencies. Downloading all files to {}.", downloadPath);
+      downloadWdlDependencies(workspaceId, token, workflowGcsUri, downloadPath.toString());
+      return true;
+    }
+    logger.info("Source WDL has no dependencies");
+    return false;
   }
 
   /**
@@ -387,93 +507,7 @@ public class CromwellWorkflowService {
 
   public static ApiWorkflowMetadataResponse toApiMetadataResponse(
       CromwellApiWorkflowMetadataResponse metadataResponse) {
-    Map<String, List<CromwellApiCallMetadata>> cromwellCallMetadataMap =
-        metadataResponse.getCalls();
-
-    // Convert each value of the map from list of cromwell call metadata into a list of api call
-    // metadata.
-    Map<String, List<ApiCallMetadata>> callMetadataMap =
-        cromwellCallMetadataMap == null
-            ? null
-            : cromwellCallMetadataMap.entrySet().stream()
-                .collect(
-                    Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry ->
-                            entry.getValue().stream()
-                                .map(
-                                    m -> {
-                                      ApiCallMetadata apiCallMetadata =
-                                          new ApiCallMetadata()
-                                              .inputs(m.getInputs())
-                                              .executionStatus(m.getExecutionStatus())
-                                              .backend(m.getBackend())
-                                              .backendStatus(m.getBackendStatus())
-                                              .start(m.getStart())
-                                              .end(m.getEnd())
-                                              .jobId(m.getJobId())
-                                              .failures(toApiFailureMessages(m.getFailures()))
-                                              .returnCode(m.getReturnCode())
-                                              .callRoot(m.getCallRoot())
-                                              .stdout(m.getStdout())
-                                              .stderr(m.getStderr())
-                                              .backendLogs(m.getBackendLogs());
-
-                                      if (m.getCallCaching() != null) {
-                                        apiCallMetadata.callCaching(
-                                            new ApiCallMetadataCallCaching()
-                                                .allowResultReuse(
-                                                    m.getCallCaching().isAllowResultReuse())
-                                                .effectiveCallCachingMode(
-                                                    m.getCallCaching()
-                                                        .getEffectiveCallCachingMode())
-                                                .hit(m.getCallCaching().isHit())
-                                                .result(m.getCallCaching().getResult()));
-                                      }
-
-                                      return apiCallMetadata;
-                                    })
-                                .toList()));
-
-    CromwellApiWorkflowMetadataResponseSubmittedFiles cromwellSubmittedFiles =
-        metadataResponse.getSubmittedFiles();
-
-    var submittedFiles =
-        cromwellSubmittedFiles == null
-            ? null
-            : new ApiWorkflowMetadataResponseSubmittedFiles()
-                .workflow(cromwellSubmittedFiles.getWorkflow())
-                .options(cromwellSubmittedFiles.getOptions())
-                .inputs(cromwellSubmittedFiles.getInputs())
-                .workflowType(cromwellSubmittedFiles.getWorkflowType())
-                .root(cromwellSubmittedFiles.getRoot())
-                .workflowUrl(cromwellSubmittedFiles.getWorkflowUrl())
-                .labels(cromwellSubmittedFiles.getLabels());
-
-    return new ApiWorkflowMetadataResponse()
-        .id(UUID.fromString(metadataResponse.getId()))
-        .status(metadataResponse.getStatus())
-        .submission(metadataResponse.getSubmission())
-        .start(metadataResponse.getStart())
-        .end(metadataResponse.getEnd())
-        .inputs(metadataResponse.getInputs())
-        .outputs(metadataResponse.getOutputs())
-        .submittedFiles(submittedFiles)
-        .calls(callMetadataMap)
-        .failures(toApiFailureMessages(metadataResponse.getFailures()));
-  }
-
-  private static List<ApiFailureMessages> toApiFailureMessages(
-      List<CromwellApiFailureMessages> failureMessages) {
-    if (failureMessages == null) {
-      return null;
-    }
-    return failureMessages.stream()
-        .map(
-            failure ->
-                new ApiFailureMessages()
-                    .message(failure.getMessage())
-                    .causedBy(toApiFailureMessages(failure.getCausedBy())))
-        .toList();
+    ObjectMapper objectMapper = new ObjectMapper();
+    return objectMapper.convertValue(metadataResponse, ApiWorkflowMetadataResponse.class);
   }
 }

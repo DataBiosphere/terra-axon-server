@@ -1001,6 +1001,8 @@ definitions:
       executionStatus:
         type: string
         description: Status in Cromwell execution terms.
+      subWorkflowMetadata:
+        $ref: "#/definitions/WorkflowMetadataResponse"
       backend:
         type: string
         description: The type of backend on which the call executed (e.g. JES, SGE, Local)

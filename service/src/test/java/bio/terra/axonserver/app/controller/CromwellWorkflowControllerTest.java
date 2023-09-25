@@ -11,6 +11,7 @@ import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
+import bio.terra.axonserver.service.cromwellworkflow.WorkflowReservedLabelKeys;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import bio.terra.axonserver.testutils.MockMvcUtils;
@@ -53,7 +54,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
 
   private final Map<String, String> DEFAULT_WORKFLOW_LABELS =
       ImmutableMap.of(
-          CromwellWorkflowService.WORKSPACE_ID_LABEL_KEY,
+          WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY,
           workspaceId.toString(),
           "fake-label-key",
           "fake-label-value");
@@ -66,10 +67,6 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
       "/api/workspaces/%s/cromwell/workflows/%s/metadata";
   private final String CROMWELL_WORKFLOW_QUERY_PATH_FORMAT =
       "/api/workspaces/%s/cromwell/workflows/query";
-  private final String CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT =
-      "/api/workspaces/%s/cromwell/parseInputsAndZip/%s";
-  private final String CROMWELL_WORKFLOW_SUBMIT_PATH_FORMAT =
-      "/api/workspaces/%s/cromwell/workflows";
 
   @Test
   void status_noWorkspaceAccess_throws403() throws Exception {
@@ -216,7 +213,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 .failures(failureMessage));
 
     ApiWorkflowMetadataResponse result = getWorkflowMetadata(USER_REQUEST, workspaceId, workflowId);
-    Assertions.assertEquals(result.getId(), workflowId);
+    Assertions.assertEquals(result.getId(), workflowId.toString());
     Assertions.assertEquals(result.getStatus(), DEFAULT_WORKFLOW_STATUS);
     Assertions.assertEquals(result.getSubmission(), DEFAULT_WORKFLOW_SUBMISSION_DATE);
 
@@ -320,7 +317,6 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 Mockito.eq(null),
                 Mockito.eq(null),
                 /*labels*/ Mockito.anyMap(),
-                Mockito.eq(null),
                 Mockito.eq(workflowId),
                 Mockito.eq(USER_REQUEST)))
         .thenReturn(
@@ -367,6 +363,8 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
 
   private ApiWorkflowParsedInputsResponse parseInputs(
       BearerToken token, UUID workspaceId, String gcsPath) throws Exception {
+    String CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT =
+        "/api/workspaces/%s/cromwell/parseInputsAndZip/%s";
     String serializedResponse =
         mockMvcUtils.getSerializedResponseForGet(
             token, CROMWELL_WORKFLOW_PARSE_INPUTS_PATH_FORMAT.formatted(workspaceId, gcsPath));
@@ -382,6 +380,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
                 new ApiSubmitWorkflowRequestBodyWorkflowOptions().jesGcsRoot("gs://fake-bucket/"))
             .requestedWorkflowId(workflowId);
 
+    String CROMWELL_WORKFLOW_SUBMIT_PATH_FORMAT = "/api/workspaces/%s/cromwell/workflows";
     String serializedResponse =
         mockMvcUtils.getSerializedResponseForPost(
             token,
