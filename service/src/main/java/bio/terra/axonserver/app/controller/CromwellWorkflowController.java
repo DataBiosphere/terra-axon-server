@@ -8,7 +8,7 @@ import bio.terra.axonserver.model.ApiWorkflowMetadataResponse;
 import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
-import bio.terra.axonserver.service.cromwellworkflow.WorkflowLabelKeys;
+import bio.terra.axonserver.service.cromwellworkflow.WorkflowReservedLabelKeys;
 import bio.terra.axonserver.service.exception.InvalidWdlException;
 import bio.terra.axonserver.service.file.FileService;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
@@ -132,7 +132,7 @@ public class CromwellWorkflowController extends ControllerBase implements Cromwe
       List<String> workspaceValidationLabel = new ArrayList<>();
       // Restrict the subset to only workflows with the corresponding workspace id label.
       workspaceValidationLabel.add(
-          "%s:%s".formatted(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(), workspaceId));
+          "%s:%s".formatted(WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY, workspaceId));
       CromwellApiWorkflowQueryResponse workflowQuery =
           cromwellWorkflowService.getQuery(
               submission,

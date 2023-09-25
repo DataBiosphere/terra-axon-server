@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+/** File visitor that deletes files as it goes. Used in AutoDeletingTempDir.java */
 class DeletionFileVisitor extends SimpleFileVisitor<Path> {
 
   @Override

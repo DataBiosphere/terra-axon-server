@@ -11,7 +11,7 @@ import bio.terra.axonserver.model.ApiWorkflowParsedInputsResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResponse;
 import bio.terra.axonserver.model.ApiWorkflowQueryResult;
 import bio.terra.axonserver.service.cromwellworkflow.CromwellWorkflowService;
-import bio.terra.axonserver.service.cromwellworkflow.WorkflowLabelKeys;
+import bio.terra.axonserver.service.cromwellworkflow.WorkflowReservedLabelKeys;
 import bio.terra.axonserver.service.wsm.WorkspaceManagerService;
 import bio.terra.axonserver.testutils.BaseUnitTest;
 import bio.terra.axonserver.testutils.MockMvcUtils;
@@ -54,7 +54,7 @@ public class CromwellWorkflowControllerTest extends BaseUnitTest {
 
   private final Map<String, String> DEFAULT_WORKFLOW_LABELS =
       ImmutableMap.of(
-          WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(),
+          WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY,
           workspaceId.toString(),
           "fake-label-key",
           "fake-label-value");

@@ -218,7 +218,7 @@ public class CromwellWorkflowService {
     if (workflowGcsUri == null && workflowUrl == null) {
       throw new BadRequestException("workflowGcsUri or workflowUrl needs to be provided.");
     }
-    var rootBucket = workflowOptions.get(WorkflowOptionKeys.JES_GCS_ROOT.getKey());
+    var rootBucket = workflowOptions.get(WorkflowRequiredOptionsKeys.JES_GCS_ROOT);
     if (rootBucket == null) {
       throw new BadRequestException("workflowOptions.jes_gcs_root must be provided.");
     }
@@ -338,7 +338,7 @@ public class CromwellWorkflowService {
   private void validateWorkflowLabelMatchesWorkspaceId(UUID workflowId, UUID workspaceId) {
     try {
       Map<String, String> labels = getLabels(workflowId).getLabels();
-      var workspaceIdLabel = labels.get(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey());
+      var workspaceIdLabel = labels.get(WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY);
       if (workspaceIdLabel == null || !workspaceIdLabel.equals(workspaceId.toString())) {
         throw new BadRequestException(
             "Workflow %s is not a member of workspace %s".formatted(workflowId, workspaceId));
@@ -379,14 +379,15 @@ public class CromwellWorkflowService {
       String projectId,
       String petSaKey,
       String saEmail) {
-    // TODO: This will likely change in the near future when we update cromwell to use tokens
-    workflowOptions.put(WorkflowOptionKeys.USER_SERVICE_ACCOUNT_JSON.getKey(), petSaKey);
+    // TODO: Update to use token auth mode once available
+    // https://verily.atlassian.net/browse/BENCH-1241
+    workflowOptions.put(WorkflowRequiredOptionsKeys.USER_SERVICE_ACCOUNT_JSON, petSaKey);
     workflowOptions.put(
-        WorkflowOptionKeys.CALL_CACHE_HIT_PATH_PREFIXES.getKey(), new String[] {rootBucket});
-    workflowOptions.put(WorkflowOptionKeys.GOOGLE_PROJECT.getKey(), projectId);
-    workflowOptions.put(WorkflowOptionKeys.GOOGLE_COMPUTE_SERVICE_ACCOUNT.getKey(), saEmail);
+        WorkflowRequiredOptionsKeys.CALL_CACHE_HIT_PATH_PREFIXES, new String[] {rootBucket});
+    workflowOptions.put(WorkflowRequiredOptionsKeys.GOOGLE_PROJECT, projectId);
+    workflowOptions.put(WorkflowRequiredOptionsKeys.GOOGLE_COMPUTE_SERVICE_ACCOUNT, saEmail);
     workflowOptions.put(
-        WorkflowOptionKeys.DEFAULT_RUNTIME_ATTRIBUTES.getKey(),
+        WorkflowRequiredOptionsKeys.DEFAULT_RUNTIME_ATTRIBUTES,
         new AbstractMap.SimpleEntry<>("docker", "debian:stable-slim"));
   }
 
@@ -404,17 +405,17 @@ public class CromwellWorkflowService {
       UUID workspaceId,
       String userEmail,
       String workflowGcsUri) {
-    workflowLabels.put(WorkflowLabelKeys.WORKSPACE_ID_LABEL_KEY.getKey(), workspaceId.toString());
-    workflowLabels.put(WorkflowLabelKeys.USER_EMAIL_LABEL_KEY.getKey(), userEmail);
+    workflowLabels.put(WorkflowReservedLabelKeys.WORKSPACE_ID_LABEL_KEY, workspaceId.toString());
+    workflowLabels.put(WorkflowReservedLabelKeys.USER_EMAIL_LABEL_KEY, userEmail);
     if (workflowGcsUri != null) {
-      // TODO: Deprecate GCS source in favor of general purpose workflow source url key
-      // Will update in a future PR once UI is updated.
-      workflowLabels.put(WorkflowLabelKeys.GCS_SOURCE_LABEL_KEY.getKey(), workflowGcsUri);
-      workflowLabels.put(WorkflowLabelKeys.WORKFLOW_SOURCE_URL_LABEL_KEY.getKey(), workflowGcsUri);
+      // TODO: Deprecate GCS source in favor of general purpose workflow source url
+      // https://verily.atlassian.net/browse/BENCH-1242
+      workflowLabels.put(WorkflowReservedLabelKeys.GCS_SOURCE_LABEL_KEY, workflowGcsUri);
+      workflowLabels.put(WorkflowReservedLabelKeys.WORKFLOW_SOURCE_URL_LABEL_KEY, workflowGcsUri);
     }
   }
 
-  private boolean containsImportStatement(Path filePath) throws IOException {
+  private static boolean containsImportStatement(Path filePath) throws IOException {
     try (BufferedReader reader =
         new BufferedReader(
             new InputStreamReader(
