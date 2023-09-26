@@ -8,4 +8,8 @@ plugins {
 
 // Thymeleaf has a known security vulnerability but is managed by the Spring Boot dependency
 // management plugin. This can be removed when Axon is on Spring Boot 3.
-ext['thymeleaf.version'] = '3.1.2.RELEASE'
+ext {
+    set('thymeleaf.version','3.1.2.RELEASE')
+    set('snakeyaml.version','1.33')
+    set('hsqldb.version', '2.7.1')
+}
