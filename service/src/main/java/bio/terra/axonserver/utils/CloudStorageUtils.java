@@ -109,7 +109,6 @@ public class CloudStorageUtils {
         logger.info("Local file path: {}", localFile.getPath());
 
         if (!localFile.getParentFile().mkdirs() && !localFile.getParentFile().exists()) {
-          logger.error("Error creating local directory");
           throw new RuntimeException("Error creating local directory for downloaded dependency");
         }
 
@@ -119,7 +118,6 @@ public class CloudStorageUtils {
           Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
           Files.setPosixFilePermissions(localFile.toPath(), perms);
         } catch (IOException e) {
-          logger.error("IO error: {}", e.getMessage());
           throw new RuntimeException("Error downloading dependency: " + e);
         }
       }

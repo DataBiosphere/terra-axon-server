@@ -32,7 +32,7 @@ public class AutoDeletingTempFile implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    logger.info("Deleting AutoDeletingTempFile {}", file.toString());
+    logger.info("Deleting AutoDeletingTempFile {}", file);
     Files.deleteIfExists(file.toPath());
   }
 }

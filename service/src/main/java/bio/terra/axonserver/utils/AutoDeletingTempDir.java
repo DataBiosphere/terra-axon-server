@@ -34,7 +34,7 @@ public class AutoDeletingTempDir implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    logger.info("Deleting AutoDeletingTempDir {}", dir.toString());
+    logger.info("Deleting AutoDeletingTempDir {}", dir);
     Files.walkFileTree(
         dir, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new DeletionFileVisitor());
   }
