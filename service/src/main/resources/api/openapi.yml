@@ -40,45 +40,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/VersionProperties"
 
-  # Unauthenticated Auth Paths
-  /auth/exchangeAuthorizationCode:
-    parameters:
-      - $ref: "#/components/parameters/AuthCode"
-    get:
-      security: []
-      summary: |
-        Exchange an authorization code for an access token and refresh token.
-      operationId: getAuthTokens
-      tags: [Authorization]
-      responses:
-        "200":
-          $ref: "#/components/responses/TokenResultResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/PermissionDenied"
-        "500":
-          $ref: "#/components/responses/ServerError"
-
-  /auth/refreshToken:
-    parameters:
-      - $ref: "#/components/parameters/RefreshToken"
-    get:
-      security: []
-      summary: |
-        Pass in a refresh token to receive an access token.
-      operationId: getRefreshedAccessToken
-      tags: [Authorization]
-      responses:
-        "200":
-          $ref: "#/components/responses/TokenResultResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "403":
-          $ref: "#/components/responses/PermissionDenied"
-        "500":
-          $ref: "#/components/responses/ServerError"
-
   # GetFile paths
   /api/workspaces/v1/{workspaceId}/resources/{resourceId}/file:
     parameters:
