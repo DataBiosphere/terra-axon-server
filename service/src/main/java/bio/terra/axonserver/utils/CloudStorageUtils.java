@@ -15,10 +15,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpRange;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -26,6 +32,7 @@ import org.springframework.web.client.HttpClientErrorException;
 
 /** Service for interacting with Google Cloud Storage */
 public class CloudStorageUtils {
+  private static final Logger logger = LoggerFactory.getLogger(CloudStorageUtils.class);
 
   /**
    * Get the contents of a GCS bucket object
@@ -83,29 +90,39 @@ public class CloudStorageUtils {
       String filterSuffix) {
     Storage gcs =
         StorageOptions.newBuilder().setCredentials(googleCredentials).build().getService();
+
+    logger.info("Listing blobs in bucket {} with prefix: {}", bucketName, directoryPath);
     Page<Blob> blobs = gcs.list(bucketName, BlobListOption.prefix(directoryPath));
+
+    logger.info("Iterating over blobs");
     for (Blob blob : blobs.iterateAll()) {
       String blobName = blob.getName();
       if (blobName.endsWith(filterSuffix)) {
+        logger.info("Blob matches filter, fetching: {}", blobName);
         Blob blobToRead = gcs.get(BlobId.of(bucketName, blobName));
         byte[] content = blobToRead.getContent();
 
         String relativePath = blobName.substring(directoryPath.length());
+        logger.info("Relative path for blob: {}", relativePath);
+
         File localFile = Paths.get(localDestination, relativePath).toFile();
+        logger.info("Local file path: {}", localFile.getPath());
+
         if (!localFile.getParentFile().mkdirs() && !localFile.getParentFile().exists()) {
           throw new RuntimeException("Error creating local directory for downloaded dependency");
         }
-        ;
 
         try (FileOutputStream fos = new FileOutputStream(localFile)) {
+          logger.info("Writing blob content to file");
           fos.write(content);
+          Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
+          Files.setPosixFilePermissions(localFile.toPath(), perms);
         } catch (IOException e) {
           throw new RuntimeException("Error downloading dependency: " + e);
         }
       }
     }
   }
-
   /**
    * Parse a bucket name and object name from a gcs URI
    *

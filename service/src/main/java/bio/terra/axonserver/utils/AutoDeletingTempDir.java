@@ -9,9 +9,14 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A tmp directory that will auto delete. For use in try-with-resources blocks. */
 public class AutoDeletingTempDir implements AutoCloseable {
+
+  private static final Logger logger = LoggerFactory.getLogger(AutoDeletingTempDir.class);
+
   private final Path dir;
 
   /**
@@ -29,6 +34,7 @@ public class AutoDeletingTempDir implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
+    logger.info("Deleting AutoDeletingTempDir {}", dir);
     Files.walkFileTree(
         dir, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new DeletionFileVisitor());
   }

@@ -311,17 +311,20 @@ public class CromwellWorkflowService {
   public Map<String, String> parseInputs(UUID workspaceId, String workflowGcsUri, BearerToken token)
       throws IOException, InvalidWdlException {
     try (AutoDeletingTempDir tempDir = new AutoDeletingTempDir(DEPS_DIR_PREFIX)) {
+      logger.info("Parsing inputs for workflow {}", workflowGcsUri);
       Path localMainWdlPath = Paths.get(tempDir.getDir().toString(), "main.wdl");
       InputStream resourceObjectStream =
           fileService.getFile(token, workspaceId, workflowGcsUri, null);
       Files.copy(resourceObjectStream, localMainWdlPath, StandardCopyOption.REPLACE_EXISTING);
+      logger.info("Copied workflow {} to local path {}", workflowGcsUri, localMainWdlPath);
 
       downloadDependenciesIfExist(
           workspaceId, token, localMainWdlPath, workflowGcsUri, tempDir.getDir());
-
+      logger.info("Downloaded all dependencies");
       Termination termination = Inputs.inputsJson(DefaultPathBuilder.build(localMainWdlPath), true);
       if (termination instanceof SuccessfulTermination) {
         String jsonString = termination.stdout().get();
+        logger.info("Received inputs from Cromwell: {}", jsonString);
         Type mapType = new TypeToken<Map<String, String>>() {}.getType();
         return new Gson().fromJson(jsonString, mapType);
       } else {
