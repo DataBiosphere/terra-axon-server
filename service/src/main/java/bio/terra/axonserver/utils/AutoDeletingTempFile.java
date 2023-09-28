@@ -8,8 +8,11 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 import org.apache.commons.lang3.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AutoDeletingTempFile implements AutoCloseable {
+  private static final Logger logger = LoggerFactory.getLogger(AutoDeletingTempFile.class);
   private final File file;
 
   public AutoDeletingTempFile(String filePrefix, String fileSuffix) throws IOException {
@@ -29,6 +32,7 @@ public class AutoDeletingTempFile implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
+    logger.info("Deleting AutoDeletingTempFile {}", file.toString());
     Files.deleteIfExists(file.toPath());
   }
 }
